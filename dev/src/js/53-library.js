@@ -58,27 +58,48 @@ function cmplCfgMoveGroup(fromG, beforeG){
 }
 /* 拖拽排序接线（条目与分组各一套；只允许同类互拖，避免误操作） */
 var cmplCfgDrag = null;
-/* ---- 拖动分组时左侧的顺序小窗：一行一组，拖到第 N 行即落到第 N 位 ---- */
-function cmplOrderShow(activeGroup){
+/* ---- 拖动时左侧的顺序小窗：一行一项，拖到第 N 行即落到第 N 位
+   mode='group' → 列分组顺序（拖起分组标题时）；mode='item' → 列「该条所属组」内的片段顺序（拖起条目卡时） ---- */
+function cmplOrderRows(mode, val){
+  var out = [], i;
+  if(mode === 'group'){
+    out = cmplGroupOrder().slice();
+    return { rows: out, activeIdx: out.indexOf(val), cap: '分组顺序（拖到目标行即就位）', groupFilter: null };
+  }
+  var all = cmplActive(), g = null;
+  for(i = 0; i < all.length; i++) if(all[i].key === val) g = all[i].group || '未分组';
+  var rows = [], activeIdx = -1;
+  for(i = 0; i < all.length; i++){
+    if((all[i].group || '未分组') !== g) continue;
+    if(all[i].key === val) activeIdx = rows.length;
+    rows.push(all[i]);
+  }
+  return { rows: rows, activeIdx: activeIdx, cap: '「' + g + '」内顺序（拖到目标行即就位）', groupFilter: g };
+}
+function cmplOrderShow(mode, val){
   var pop = document.getElementById('cmplOrderPop');
   if(!pop) return;
   pop.innerHTML = '';
-  var order = cmplGroupOrder(), i;
+  var info = cmplOrderRows(mode, val), rows = info.rows, i;
   var cap = document.createElement('div');
   cap.className = 'cmpl-order-cap';
-  cap.textContent = '分组顺序（拖到目标行即就位）';
+  cap.textContent = info.cap;
   pop.appendChild(cap);
-  for(i = 0; i < order.length; i++){
-    (function(g, idx){
+  for(i = 0; i < rows.length; i++){
+    (function(row0, idx){
+      var isActive = (idx === info.activeIdx);
       var row = document.createElement('div');
-      row.className = 'cmpl-order-row' + (g === activeGroup ? ' active' : '');
-      row.dataset.idx = idx; row.dataset.group = g;
+      row.className = 'cmpl-order-row' + (isActive ? ' active' : '');
+      row.dataset.idx = idx;
+      row.dataset.key = (mode === 'group') ? row0 : row0.key;
+      row.dataset.group = (mode === 'group') ? row0 : (row0.group || '未分组');
       var no = document.createElement('span'); no.className = 'cmpl-order-no'; no.textContent = (idx + 1);
-      var tx = document.createElement('span'); tx.textContent = g;
+      var tx = document.createElement('span'); tx.className = 'cmpl-order-tx';
+      tx.textContent = (mode === 'group') ? row0 : (row0.label || '(未命名)');
       row.appendChild(no); row.appendChild(tx);
-      if(g !== activeGroup){
+      if(!isActive){
         row.addEventListener('dragover', function(e){
-          if(!cmplCfgDrag || cmplCfgDrag.type !== 'group') return;
+          if(!cmplCfgDrag || cmplCfgDrag.mode !== mode) return;
           e.preventDefault(); e.dataTransfer.dropEffect = 'move';
           row.classList.add('over');
         });
@@ -86,14 +107,15 @@ function cmplOrderShow(activeGroup){
         row.addEventListener('drop', function(e){
           e.preventDefault(); row.classList.remove('over');
           var d = cmplCfgDrag;
-          if(!d || d.type !== 'group') return;
-          if(cmplCfgMoveGroupTo(d.val, idx)){ renderCmplCfg(); toast('已把「' + d.val + '」排到第 ' + (idx + 1) + ' 位'); }
+          if(!d || d.mode !== mode) return;
+          var ok = (mode === 'group') ? cmplCfgMoveGroupTo(d.val, idx) : cmplCfgMoveItemTo(d.val, idx);
           cmplCfgDrag = null;
           cmplOrderHide();
+          if(ok){ renderCmplCfg(); toast('已排到第 ' + (idx + 1) + ' 位'); }
         });
       }
       pop.appendChild(row);
-    })(order[i], i);
+    })(rows[i], i);
   }
   /* 定位：默认贴在配置窗口左侧；左侧不够（窄屏）则贴窗口内左上 */
   var win = document.querySelector('#cmplCfgMask .tpl-win');
@@ -110,7 +132,7 @@ function cmplOrderHide(){
   var pop = document.getElementById('cmplOrderPop');
   if(pop){ pop.classList.add('hide'); pop.innerHTML = ''; }
 }
-/* 拖到顺序小窗的第 idx 位（数组插位语义） */
+/* 拖到顺序小窗的第 idx 位（数组插位语义）——组 */
 function cmplCfgMoveGroupTo(fromG, idx){
   var order = cmplGroupOrder().slice(), fi = order.indexOf(fromG);
   if(fi < 0) return false;
@@ -123,13 +145,29 @@ function cmplCfgMoveGroupTo(fromG, idx){
   saveNow();
   return true;
 }
+/* 拖到顺序小窗的第 idx 位——条目（保持在本组内，落到该组第 idx 位） */
+function cmplCfgMoveItemTo(key, idx){
+  var arr = cmplActive().slice(), fi = -1, i;
+  for(i = 0; i < arr.length; i++) if(arr[i].key === key) fi = i;
+  if(fi < 0) return false;
+  var item = arr.splice(fi, 1)[0], g = item.group || '未分组';
+  var pos = [];
+  for(i = 0; i < arr.length; i++) if((arr[i].group || '未分组') === g) pos.push(i);
+  var at;
+  if(idx <= 0) at = pos.length ? pos[0] : arr.length;
+  else if(idx >= pos.length) at = pos.length ? (pos[pos.length - 1] + 1) : arr.length;
+  else at = pos[idx];
+  arr.splice(at, 0, item);
+  cmplSetItems(arr); saveNow();
+  return true;
+}
 function cmplCfgDnd(el, type, val){
   el.draggable = true;
   el.addEventListener('dragstart', function(e){
-    cmplCfgDrag = { type: type, val: val };
+    cmplCfgDrag = { mode: type, type: type, val: val };
     try{ e.dataTransfer.setData('text/plain', type + ':' + val); e.dataTransfer.effectAllowed = 'move'; }catch(err){}
     el.classList.add('dragging');
-    if(type === 'group') cmplOrderShow(val);      /* 拖分组 → 左侧浮现顺序小窗 */
+    cmplOrderShow(type, val);     /* 拖分组 → 列分组顺序；拖条目 → 列该组内片段顺序 */
   });
   el.addEventListener('dragend', function(){
     el.classList.remove('dragging');

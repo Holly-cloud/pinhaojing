@@ -564,6 +564,55 @@ t('I12 拖到小窗第 3 行：该组落到第 3 位（高亮反馈 + 落盘 + �
   i12.overCls && i12.idx === 2 && JSON.stringify(i12.gorder) === JSON.stringify(i12.after) && i12.popHidden && i12.headOk,
   `把「${i12.fromG}」拖到第 3 行 → 组序=${JSON.stringify(i12.after)}（现在第 ${i12.idx + 1} 位）；gorder 落盘=${JSON.stringify(i12.gorder) === JSON.stringify(i12.after)}；小窗收起=${i12.popHidden}`);
 
+/* ---------- I13 拖条目时小窗改为「该组内片段顺序」 ---------- */
+const i13 = await evalJS(`(() => {
+  renderCmplCfg();
+  var cards = document.querySelectorAll('#cmplCfgBody .cmpl-cfg-card');
+  var a = cards[0];
+  var key = a.dataset.idx !== undefined ? null : null;
+  var all = cmplActive();
+  var firstCardKey = null;
+  var dt = new DataTransfer();
+  a.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  var pop = document.getElementById('cmplOrderPop');
+  var activeRow = pop.querySelector('.cmpl-order-row.active');
+  var rows = Array.prototype.map.call(pop.querySelectorAll('.cmpl-order-row .cmpl-order-tx'), function(e){ return e.textContent; });
+  var groupOfActive = activeRow ? activeRow.dataset.group : null;
+  var sameGroup = all.filter(function(x){ return (x.group || '未分组') === groupOfActive; }).map(function(x){ return x.label; });
+  return { open: !pop.classList.contains('hide'), cap: (pop.querySelector('.cmpl-order-cap') || {}).textContent,
+           rows: rows, activeCount: pop.querySelectorAll('.cmpl-order-row.active').length,
+           activeIdxInRows: activeRow ? parseInt(activeRow.dataset.idx, 10) : -1,
+           groupOfActive: groupOfActive, sameGroup: sameGroup,
+           activeKey: activeRow ? activeRow.dataset.key : null, mode: cmplCfgDrag ? cmplCfgDrag.mode : null };
+})()`);
+t('I13 拖条目时小窗列出「该条所属组」内的片段顺序（标题带组名、行数=该组条数、被拖那条标「拖动中」）',
+  i13.open && i13.mode === 'item' && i13.activeCount === 1 && i13.rows.length === i13.sameGroup.length
+  && i13.rows.indexOf(i13.sameGroup[0]) >= 0 && (i13.cap || '').indexOf(i13.groupOfActive) >= 0,
+  `标题=${i13.cap}｜行数=${i13.rows.length}（组内 ${i13.sameGroup.length}）被拖在第 ${i13.activeIdxInRows + 1} 行 mode=${i13.mode}`);
+
+/* ---------- I14 拖到小窗第 2 行 → 该条目落到组内第 2 位 ---------- */
+const i14 = await evalJS(`(() => {
+  var pop = document.getElementById('cmplOrderPop');
+  var activeRow = pop.querySelector('.cmpl-order-row.active');
+  var key = activeRow.dataset.key, g = activeRow.dataset.group;
+  var target = pop.querySelectorAll('.cmpl-order-row')[1];
+  var dt = new DataTransfer();
+  target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  var overCls = target.classList.contains('over');
+  target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  cmplOrderHide();
+  var after = cmplActive().filter(function(x){ return (x.group || '未分组') === g; }).map(function(x){ return x.label; });
+  var ls = null; try{ ls = JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){}
+  var lsLabels = ls && ls.cmpl && ls.cmpl.items ? ls.cmpl.items.filter(function(x){ return (x.group || '未分组') === g; }).map(function(x){ return x.label; }) : null;
+  var headOrder = Array.prototype.map.call(document.querySelectorAll('#cmplCfgBody .cmpl-cfg-group'), function(e){ return e.dataset.group; });
+  return { overCls: overCls, key: key, group: g, after: after, lsLabels: lsLabels, popHidden: document.getElementById('cmplOrderPop').classList.contains('hide'),
+           groupOrderKept: headOrder.indexOf(g) === cmplGroupOrder().indexOf(g) };
+})()`);
+t('I14 拖到小窗第 2 行：该条目落到组内第 2 位（高亮 + 落盘 + 组顺序不受影响；小窗收起）',
+  i14.overCls && i14.after.length === i13.sameGroup.length && i14.after[1] === i13.sameGroup[i13.activeIdxInRows]
+  && JSON.stringify(i14.lsLabels) === JSON.stringify(i14.after) && i14.popHidden && i14.groupOrderKept,
+  `「${i13.sameGroup[i13.activeIdxInRows]}」拖到第 2 行 → 组「${i14.group}」内序列=${JSON.stringify(i14.after)}；落盘一致=${JSON.stringify(i14.lsLabels) === JSON.stringify(i14.after)}`);
+
 /* ---------- 截图 ---------- */
 const SHOT = process.argv[2] || '';
 if (SHOT) {
