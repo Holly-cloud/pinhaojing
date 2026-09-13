@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>拼好镜 v7.7 · coding 编辑器小样（评审用 v3）</title>
+<style>
+/* ================= 评审小样 v3 · 拼好镜 v7.7 候选实现 =================
+   变更（2026-09-13 第三轮需求）：
+     ③ 台词区豁免：被一行内成对的中文双引号“ ”包住的错误符号（，/,）一律无视
+        —— 随所在层级族色正常显示、不计入状态栏错误数、行号不标红
+   变更（2026-09-13 第二轮需求）：
+     ① 中文逗号 = 「错误符号」→ 红色 + 波浪下划线，行号同步标红
+     ② 独立编辑器改造成 coding 编辑器：等宽字体 + 行号栏 + 状态栏 + 括号配对高亮
+   用途：① Holly 评审观感；② 同时是待移植进 PHJ.html 的引擎源码（已与 PHJ.html v7.7 同源）。
+   注意：本文件不是交付物，交付物是 PHJ.html。
+   色板 v3（错误红占用红色 → 花括号改深玫红），全部对比度 ≥ 4.76:1
+   ================================================================ */
+*{box-sizing:border-box}
+:root{--card:rgba(255,255,255,.74);--bg:#eef0f3;--border:rgba(255,255,255,.55);--text:#1d1d1f;--muted:rgba(0,0,0,.48);--accent:#0071e3;--accent-dark:#0066cc;--radius:16px}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:
+  radial-gradient(1300px 820px at 8% -8%, rgba(0,113,227,.14), transparent 58%),
+  radial-gradient(1000px 680px at 94% 2%, rgba(175,82,222,.13), transparent 56%),
+  radial-gradient(1100px 760px at 48% 114%, rgba(0,173,216,.11), transparent 58%),
+  radial-gradient(760px 540px at 82% 72%, rgba(255,159,28,.09), transparent 55%),
+  radial-gradient(700px 500px at 18% 90%, rgba(88,196,120,.07), transparent 55%),
+  #eef0f3;
+  color:var(--text);font:14px/1.47 system-ui,-apple-system,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue","Microsoft YaHei",Arial,sans-serif;letter-spacing:-.12px;-webkit-font-smoothing:antialiased}
+
+/* --- 与应用一致的窗口/按钮视觉（摘自 PHJ.html） --- */
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:11000;display:flex;align-items:flex-start;justify-content:center;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);overflow-y:auto;padding:24px 0}
+.modal-mask>.col{display:flex;flex-direction:column;gap:10px;align-items:center;margin:auto}
+.blk-win{width:640px;max-width:94vw;max-height:96vh;display:flex;flex-direction:column;background:rgba(250,250,252,.92);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);border:1px solid rgba(255,255,255,.7);border-radius:16px;padding:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 24px 64px rgba(0,0,0,.25);overflow-y:auto}
+.modal-title{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text);letter-spacing:-.1px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid rgba(255,255,255,.6);background:rgba(255,255,255,.5);-webkit-backdrop-filter:saturate(160%) blur(12px);backdrop-filter:saturate(160%) blur(12px);color:var(--text);border-radius:14px;min-height:36px;padding:0 14px;font-size:13px;letter-spacing:-.12px;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,box-shadow .15s}
+.btn.primary{background:rgba(0,113,227,.85);border-color:rgba(255,255,255,.35);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.btn.primary:hover{background:rgba(10,123,228,.92)}
+
+/* ================= v7.6 叠层高亮 + coding 化（核心） ================= */
+/* 外层承接白底/边框/焦点环；两层内部排版逐字一致（含等宽字体与左侧行号留白） */
+.blk-edit{position:relative;border:1px solid rgba(0,0,0,.14);background:rgba(255,255,255,.85);border-radius:10px;transition:border-color .15s,box-shadow .15s}
+.blk-edit:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.15)}
+.blk-hl,.blk-input{
+  margin:0;padding:10px 12px 10px 52px;border:1px solid transparent;border-radius:10px;
+  font-family:ui-monospace,"Cascadia Mono",Consolas,"SF Mono",Menlo,"Microsoft YaHei",monospace;
+  font-size:13.5px;line-height:1.65;letter-spacing:0;tab-size:4;
+  white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;
+}
+.blk-hl{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:hidden;color:#2f3640}
+.blk-hl code{font:inherit;white-space:inherit;overflow-wrap:inherit;word-break:inherit}
+.blk-hl .hl-line{position:relative;min-height:1.65em}
+.blk-hl .hl-line>.ln{position:absolute;left:-40px;width:28px;text-align:right;color:rgba(0,0,0,.28);font-size:12px;font-variant-numeric:tabular-nums;user-select:none;pointer-events:none}
+.blk-hl .hl-line.has-err>.ln{color:#c62828;font-weight:600}
+.blk-input{position:relative;z-index:1;display:block;width:100%;height:70vh;min-height:220px;resize:vertical;outline:none;background:transparent;
+  color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--text)}
+.blk-input::placeholder{color:var(--muted);-webkit-text-fill-color:var(--muted)}
+.blk-input::selection{background:rgba(0,113,227,.22);-webkit-text-fill-color:#1d1d1f;color:#1d1d1f}
+
+/* ---- 符号族配色 v3（macOS 浅色柔和系 · 全部对比度 ≥4.76:1） ---- */
+.hl-brace{color:#a8336b}   /* {}        5.73 */
+.hl-paren{color:#b04a12}   /* （）( )   5.25 */
+.hl-angle{color:#00695c}   /* <> 〈〉    6.34 */
+.hl-lent{color:#6d3bbf}    /* 【】〔〕   6.65 */
+.hl-quote{color:#0b64b8}   /* 引号族     5.71 */
+.hl-title{color:#2e7d32}   /* 《》       4.92 */
+.hl-square{color:#3949ab}  /* [] ［］    7.42 */
+.hl-punct{color:#8f6a00}   /* 句读与其余符号 4.76 */
+/* 错误符号（中文逗号）：红 + 波浪下划线（编辑器 lint 语义） */
+.hl-err{color:#c62828;text-decoration:underline wavy #c62828;text-decoration-thickness:1px;text-underline-offset:2px}
+/* 光标处括号配对（coding 语义） */
+.hl-match{background:rgba(0,113,227,.16);border-radius:2px}
+
+/* 状态栏（coding 编辑器底部信息带） */
+.blk-status{display:flex;align-items:center;gap:16px;padding:6px 12px;margin-top:-1px;border-top:1px solid rgba(0,0,0,.07);
+  font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:11.5px;color:var(--muted);letter-spacing:0}
+.blk-status .sp{flex:1}
+.blk-status b{font-weight:600;color:var(--text)}
+.blk-status .err b{color:#c62828}
+
+/* --- 评审辅助区（不进产品） --- */
+.legend{width:640px;max-width:94vw;background:rgba(250,250,252,.92);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);border:1px solid rgba(255,255,255,.7);border-radius:16px;padding:12px 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 12px 32px rgba(0,0,0,.18);font-size:12px;color:var(--text)}
+.legend .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.legend .chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:9px;background:rgba(255,255,255,.7);border:1px solid rgba(0,0,0,.06)}
+.legend .sw{font-weight:600}
+.legend .note{color:var(--muted);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="modal-mask">
+  <div class="col">
+    <!-- ===== 与产品一致的块编辑窗口（coding 形态） ===== -->
+    <div class="blk-win">
+      <div class="modal-title">编辑提示词块</div>
+      <div class="blk-edit">
+        <pre class="blk-hl" aria-hidden="true"><code id="blkHl"></code></pre>
+        <textarea class="blk-input" id="blkInput" spellcheck="false" placeholder="输入提示词内容"></textarea>
+        <div class="blk-status">
+          <span class="grp">行 <b id="stLine">1</b>，列 <b id="stCol">1</b></span>
+          <span class="grp">字符 <b id="stLen">0</b></span>
+          <span class="grp err"><b id="stErr">0</b> 处错误符号</span>
+          <span class="sp"></span>
+          <span class="grp">UTF-8 · LF</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="blkStrip">移除空行</button>
+        <div style="flex:1"></div>
+        <button class="btn">取消</button>
+        <button class="btn primary">确定</button>
+      </div>
+    </div>
+
+    <!-- ===== 评审辅助：图例 + 对照开关（不进产品） ===== -->
+    <div class="legend">
+      <div class="row">
+        <span class="chip"><b>评审辅助 v2</b></span>
+        <button class="btn" id="tgHl" style="min-height:26px;padding:0 10px;font-size:12px">对照：关闭着色</button>
+        <span class="chip">请重点看：<b>等宽字体</b> / <b>行号栏</b> / <b>错误标红</b> / 状态栏</span>
+      </div>
+      <div class="row">
+        <span class="chip"><span class="sw hl-brace">{ }</span> 花括号</span>
+        <span class="chip"><span class="sw hl-angle">&lt; &gt; 〈 〉</span> 尖括号</span>
+        <span class="chip"><span class="sw hl-paren">（ ） ( )</span> 圆括号</span>
+        <span class="chip"><span class="sw hl-lent">【 】 〔 〕</span> 方头括号</span>
+        <span class="chip"><span class="sw hl-quote">「 」 “ ” ‘ ’</span> 引号族</span>
+        <span class="chip"><span class="sw hl-title">《 》</span> 书名号</span>
+        <span class="chip"><span class="sw hl-square">[ ] ［ ］</span> 方括号</span>
+        <span class="chip"><span class="sw hl-punct">。、：；！？</span> 句读与其余符号</span>
+        <span class="chip"><span class="sw hl-err">， ,</span> 错误符号</span>
+        <span class="chip" style="color:#2f3640"><b>叙述正文</b></span>
+      </div>
+      <div class="note">
+        <b>coding 化三项</b>（按你的勾选）：① 等宽字体 ② 行号栏（软换行的续行不编号）③ 状态栏（行·列·字符·错误数）+ 光标处<b>括号配对高亮</b>。未做：缩进参考线、Tab 缩进（你未勾选）。<br>
+        <b>错误符号</b>：中文逗号 `，` 与半角逗号 `,` —— 红字 + 波浪下划线 + 行号标红；<b>优先级高于符号族</b>，且不参与括号配对。错误符号表是文件头常量，加一个字符即可扩展。<br>
+        <b>台词区豁免（v7.7 新增）</b>：被<b>一行内成对的中文双引号“ ”</b>包住的错误符号<b>一律无视</b>——随所在层级族色正常显示、<b>不计入</b>状态栏错误数、行号不标红。边界＝<b>仅中文双引号</b>（半角 `"` 里的逗号照旧标红）；<b>未闭合不算</b>台词区（照旧标红，宁缺勿滥）；引号内再嵌 `{}`／`（）` 等成对符号时<b>里层同样豁免</b>（各自随所在层级族色）。<br>
+        <b>通用性</b>：符号只按<b>结构</b>分族着色 —— 引擎零领域知识，<b>不预设任何符号代表什么内容</b>（保持灵活）。规则：成对符号 + 其内文本同族色（内层覆盖外层）；未闭合开符号着色至行尾、换行重置；叙述用专属墨蓝 <span style="color:#2f3640" class="sw">#2f3640</span>。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ================= v7.6/v7.7 通用符号着色 + 错误标记引擎（与 PHJ.html 同源） =================
+   划分依据：文本中出现的符号本身（Unicode 标点/符号），不预设领域词表。
+   规则：R0 错误符号表（，,）→ 红 + 波浪线，优先级最高，且不参与括号配对
+        R0.5 台词区豁免（v7.7）：被一行内成对的中文双引号“ ”包住的错误符号一律无视——
+             随所在层级族色正常显示、不计入状态栏错误数、行号不标红。
+             边界＝仅中文双引号（半角 " 不算）；未闭合不算台词区（照旧标红）；
+             判定按「祖先链含双引号」（引号内再嵌 {}/() 等成对符号，里层也豁免）
+        R1 成对符号包裹的成分 → 括符与内部文本同族色
+        R2 嵌套 → 内层覆盖外层（最近的开符号决定）
+        R3 其余符号（句读/运算符/箭头…）→ 配对区域内随该族色；区域外着句读色
+        R4 未闭合开符号 → 至行尾着该族色（换行重置）
+        R5 其余正文 → 叙述专属墨蓝（= 基线色，不产生 span）
+   ================================================================= */
+(function(){
+  var ERR = {'，':1, ',':1};                                 /* 错误符号表（常量，可扩展）：中文逗号 + 半角逗号 */
+  var DLG = {'“':'”'};                                        /* v7.7 台词区边界表（成对中文双引号；未闭合不生效） */
+  var DLG_OPEN = {};
+  for(var dk in DLG) DLG_OPEN[DLG[dk]] = dk;
+  var PAIRS = {'{':'}','（':'）','(' : ')' ,'<':'>','〈':'〉','《':'》','「':'」','『':'』','【':'】','〔':'〕','[':']','［':'］','“':'”','‘':'’'};
+  var TOGGLE = {'"':1, "'":1, '`':1};
+  var CLOSERS = {};
+  for(var k in PAIRS) CLOSERS[PAIRS[k]] = k;
+
+  function famOf(ch){
+    if('{}'.indexOf(ch) >= 0) return 'brace';
+    if('<>〈〉'.indexOf(ch) >= 0) return 'angle';
+    if('()（）'.indexOf(ch) >= 0) return 'paren';
+    if('【】〔〕'.indexOf(ch) >= 0) return 'lent';
+    if('[]［］'.indexOf(ch) >= 0) return 'square';
+    if('《》'.indexOf(ch) >= 0) return 'title';
+    if('「」『』“”‘’"\'`'.indexOf(ch) >= 0) return 'quote';
+    return 'punct';
+  }
+  var SYM = /[\p{P}\p{S}]/u;
+
+  /* v7.7 台词区掩码：一行内成对中文双引号“ ”包住的字符 → 1（含更内层嵌套；未闭合的开引号不生效） */
+  function dialogueMask(text){
+    var n = text.length, diff = new Int32Array(n + 1), m = new Uint8Array(n), st = [];
+    var i, ch, o, acc = 0;
+    for(i = 0; i < n; i++){
+      ch = text.charAt(i);
+      if(ch === '\n'){ st.length = 0; continue; }                                 /* 换行重置：跨行不成对 */
+      if(DLG[ch]) st.push(i);
+      else if(DLG_OPEN[ch] && st.length){ o = st.pop(); diff[o + 1]++; diff[i]--; }
+    }
+    for(i = 0; i < n; i++){ acc += diff[i]; if(acc > 0) m[i] = 1; }
+    return m;
+  }
+
+  /* 逐字符分类：返回 { fam:[...], err:[bool per line] } */
+  function classify(text){
+    var fam = new Array(text.length), stack = [], dlg = dialogueMask(text);
+    function top(){ return stack.length ? stack[stack.length - 1] : null; }
+    for(var i = 0; i < text.length; i++){
+      var ch = text.charAt(i);
+      if(ch === '\n'){ stack.length = 0; fam[i] = 'body'; continue; }
+      if(ERR[ch] && !dlg[i]){ fam[i] = 'err'; continue; }              /* R0 不参与配对（v7.7：台词区内豁免，继续走 R1~R5） */
+      if(!SYM.test(ch)){ var t = top(); fam[i] = t ? t.fam : 'body'; continue; }   /* R5/R1 */
+      if(PAIRS[ch]){ var f = famOf(ch); fam[i] = f; stack.push({ch:ch, fam:f}); }
+      else if(CLOSERS[ch]){
+        var t2 = top();
+        if(t2 && PAIRS[t2.ch] === ch){ stack.pop(); fam[i] = t2.fam; } else fam[i] = 'punct';
+      } else if(TOGGLE[ch]){
+        var t3 = top();
+        if(t3 && t3.ch === ch){ stack.pop(); fam[i] = t3.fam; }
+        else { var f3 = famOf(ch); fam[i] = f3; stack.push({ch:ch, fam:f3}); }
+      } else { var t4 = top(); fam[i] = t4 ? t4.fam : 'punct'; }      /* R3 */
+    }
+    return fam;
+  }
+  /* 括号配对（coding 语义）：光标紧邻处的括号 → 返回配对两端索引 */
+  function findMatch(text, caret){
+    var cands = [caret - 1, caret];
+    for(var c = 0; c < cands.length; c++){
+      var p = cands[c];
+      if(p < 0 || p >= text.length) continue;
+      var ch = text.charAt(p);
+      if(ERR[ch]) continue;
+      if(PAIRS[ch]){                                   /* 向后找闭合 */
+        var depth = 0;
+        for(var i = p; i < text.length; i++){
+          var x = text.charAt(i);
+          if(x === '\n') break;
+          if(x === ch) depth++;
+          else if(x === PAIRS[ch]){ depth--; if(!depth) return [p, i]; }
+        }
+      } else if(CLOSERS[ch]){                          /* 向前找开启 */
+        var open = CLOSERS[ch], d2 = 0;
+        for(var j = p; j >= 0; j--){
+          var y = text.charAt(j);
+          if(y === '\n') break;
+          if(y === ch) d2++;
+          else if(y === open){ d2--; if(!d2) return [j, p]; }
+        }
+      }
+    }
+    return null;
+  }
+  function esc(s){ return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  /* 逐行渲染：行号栏 + 族色 + 错误 + 配对高亮 */
+  function toHTML(text, match, fam){
+    fam = fam || classify(text);                                 /* v7.7：可传入预分类结果（与状态栏同源） */
+    var lines = text.split('\n'), idx = 0, html = '';
+    for(var li = 0; li < lines.length; li++){
+      var line = lines[li], lineHasErr = false, body = '';
+      var i = 0;
+      while(i < line.length){
+        var f = fam[idx + i], j = i;
+        while(j < line.length && fam[idx + j] === f) j++;
+        /* 该 run 内切出配对高亮片段 */
+        var cur = '', curM = false, parts = [];
+        for(var q = i; q < j; q++){
+          var g = idx + q, isM = !!(match && (g === match[0] || g === match[1]));
+          if(isM !== curM && cur){ parts.push([curM, cur]); cur = ''; }
+          curM = isM; cur += esc(line.charAt(q));
+        }
+        if(cur) parts.push([curM, cur]);
+        for(var pi = 0; pi < parts.length; pi++){
+          var mm = parts[pi][0], ss = parts[pi][1];
+          if(f === 'body' && !mm){ body += ss; }
+          else { body += '<span class="hl-' + f + (mm ? ' hl-match' : '') + '">' + ss + '</span>'; }
+        }
+        if(f === 'err') lineHasErr = true;
+        i = j;
+      }
+      html += '<div class="hl-line' + (lineHasErr ? ' has-err' : '') + '"><span class="ln">' + (li + 1) + '</span>'
+            + (line.length ? body : '\u200b') + '</div>';
+      idx += line.length + 1;
+    }
+    return html;
+  }
+
+  /* ---------- 接线（移植时替换为 blkInput） ---------- */
+  var ta  = document.getElementById('blkInput');
+  var pre = document.querySelector('.blk-hl');
+  var hlOn = true;
+
+  function syncBox(){
+    pre.style.width  = ta.offsetWidth  + 'px';
+    pre.style.height = ta.offsetHeight + 'px';
+    pre.scrollTop = ta.scrollTop;
+    pre.scrollLeft = ta.scrollLeft;
+  }
+  function refresh(){
+    var caret = ta.selectionStart === ta.selectionEnd ? ta.selectionStart : -1;
+    var match = (hlOn && caret >= 0) ? findMatch(ta.value, caret) : null;
+    var fam = classify(ta.value);                                /* v7.7：只分类一次，着色 + 状态栏共用 */
+    document.getElementById('blkHl').innerHTML = hlOn ? toHTML(ta.value, match, fam) : esc(ta.value);
+    syncBox();
+    status(fam);
+  }
+  function status(fam){
+    var v = ta.value, p = ta.selectionStart || 0;
+    var line = v.slice(0, p).split('\n').length;
+    var col  = p - (v.lastIndexOf('\n', p - 1) + 1) + 1;
+    if(!fam) fam = classify(v);
+    var errs = 0;                                                /* v7.7：错误计数与着色同源（台词区内不计入） */
+    for(var i = 0; i < fam.length; i++) if(fam[i] === 'err') errs++;
+    document.getElementById('stLine').textContent = line;
+    document.getElementById('stCol').textContent  = col;
+    document.getElementById('stLen').textContent  = v.length;
+    document.getElementById('stErr').textContent  = errs;
+  }
+  ta.addEventListener('input', refresh);
+  ta.addEventListener('scroll', syncBox);
+  ['click','keyup','select','focus'].forEach(function(ev){ ta.addEventListener(ev, refresh); });
+  if(window.ResizeObserver) new ResizeObserver(syncBox).observe(ta);
+  window.addEventListener('resize', syncBox);
+  document.getElementById('tgHl').addEventListener('click', function(){
+    hlOn = !hlOn;
+    this.textContent = hlOn ? '对照：关闭着色' : '对照：开启着色';
+    refresh();
+  });
+  /* 评审/验收钩子（小样专有，移植时不带） */
+  window.__HL = { classify: classify, toHTML: toHTML, findMatch: findMatch, refresh: refresh, syncBox: syncBox, status: status };
+
+  /* ---------- 示例文本（含台词区 / 错误符号 / 嵌套 / 未闭合 / 各符号族） ---------- */
+  ta.value = [
+    '将参考图中穿红衣、束发的女子定义为红衣女子，将远处穿黑衣、蒙面的身影定义为黑衣人。',
+    '镜头1：傍晚，镜头从红衣女子侧面中景缓慢推进，她站在悬崖边拿起酒壶仰头喝酒，衣袂在山风中轻轻摆动，镜头环绕她半圈，从正面推到背影，远处隐约可见竹林中的黑衣人影。',
+    '镜头2：镜头变焦渐隐到远景，无人机视角俯瞰整片悬崖和竹林，两人分立山崖两端，山风卷起衣摆和尘土，红衣女子缓缓放下酒壶，握上剑柄。',
+    '红衣女子轻声说道{这一剑，我等了很久}，她低声补了一句「别回头」。',
+    '台词区演示（v7.7）：她开口说：“这一剑，我等了很久”，然后拔剑——引号内的逗号被无视，紧跟其后的那个逗号照旧标红。',
+    '台词区嵌套演示（v7.7）：“外{内，层}层，尾”——里层逗号随花括号族色、外层尾逗号随引号族色，两者都不算错误。',
+    '半角引号对照（v7.7）：他说"hi, there"，半角双引号不算台词区，所以这里的 , 与 ，都照旧标红。',
+    '<山风呼啸声>（低沉渐强的鼓点，随对峙收紧）【序幕：她低声说{别回头}】',
+    '补充说明：参考<图片2>中的竹林环境与「雨雾质感」，主色调走《一代宗师》式的冷绿；水印与字幕一律不要出现（约束）。',
+    '普通叙述文本走专属墨蓝；句读符号（。、：；）本身参与上色，正文不受影响。',
+    '未闭合演示：这一段故意留一个未闭合的方头括号【后面直到行尾都着同族色',
+    '未闭合引号演示（v7.7）：她说道：“这一行没有闭合引号，所以这个逗号照旧标红'
+  ].join('\n');
+
+  refresh();
+})();
+</script>
+</body>
+</html>
