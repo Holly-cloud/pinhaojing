@@ -45,6 +45,12 @@ async function key(name) {
   await sleep(90);
 }
 async function type(text) { await send('Input.insertText', { text }); await sleep(120); }
+const DIGIT_VK = { '1': 49, '2': 50, '3': 51, '4': 52, '5': 53, '6': 54, '7': 55, '8': 56, '9': 57 };
+async function digit(d) {   /* v7.8：数字键跳位（输入法式） */
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: d, code: 'Digit' + d, windowsVirtualKeyCode: DIGIT_VK[d], nativeVirtualKeyCode: DIGIT_VK[d] });
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: d, code: 'Digit' + d, windowsVirtualKeyCode: DIGIT_VK[d], nativeVirtualKeyCode: DIGIT_VK[d] });
+  await sleep(90);
+}
 
 const TARGET = 'file:///' + encodeURI(path.resolve(HERE, '../../../PHJ.html').replace(/\\/g, '/'));
 await send('Page.enable'); await send('Runtime.enable');
@@ -103,9 +109,9 @@ const h2 = await evalJS(`(() => {
 t('H2 状态栏「节」随光标显示当前结构', h2.style === '风格包 · 光影逻辑' && h2.body === '叙事正文' && h2.tail === '硬性要求',
   `风格行=${h2.style} 叙事行=${h2.body} 硬性行=${h2.tail}`);
 
-/* ---------- H3 `\` 触发气泡 + 结构置顶（叙事区 → 镜头句组在前） ---------- */
+/* ---------- H3 `#` 触发气泡 + 结构置顶（叙事区 → 镜头句组在前） ---------- */
 await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); hlRefresh(); return 1; })()`);
-await type('\\');
+await type('#');
 const h3 = await evalJS(`(() => {
   var pop = document.getElementById('cmplPop');
   var groups = Array.prototype.map.call(pop.querySelectorAll('.cmpl-group'), function(e){ return e.textContent; });
@@ -113,18 +119,18 @@ const h3 = await evalJS(`(() => {
   return { open: !pop.classList.contains('hide'), rows: pop.querySelectorAll('.cmpl-item').length, groups: groups,
            inEdit: rectP.left >= rectE.left - 1 && rectP.right <= rectE.right + 1, w: Math.round(rectP.width), h: Math.round(rectP.height) };
 })()`);
-t('H3 输入 `\\` 弹候选气泡（且候选行非空、气泡落在编辑区内）',
+t('H3 输入 `#` 弹候选气泡（且候选行非空、气泡落在编辑区内）',
   h3.open && h3.rows > 0 && h3.inEdit, `行数=${h3.rows} 尺寸=${h3.w}×${h3.h} 组序=${JSON.stringify(h3.groups)}`);
 t('H4 结构感知置顶：光标在「硬性要求」节（风格区）触发时，风格包组排第一',
   (h3.groups[0] || '') === '风格包', `实际首组＝${h3.groups[0]}｜完整组序=${JSON.stringify(h3.groups)}`);
 
-/* ---------- H5 过滤：`\光影` → 名称命中优先于正文命中（542 字整套只靠正文命中，必须排在后面） ---------- */
+/* ---------- H5 过滤：`#光影` → 名称命中优先于正文命中（542 字整套只靠正文命中，必须排在后面） ---------- */
 await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.value = ${JSON.stringify(FIX)}; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset(); return 1; })()`);
-await type('\\');
+await type('#');
 await type('光影');
 const h5 = await evalJS(`(() => { var pop = document.getElementById('cmplPop');
   return { rows: Array.prototype.map.call(pop.querySelectorAll('.cmpl-item .cmpl-label'), function(e){ return e.textContent; }) }; })()`);
-t('H5 触发符后接查询词即过滤，且名称命中排前（`\\光影` → 「光影逻辑」第一；只有正文含该词的「风格包·全套」退到后面）',
+t('H5 触发符后接查询词即过滤，且名称命中排前（`#光影` → 「光影逻辑」第一；只有正文含该词的「风格包·全套」退到后面）',
   h5.rows[0] === '光影逻辑' && h5.rows.indexOf('风格包 · 全套') > 0, `候选=${JSON.stringify(h5.rows)}`);
 
 /* ---------- H6 键盘上屏（↑↓ 切换回第一项 + Enter 提交），触发符被吃掉 ---------- */
@@ -133,24 +139,24 @@ await key('ArrowDown');
 await key('ArrowUp');
 await key('Enter');
 const h6 = await evalJS(`(() => { var ta = document.getElementById('blkInput'); var v = ta.value; var pop = document.getElementById('cmplPop');
-  return { len: v.length, tail: v.slice(-24), triggerLeft: v.slice(-400).indexOf('\\\\光影') >= 0, popHidden: pop.classList.contains('hide') }; })()`);
+  return { len: v.length, tail: v.slice(-24), triggerLeft: v.slice(-400).indexOf('#光影') >= 0, popHidden: pop.classList.contains('hide') }; })()`);
 t('H6 键盘 ↑↓ + Enter 上屏（↑↓ 转一圈回到当前第一项并落盘、触发符与查询词被吃掉、气泡关闭）',
   h6.popHidden && !h6.triggerLeft && h6.tail === h6first.tail, `第一项=「${h6first.label}」→ 尾部=「${h6.tail}」（期望「${h6first.tail}」）`);
 
 /* ---------- H7 鼠标点选上屏（mousedown + preventDefault 保焦点） ---------- */
 await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.value = ${JSON.stringify(FIX)}; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset(); return 1; })()`);
-await type('\\');
+await type('#');
 const h7a = await evalJS(`(() => { var p = document.getElementById('cmplPop'); if(p.classList.contains('hide')) return null;
   var lab = p.querySelector('.cmpl-item .cmpl-label'); return lab ? lab.textContent : null; })()`);
 await mousedown('#cmplPop .cmpl-item');
 const h7 = await evalJS(`(() => { var ta = document.getElementById('blkInput'), pop = document.getElementById('cmplPop');
-  return { tail: ta.value.slice(-46), popHidden: pop.classList.contains('hide'), focused: document.activeElement === ta, triggerLeft: ta.value.slice(-30).indexOf('\\\\') >= 0 }; })()`);
+  return { tail: ta.value.slice(-46), popHidden: pop.classList.contains('hide'), focused: document.activeElement === ta, triggerLeft: ta.value.slice(-30).indexOf('#') >= 0 }; })()`);
 t('H7 鼠标点选候选上屏（焦点仍在输入框、触发符被吃掉）',
   h7.popHidden && h7.focused && !h7.triggerLeft && h7.tail.indexOf('：') >= 0, `选中条「${h7a}」→ 尾部=「${h7.tail}」 焦点=${h7.focused}`);
 
 /* ---------- H8 Esc 顺序：第一次关候选、第二次才关编辑器 ---------- */
 await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.value = ${JSON.stringify(FIX)}; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset(); return 1; })()`);
-await type('\\');
+await type('#');
 await key('Escape');
 const h8a = await evalJS(`({ popHidden: document.getElementById('cmplPop').classList.contains('hide'), editorOpen: !document.getElementById('blkMask').classList.contains('hide') })`);
 await key('Escape');
@@ -162,7 +168,7 @@ t('H8 Esc 顺序：候选打开时 Esc 只关候选，再按一次才关编辑�
 await evalJS(`(() => { state.blocks = [{ id:'h9', text:'', x:40, y:40 }]; render();
   openBlockEditor('', function(v){ window.__cb9 = v; }); return 1; })()`);
 await sleep(150);
-await type('\\台词');
+await type('#台词');
 await key('Enter');
 const h9a = await evalJS(`(() => { var ta = document.getElementById('blkInput');
   return { v: ta.value, caret: ta.selectionStart, slots: cmplSlots ? cmplSlots.slice() : null, marker: /\\$\\{/.test(ta.value) }; })()`);
@@ -177,10 +183,44 @@ t('H10 槽位跟踪：槽位内打字后续槽位同步位移；Tab 跳到下一
   h9b.v === '说【{{node:周夫子}}音色】：“”' && h9c.caret === h9b.v.indexOf('“') + 1 && h9c.slots && h9c.slots.length === 2,
   `打字后=「${h9b.v}」；Tab 后光标=${h9c.caret}（期望 ${h9b.v.indexOf('“') + 1}）；槽位=${JSON.stringify(h9c.slots)}`);
 
+/* ---------- H16 数字键跳位：`#` 后按 5 → 第 5 条直接上屏（输入法式，不用方向键） ---------- */
+await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.value = ${JSON.stringify(FIX)}; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset(); return 1; })()`);
+await type('#');
+const h16items = await evalJS(`(() => { var pop = document.getElementById('cmplPop');
+  return { n: cmplItems.length, idx0to8: Array.prototype.map.call(pop.querySelectorAll('.cmpl-item .cmpl-idx'), function(e){ return e.textContent; }),
+           fifth: cmplItems[4] ? cmplItems[4].label : null, fifthTail: cmplItems[4] ? cmplPrepare(cmplItems[4].body).text.slice(-20) : null }; })()`);
+await digit('5');
+const h16 = await evalJS(`(() => { var ta = document.getElementById('blkInput'), pop = document.getElementById('cmplPop');
+  return { tail: ta.value.slice(-20), popHidden: pop.classList.contains('hide'), triggerLeft: ta.value.slice(-400).indexOf('#') >= 0 }; })()`);
+t('H16 候选行带序号 1..9；按数字键直接取该条上屏（本例取第 5 条）',
+  h16items.idx0to8.join('') === '123456789' && h16items.n > 5 && h16.popHidden && !h16.triggerLeft && h16.tail.indexOf(h16items.fifthTail) >= 0,
+  `序号=${h16items.idx0to8.join('')} 第5条=「${h16items.fifth}」→ 尾部=「${h16.tail}」（期望「${h16items.fifthTail}」）`);
+
+/* ---------- H17 Tab = 一键补全（不按方向键，直接落第一项） ---------- */
+await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.value = ${JSON.stringify(FIX)}; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset(); return 1; })()`);
+await type('#');
+const h17first = await evalJS(`(() => { var it = cmplItems[0]; return { label: it.label, tail: it.body.slice(-20) }; })()`);
+await key('Tab');
+const h17 = await evalJS(`(() => { var ta = document.getElementById('blkInput'), pop = document.getElementById('cmplPop');
+  return { tail: ta.value.slice(-20), popHidden: pop.classList.contains('hide'), focused: document.activeElement === ta }; })()`);
+t('H17 Tab 一键补全：`#` 后直接 Tab 即落第一项（气泡关闭、焦点留在输入框）',
+  h17.popHidden && h17.focused && h17.tail === h17first.tail, `第一项=「${h17first.label}」→ 尾部=「${h17.tail}」 焦点=${h17.focused}`);
+
+/* ---------- H18 无候选时 Tab 不逃逸焦点（否则接着打的字会丢到窗口外） ---------- */
+const h18 = await evalJS(`(() => { openBlockEditor('画面结束。', null);
+  var ta = document.getElementById('blkInput'); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset();
+  return { before: document.activeElement === ta, len: ta.value.length }; })()`);
+await key('Tab');
+const h18b = await evalJS(`(() => { var ta = document.getElementById('blkInput');
+  return { focused: document.activeElement === ta, len: ta.value.length, hasTab: ta.value.indexOf('\\t') >= 0 }; })()`);
+t('H18 无候选/无槽位时按 Tab：焦点不逃出编辑器、也不往文本里插 Tab 字符',
+  h18.before && h18b.focused && h18b.len === h18.len && !h18b.hasTab,
+  `焦点 ${h18.before} → ${h18b.focused}；长度 ${h18.len} → ${h18b.len}`);
+
 /* ---------- H11 风格包·全套：逐字等于定型件，且自动补足前置空行 ---------- */
 await evalJS(`(() => { openBlockEditor('画面结束。', null); return 1; })()`);
 await sleep(150);
-await type('\\全套');
+await type('#全套');
 await key('Enter');
 const h11 = await evalJS(`(() => { var v = document.getElementById('blkInput').value;
   return { head: v.slice(0, 16), exact: v === ('画面结束。\\n\\n' + cmplFullStyle()), len: v.length, styleLen: cmplFullStyle().length, tail: v.slice(-30) }; })()`);
@@ -208,10 +248,10 @@ const h13 = await evalJS(`(() => {
   openBlockEditor('', null);
   ta.focus();
   ta.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
-  ta.value = '\\\\'; ta.setSelectionRange(1, 1);
+  ta.value = '#'; ta.setSelectionRange(1, 1);
   ta.dispatchEvent(new Event('input', { bubbles: true }));
   var composing = { pop: !document.getElementById('cmplPop').classList.contains('hide') };
-  ta.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '\\\\' }));
+  ta.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '#' }));
   var after = { pop: !document.getElementById('cmplPop').classList.contains('hide'), rows: document.getElementById('cmplPop').querySelectorAll('.cmpl-item').length };
   return { composing: composing.pop, after: after.pop, rows: after.rows };
 })()`);
@@ -251,7 +291,7 @@ const SHOT = process.argv[2] || '';
 if (SHOT) {
   await evalJS(`(() => { state.blocks = [{ id:'s1', text:${JSON.stringify(FIX)}, x:80, y:60 }]; render(); openBlockEditor(state.blocks[0].text, null);
     var ta = document.getElementById('blkInput'); ta.value += '\\n\\n\\n'; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); hlRefresh();
-    ta.value += '\\\\'; ta.setSelectionRange(ta.value.length, ta.value.length); cmplOnInput(); return 1; })()`);
+    ta.value += '#'; ta.setSelectionRange(ta.value.length, ta.value.length); cmplOnInput(); return 1; })()`);
   await sleep(400);
   const shot = await send('Page.captureScreenshot', { format: 'png' });
   fs.writeFileSync(SHOT, Buffer.from(shot.data, 'base64'));

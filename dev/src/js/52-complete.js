@@ -1,7 +1,8 @@
 
 /* ==================== v7.8 候选引擎（结构感知补全 + 槽位 + 复制全文） ====================
-   触发：输入 `\` 后弹候选气泡（`\` 在 53 条语料中出现 0 次 → 零冲突）。
-   键鼠双模：↑↓ 切换 / Enter·Tab 上屏 / Esc 关闭 / 鼠标点选（mousedown+preventDefault 保住焦点与光标）。
+   触发：输入 `#` 后弹候选气泡（`#` 在 53 条语料中出现 0 次 → 零冲突；且中文输入法下不占键位——
+        初版用 `\`，但中文态按 `\` 会出顿号「、」，已按 Holly 反馈改为 `#`）。
+   键鼠双模：↑↓ 切换 / Enter·Tab 一键补全 / 数字 1..9 直取该条（输入法式跳位） / Esc 关闭 / 鼠标点选（mousedown+preventDefault 保住焦点与光标）。
    结构感知：候选按「当前节」（51-struct.js）置顶——写风格包时风格段在前，写叙事时镜头句在前。
    槽位：片段里的 `${n}` 是占位标记（只在常量里存在，上屏时被吃掉）→ 上屏后 Tab 逐位跳。
    数据来源（不照搬语料，全部来自规律；逐字引用的只有你的「风格包」——那是项目级资产，不是片段）：
@@ -9,9 +10,10 @@
      · 镜头句 —— 141 句镜头句的语法：{连接词}{运镜}{主体}{动作}{台词}
      · 词表 —— 你的实际用词（9 运镜 / 3 连接 / 3 台词动词）+ **标注你从没用过的**（未用过徽章）
    ================================================================= */
-var CMPL_TRIGGER = '\\';           /* 触发符（单反斜杠） */
+var CMPL_TRIGGER = '#';            /* 触发符：语料 53 条中 0 次出现；且中文输入法下不占键位（`\` 在中文态会出顿号「、」，故弃用） */
 var CMPL_MAX_QUERY = 14;           /* 触发符后最多跟多少字符算查询 */
 var CMPL_PER_GROUP = 4;            /* 无查询时每组先露几条 */
+var CMPL_DIGIT_JUMP = 9;           /* 候选前 N 条可用数字键 1..N 直接上屏（输入法式） */
 var CMPL_GROUP_HINT = { 风格包: 'style', 硬性要求: 'tail', 起手式: 'anchor', 结构件: 'mark', 镜头句: 'body', 景别: 'body', 运镜: 'body', 台词: 'body' };
 
 var CMPL_STYLE = [
@@ -164,6 +166,12 @@ function cmplRender(){
     var row = document.createElement('div');
     row.className = 'cmpl-item' + (i === cmplSel ? ' sel' : '');
     row.dataset.idx = i;
+    if(i < CMPL_DIGIT_JUMP){
+      var no = document.createElement('span');   /* v7.8：序号=数字键跳位（1..9 直接上屏） */
+      no.className = 'cmpl-idx';
+      no.textContent = (i + 1);
+      row.appendChild(no);
+    }
     var lb = document.createElement('span');
     lb.className = 'cmpl-label';
     lb.textContent = it.label;
@@ -269,9 +277,14 @@ function cmplKeydown(e){
   if(cmplComposing || e.isComposing) return;
   var ta = cmplTa();
   if(cmplOpen){
+    /* v7.8：数字键 = 输入法式跳位上屏（1..9 直取该条；超出候选条数则不拦截，数字照常进入文本） */
+    if(/^[1-9]$/.test(e.key) && !e.ctrlKey && !e.altKey && !e.metaKey){
+      var di = parseInt(e.key, 10) - 1;
+      if(di < CMPL_DIGIT_JUMP && di < cmplItems.length){ e.preventDefault(); cmplSel = di; cmplCommit(); return; }
+    }
     if(e.key === 'ArrowDown'){ e.preventDefault(); cmplMoveSel(1); return; }
     if(e.key === 'ArrowUp'){ e.preventDefault(); cmplMoveSel(-1); return; }
-    if(e.key === 'Enter' || e.key === 'Tab'){ e.preventDefault(); cmplCommit(); return; }
+    if(e.key === 'Enter' || e.key === 'Tab'){ e.preventDefault(); cmplCommit(); return; }   /* Enter 与 Tab 都是一键补全 */
     if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); cmplClose(); return; }   /* 第一次 Esc 只关候选 */
   }else if(cmplSlots && cmplSlots.length){
     if(e.key === 'Tab'){
@@ -282,6 +295,8 @@ function cmplKeydown(e){
     }
     if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); cmplSlots = null; return; }   /* 再按一次 Esc 才关编辑器 */
   }
+  /* v7.8：编辑器内 Tab 不逃逸焦点（无候选、无槽位时也拦住——否则焦点跑到窗口外，接着打字的字全丢） */
+  if(e.key === 'Tab'){ e.preventDefault(); return; }
   if(e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c')){ e.preventDefault(); blkCopyAll(); }
 }
 /* ---- 复制全文（v7.8：编辑器内一键把整段提示词送进剪贴板） ---- */
