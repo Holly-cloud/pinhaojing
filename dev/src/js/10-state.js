@@ -24,7 +24,7 @@ function defaultState(){
     splice: { items: [], activeUnitId: null },
     collapsed: false,
     templates: [],
-    cmpl: { v: 1, items: null },   /* v7.8：补全片段库（null = 用内置表；数组 = 用户表） */
+    cmpl: { v: 1, items: null, gorder: null },   /* v7.8：补全片段库（items null = 用内置表；gorder = 分组顺序） */
     blocks: [{
       id: uid(),
       text: '示例块：这是一段提示词——雨夜小巷，霓虹倒映在水洼里，镜头缓慢推近，侦探撑伞走来。\n\n第二段：角色停步回望，眼神警惕，雨水沿帽沿滑落。\n\n左键拖把手=移动位置；右键菜单或点「拼」可加入右侧拼接栏，按顺序拼成整条 prompt。',
@@ -94,8 +94,9 @@ function migrate(d){
   /* v7.8（version 13）：补全片段库 —— cmpl.items 缺省为 null（＝用内置表）；已物化的用户表逐条校验；
      内置表版本升级（CMPL_SEED_V 变大）时把用户表里没有的新内置条目并进去（用户改过的不动） */
   var cmplIn = (d.cmpl && typeof d.cmpl === 'object') ? d.cmpl : null;
-  var cmpl = { v: (cmplIn && typeof cmplIn.v === 'number') ? cmplIn.v : CMPL_SEED_V, items: null };
+  var cmpl = { v: (cmplIn && typeof cmplIn.v === 'number') ? cmplIn.v : CMPL_SEED_V, items: null, gorder: null };
   if(cmplIn && Array.isArray(cmplIn.items)){
+    cmpl.gorder = Array.isArray(cmplIn.gorder) ? cmplIn.gorder.filter(function(x){ return typeof x === 'string'; }) : null;
     cmpl.items = cmplIn.items.filter(function(x){
       return x && typeof x.body === 'string';
     }).map(function(x){

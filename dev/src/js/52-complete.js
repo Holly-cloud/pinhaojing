@@ -84,6 +84,7 @@ var CMPL_GROUPS = [
 
 /* ---- 运行态 ---- */
 var cmplItems = [], cmplSel = 0, cmplOpen = false, cmplSlots = null, cmplSlotIdx = 0, cmplComposing = false;
+var cmplGroup = null;   /* null = 组视图（数字=按组切换）；字符串 = 已进入该组（数字=直取条目） */
 var _cmctx = null;
 var CMPL_FONT = '13.5px ui-monospace,"Cascadia Mono",Consolas,"SF Mono",Menlo,"Microsoft YaHei",monospace';
 var CMPL_LH = 13.5 * 1.65;         /* = .blk-hl/.blk-input 的 line-height（铁律：与编辑层排版一致） */
@@ -153,19 +154,54 @@ function cmplSetItems(arr){
   cmplInvalidate();
 }
 
-/* 候选池：按查询过滤 + 命中质量（名称 > 正文）+ 按当前节置顶；无查询时每组先露 CMPL_PER_GROUP 条 */
+/* 组顺序：配置窗口里的拖拽顺序（state.cmpl.gorder）优先，其余按生效表出现顺序追加 */
+function cmplGroupOrder(){
+  var all = cmplActive(), c = (typeof state !== 'undefined' && state) ? state.cmpl : null;
+  var ord = (c && Array.isArray(c.gorder)) ? c.gorder.slice() : [], seen = {}, out = [], i, g;
+  for(i = 0; i < ord.length; i++){
+    g = ord[i];
+    if(!seen[g] && all.some(function(x){ return (x.group || '未分组') === g; })){ seen[g] = 1; out.push(g); }
+  }
+  for(i = 0; i < all.length; i++){
+    g = all[i].group || '未分组';
+    if(!seen[g]){ seen[g] = 1; out.push(g); }
+  }
+  return out;
+}
+/* 组视图：一行一组（数字/Enter/点击 = 进组；本节相关的组置顶） */
+function cmplBuildGroups(region){
+  var all = cmplActive(), order = cmplGroupOrder(), out = [], i, j, g, n, prev;
+  for(i = 0; i < order.length; i++){
+    g = order[i]; n = 0; prev = [];
+    for(j = 0; j < all.length; j++){
+      if((all[j].group || '未分组') !== g) continue;
+      n++;
+      if(prev.length < 3) prev.push(all[j].label || '');
+    }
+    if(!n) continue;
+    out.push({ kind: 'group', group: g, label: g, count: n, note: n + ' 条',
+               body: prev.join('、') + (n > 3 ? ' …' : ''), ord: out.length, score: (CMPL_GROUP_HINT[g] === region ? 0 : 1) });
+  }
+  out.sort(function(a, b){ return (a.score - b.score) || (a.ord - b.ord); });
+  return out.slice(0, 24);
+}
+/* 组内视图：该组全部条目（数字 = 直取该条上屏） */
+function cmplBuildGroupItems(g){
+  var all = cmplActive(), out = [], i;
+  for(i = 0; i < all.length; i++){
+    if((all[i].group || '未分组') !== g) continue;
+    out.push({ kind: 'item', group: all[i].group, note: all[i].note, label: all[i].label, body: all[i].body, block: all[i].block });
+  }
+  return out.slice(0, 40);
+}
+/* 查询视图：扁平结果（命中质量 名称 > 正文）+ 本节相关置顶 */
 function cmplBuild(query, region){
-  var all = cmplActive(), q = String(query || '').toLowerCase(), pool = [], perGroup = {}, i, it, g;
+  var all = cmplActive(), q = String(query || '').toLowerCase(), pool = [], i, it;
   for(i = 0; i < all.length; i++){
     it = all[i];
-    if(!q){
-      g = it.group || '未分组';
-      perGroup[g] = (perGroup[g] || 0) + 1;
-      if(perGroup[g] > CMPL_PER_GROUP) continue;
-    }
     var score = cmplScore(it, q, region);
     if(score < 0) continue;
-    pool.push({ group: it.group || '未分组', note: it.note, label: it.label, body: it.body, block: it.block, score: score, ord: pool.length });
+    pool.push({ kind: 'item', group: it.group || '未分组', note: it.note, label: it.label, body: it.body, block: it.block, score: score, ord: pool.length });
   }
   /* 稳定排序：命中质量 → 本节相关（score 里已含 -0.5）→ 原顺序 */
   pool.sort(function(a, b){ return (a.score - b.score) || (a.ord - b.ord); });
@@ -191,7 +227,7 @@ function cmplRender(){
   var lastG = null, i, it;
   for(i = 0; i < cmplItems.length; i++){
     it = cmplItems[i];
-    if(it.group !== lastG){
+    if(it.kind !== 'group' && it.group !== lastG){   /* 组视图不再插组标题行 */
       lastG = it.group;
       var h = document.createElement('div');
       h.className = 'cmpl-group';
@@ -199,10 +235,10 @@ function cmplRender(){
       pop.appendChild(h);
     }
     var row = document.createElement('div');
-    row.className = 'cmpl-item' + (i === cmplSel ? ' sel' : '');
+    row.className = 'cmpl-item' + (i === cmplSel ? ' sel' : '') + (it.kind === 'group' ? ' cmpl-grp' : '');
     row.dataset.idx = i;
     if(i < CMPL_DIGIT_JUMP){
-      var no = document.createElement('span');   /* v7.8：序号=数字键跳位（1..9 直接上屏） */
+      var no = document.createElement('span');   /* 序号 = 数字键：组视图下按组切换，组内/查询下直取该条 */
       no.className = 'cmpl-idx';
       no.textContent = (i + 1);
       row.appendChild(no);
@@ -219,8 +255,14 @@ function cmplRender(){
     }
     var pv = document.createElement('span');
     pv.className = 'cmpl-preview';
-    pv.textContent = it.body.replace(/\$\{\d+\}/g, '…').slice(0, 28);
+    pv.textContent = it.kind === 'group' ? String(it.body || '') : it.body.replace(/\$\{\d+\}/g, '…').slice(0, 28);
     row.appendChild(pv);
+    if(it.kind === 'group'){
+      var ar = document.createElement('span');
+      ar.className = 'cmpl-arrow';
+      ar.textContent = '›';
+      row.appendChild(ar);
+    }
     pop.appendChild(row);
   }
   pop.classList.remove('hide');
@@ -249,16 +291,37 @@ function cmplPlace(){
 function cmplClose(){
   var pop = cmplPop();
   if(pop) pop.classList.add('hide');
-  cmplOpen = false; cmplItems = []; cmplSel = 0;
+  cmplOpen = false; cmplItems = []; cmplSel = 0; cmplGroup = null;
 }
 function cmplReset(){
   cmplClose();
   cmplSlots = null; cmplSlotIdx = 0; cmplComposing = false;
 }
-/* 上屏 */
+/* 进组：只换候选列表，不动文本（触发符仍在） */
+function cmplEnterGroup(g){
+  var ta = cmplTa();
+  var st = (ta && typeof structAt === 'function') ? structAt(ta.value, ta.selectionStart) : { region: 'anchor' };
+  cmplGroup = g;
+  cmplItems = cmplBuildGroupItems(g);
+  cmplSel = 0;
+  if(!cmplItems.length){ cmplClose(); return; }
+  cmplRender();
+}
+/* 退组：回到组视图（Esc 第一次） */
+function cmplLeaveGroup(){
+  var ta = cmplTa();
+  var st = (ta && typeof structAt === 'function') ? structAt(ta.value, ta.selectionStart) : { region: 'anchor' };
+  cmplGroup = null;
+  cmplItems = cmplBuildGroups(st.region);
+  cmplSel = 0;
+  if(!cmplItems.length){ cmplClose(); return; }
+  cmplRender();
+}
+/* 上屏（组视图下 Enter/数字/点击 = 进组） */
 function cmplCommit(){
   var ta = cmplTa(), it = cmplItems[cmplSel];
   if(!ta || !it) return;
+  if(it.kind === 'group'){ cmplEnterGroup(it.group); return; }
   var q = cmplQueryAt(ta);
   if(!q){ cmplClose(); return; }
   var ins = cmplPrepare(it.body);
@@ -303,7 +366,9 @@ function cmplOnInput(){
   var q = cmplQueryAt(ta);
   if(!q){ cmplClose(); return; }
   var st = typeof structAt === 'function' ? structAt(ta.value, ta.selectionStart) : { region: 'anchor' };
-  cmplItems = cmplBuild(q.query, st.region);
+  if(q.query){ cmplGroup = null; cmplItems = cmplBuild(q.query, st.region); }          /* 查询视图：扁平结果 */
+  else if(cmplGroup){ cmplItems = cmplBuildGroupItems(cmplGroup); }                    /* 组内视图 */
+  else { cmplItems = cmplBuildGroups(st.region); }                                     /* 组视图（数字=按组切换） */
   cmplSel = 0;
   if(!cmplItems.length){ cmplClose(); return; }
   cmplRender();
@@ -320,7 +385,7 @@ function cmplKeydown(e){
     if(e.key === 'ArrowDown'){ e.preventDefault(); cmplMoveSel(1); return; }
     if(e.key === 'ArrowUp'){ e.preventDefault(); cmplMoveSel(-1); return; }
     if(e.key === 'Enter' || e.key === 'Tab'){ e.preventDefault(); cmplCommit(); return; }   /* Enter 与 Tab 都是一键补全 */
-    if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); cmplClose(); return; }   /* 第一次 Esc 只关候选 */
+    if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); if(cmplGroup){ cmplLeaveGroup(); } else { cmplClose(); } return; }   /* Esc：先退组/关候选，第二次才关编辑器 */
   }else if(cmplSlots && cmplSlots.length){
     if(e.key === 'Tab'){
       e.preventDefault();

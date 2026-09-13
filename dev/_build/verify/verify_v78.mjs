@@ -114,15 +114,18 @@ await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.focus();
 await type('#');
 const h3 = await evalJS(`(() => {
   var pop = document.getElementById('cmplPop');
-  var groups = Array.prototype.map.call(pop.querySelectorAll('.cmpl-group'), function(e){ return e.textContent; });
+  var labels = Array.prototype.map.call(pop.querySelectorAll('.cmpl-item .cmpl-label'), function(e){ return e.textContent; });
+  var idxs = Array.prototype.map.call(pop.querySelectorAll('.cmpl-item .cmpl-idx'), function(e){ return e.textContent; }).join('');
   var rectE = document.querySelector('.blk-edit').getBoundingClientRect(), rectP = pop.getBoundingClientRect();
-  return { open: !pop.classList.contains('hide'), rows: pop.querySelectorAll('.cmpl-item').length, groups: groups,
+  return { open: !pop.classList.contains('hide'), rows: pop.querySelectorAll('.cmpl-item').length,
+           groupRows: pop.querySelectorAll('.cmpl-item.cmpl-grp').length, labels: labels, idxs: idxs,
            inEdit: rectP.left >= rectE.left - 1 && rectP.right <= rectE.right + 1, w: Math.round(rectP.width), h: Math.round(rectP.height) };
 })()`);
-t('H3 输入 `#` 弹候选气泡（且候选行非空、气泡落在编辑区内）',
-  h3.open && h3.rows > 0 && h3.inEdit, `行数=${h3.rows} 尺寸=${h3.w}×${h3.h} 组序=${JSON.stringify(h3.groups)}`);
+t('H3 输入 `#` 弹候选气泡：第一层是**组视图**（一行一组、带序号 1..9），气泡落在编辑区内',
+  h3.open && h3.rows > 0 && h3.inEdit && h3.groupRows === h3.rows && h3.idxs.slice(0, 3) === '123' && h3.idxs.length === h3.rows,
+  `组行 ${h3.groupRows}/${h3.rows} 尺寸=${h3.w}×${h3.h} 序号=${h3.idxs} 组序=${JSON.stringify(h3.labels)}`);
 t('H4 结构感知置顶：光标在「硬性要求」节（风格区）触发时，风格包组排第一',
-  (h3.groups[0] || '') === '风格包', `实际首组＝${h3.groups[0]}｜完整组序=${JSON.stringify(h3.groups)}`);
+  (h3.labels[0] || '') === '风格包', `实际首组＝${h3.labels[0]}｜完整组序=${JSON.stringify(h3.labels)}`);
 
 /* ---------- H5 过滤：`#光影` → 名称命中优先于正文命中（542 字整套只靠正文命中，必须排在后面） ---------- */
 await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.value = ${JSON.stringify(FIX)}; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset(); return 1; })()`);
@@ -143,16 +146,33 @@ const h6 = await evalJS(`(() => { var ta = document.getElementById('blkInput'); 
 t('H6 键盘 ↑↓ + Enter 上屏（↑↓ 转一圈回到当前第一项并落盘、触发符与查询词被吃掉、气泡关闭）',
   h6.popHidden && !h6.triggerLeft && h6.tail === h6first.tail, `第一项=「${h6first.label}」→ 尾部=「${h6.tail}」（期望「${h6first.tail}」）`);
 
+/* ---------- H6b 键盘层级导航：Enter 进组 → Esc 退回组视图 → Esc 关气泡 ---------- */
+await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.value = ${JSON.stringify(FIX)}; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset(); return 1; })()`);
+await type('#');
+await key('Enter');                                   /* 进组视图第一行 */
+const h6b1 = await evalJS(`({ group: cmplGroup, first: cmplItems[0] ? cmplItems[0].label : null, kind: cmplItems[0] ? cmplItems[0].kind : null })`);
+await key('Escape');                                  /* 退组 */
+const h6b2 = await evalJS(`({ group: cmplGroup, kind: cmplItems[0] ? cmplItems[0].kind : null, popHidden: document.getElementById('cmplPop').classList.contains('hide'), editorOpen: !document.getElementById('blkMask').classList.contains('hide') })`);
+await key('Escape');                                  /* 关气泡（编辑器仍在） */
+const h6b3 = await evalJS(`({ popHidden: document.getElementById('cmplPop').classList.contains('hide'), editorOpen: !document.getElementById('blkMask').classList.contains('hide') })`);
+t('H6b 层级导航：Enter 进组 → Esc 退回组视图 → 再 Esc 关气泡（编辑器不关）',
+  h6b1.group === '风格包' && h6b1.kind === 'item' && h6b2.group === null && h6b2.kind === 'group' && !h6b2.popHidden
+  && h6b3.popHidden && h6b3.editorOpen,
+  `进组=${h6b1.group}｜退组后 kind=${h6b2.kind}｜两次 Esc 后 气泡藏=${h6b3.popHidden} 编辑器开=${h6b3.editorOpen}`);
+
 /* ---------- H7 鼠标点选上屏（mousedown + preventDefault 保焦点） ---------- */
 await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.value = ${JSON.stringify(FIX)}; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset(); return 1; })()`);
 await type('#');
 const h7a = await evalJS(`(() => { var p = document.getElementById('cmplPop'); if(p.classList.contains('hide')) return null;
   var lab = p.querySelector('.cmpl-item .cmpl-label'); return lab ? lab.textContent : null; })()`);
-await mousedown('#cmplPop .cmpl-item');
+await mousedown('#cmplPop .cmpl-item');                 /* 第一下：点组 → 进组 */
+const h7mid = await evalJS(`({ group: cmplGroup, first: (document.querySelector('#cmplPop .cmpl-item .cmpl-label') || {}).textContent })`);
+await mousedown('#cmplPop .cmpl-item');                 /* 第二下：点组内第一条 → 上屏 */
 const h7 = await evalJS(`(() => { var ta = document.getElementById('blkInput'), pop = document.getElementById('cmplPop');
   return { tail: ta.value.slice(-46), popHidden: pop.classList.contains('hide'), focused: document.activeElement === ta, triggerLeft: ta.value.slice(-30).indexOf('#') >= 0 }; })()`);
-t('H7 鼠标点选候选上屏（焦点仍在输入框、触发符被吃掉）',
-  h7.popHidden && h7.focused && !h7.triggerLeft && h7.tail.indexOf('：') >= 0, `选中条「${h7a}」→ 尾部=「${h7.tail}」 焦点=${h7.focused}`);
+t('H7 鼠标点选（两级）：第一下点组 = 进组，第二下点条目 = 上屏（焦点仍在输入框、触发符被吃掉）',
+  h7mid.group === h7a && h7.popHidden && h7.focused && !h7.triggerLeft && h7.tail.indexOf('禁止自行新增或删减台词') >= 0,
+  `点组「${h7a}」→ 进组后首条「${h7mid.first}」→ 尾部=「${h7.tail}」 焦点=${h7.focused}`);
 
 /* ---------- H8 Esc 顺序：第一次关候选、第二次才关编辑器 ---------- */
 await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.value = ${JSON.stringify(FIX)}; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset(); return 1; })()`);
@@ -208,28 +228,42 @@ const h10c = await evalJS(`(() => {
 t('H10c 候选片段里不写 `{{node:…}}`（那是画布自动生成的引用；素材绑定位统一用 `@`）',
   h10c.bad.length === 0 && h10c.hasAt, `候选 ${h10c.all} 条，违规 ${h10c.bad.length} 条${h10c.bad.length ? '：' + h10c.bad.join('、') : ''}`);
 
-/* ---------- H16 数字键跳位：`#` 后按 5 → 第 5 条直接上屏（输入法式，不用方向键） ---------- */
+/* ---------- H16 数字键分级：组视图下数字 = 按组切换；组内数字 = 直取该条上屏 ---------- */
 await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.value = ${JSON.stringify(FIX)}; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset(); return 1; })()`);
 await type('#');
-const h16items = await evalJS(`(() => { var pop = document.getElementById('cmplPop');
-  return { n: cmplItems.length, idx0to8: Array.prototype.map.call(pop.querySelectorAll('.cmpl-item .cmpl-idx'), function(e){ return e.textContent; }),
-           fifth: cmplItems[4] ? cmplItems[4].label : null, fifthTail: cmplItems[4] ? cmplPrepare(cmplItems[4].body).text.slice(-20) : null }; })()`);
-await digit('5');
-const h16 = await evalJS(`(() => { var ta = document.getElementById('blkInput'), pop = document.getElementById('cmplPop');
+const h16a = await evalJS(`(() => {
+  var pop = document.getElementById('cmplPop');
+  return { first: (pop.querySelector('.cmpl-item .cmpl-label') || {}).textContent,
+           idxs: Array.prototype.map.call(pop.querySelectorAll('.cmpl-item .cmpl-idx'), function(e){ return e.textContent; }).join('') };
+})()`);
+await digit('1');                                    /* 数字 = 按组切换 → 进第 1 组 */
+const h16b = await evalJS(`(() => {
+  var pop = document.getElementById('cmplPop');
+  return { group: cmplGroup,
+           labels: Array.prototype.map.call(pop.querySelectorAll('.cmpl-item .cmpl-label'), function(e){ return e.textContent; }),
+           fifth: cmplItems[4] ? cmplPrepare(cmplItems[4].body).text.slice(-20) : null,
+           fifthLabel: cmplItems[4] ? cmplItems[4].label : null };
+})()`);
+await digit('5');                                    /* 组内数字 = 直取该条上屏 */
+const h16c = await evalJS(`(() => { var ta = document.getElementById('blkInput'), pop = document.getElementById('cmplPop');
   return { tail: ta.value.slice(-20), popHidden: pop.classList.contains('hide'), triggerLeft: ta.value.slice(-400).indexOf('#') >= 0 }; })()`);
-t('H16 候选行带序号 1..9；按数字键直接取该条上屏（本例取第 5 条）',
-  h16items.idx0to8.join('') === '123456789' && h16items.n > 5 && h16.popHidden && !h16.triggerLeft && h16.tail.indexOf(h16items.fifthTail) >= 0,
-  `序号=${h16items.idx0to8.join('')} 第5条=「${h16items.fifth}」→ 尾部=「${h16.tail}」（期望「${h16items.fifthTail}」）`);
+t('H16 数字键分级：组视图下数字 = 按组切换（1 → 进第 1 组「风格包」）；组内数字 = 直取该条上屏',
+  h16a.idxs === '1234567' && h16a.first === '风格包' && h16b.group === '风格包' && h16b.labels.length >= 5
+  && h16c.popHidden && !h16c.triggerLeft && h16c.tail.indexOf(h16b.fifth) >= 0,
+  `组视图首行=「${h16a.first}」→ 按 1 进组「${h16b.group}」（${h16b.labels.length} 条）→ 按 5 取「${h16b.fifthLabel}」→ 尾部=「${h16c.tail}」`);
 
-/* ---------- H17 Tab = 一键补全（不按方向键，直接落第一项） ---------- */
+/* ---------- H17 Tab = 一键补全（两级：先按 Tab 进组，再按 Tab 落组内第一条） ---------- */
 await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.value = ${JSON.stringify(FIX)}; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset(); return 1; })()`);
 await type('#');
+await key('Tab');                                     /* 第一下：进组视图第一行 */
+const h17a = await evalJS(`({ group: cmplGroup, first: cmplItems[0] ? cmplItems[0].label : null })`);
 const h17first = await evalJS(`(() => { var it = cmplItems[0]; return { label: it.label, tail: it.body.slice(-20) }; })()`);
-await key('Tab');
+await key('Tab');                                     /* 第二下：落组内第一条 */
 const h17 = await evalJS(`(() => { var ta = document.getElementById('blkInput'), pop = document.getElementById('cmplPop');
   return { tail: ta.value.slice(-20), popHidden: pop.classList.contains('hide'), focused: document.activeElement === ta }; })()`);
-t('H17 Tab 一键补全：`#` 后直接 Tab 即落第一项（气泡关闭、焦点留在输入框）',
-  h17.popHidden && h17.focused && h17.tail === h17first.tail, `第一项=「${h17first.label}」→ 尾部=「${h17.tail}」 焦点=${h17.focused}`);
+t('H17 Tab 一键补全（两级）：`#` → Tab 进组 → Tab 落组内第一条（气泡关闭、焦点留在输入框）',
+  h17a.group === '风格包' && h17.popHidden && h17.focused && h17.tail === h17first.tail,
+  `进组「${h17a.group}」→ 第一条「${h17first.label}」→ 尾部=「${h17.tail}」 焦点=${h17.focused}`);
 
 /* ---------- H18 无候选时 Tab 不逃逸焦点（否则接着打的字会丢到窗口外） ---------- */
 const h18 = await evalJS(`(() => { openBlockEditor('画面结束。', null);
@@ -437,6 +471,56 @@ await evalJS(`(() => { cmplCfgReset(); return 1; })()`);
 t('I8 配置窗口内按 Esc 关窗（关窗后片段库保持已物化状态；末尾已复位）',
   !i8.open && Array.isArray(i8.items) && i8.items.length === i8.seed,
   `窗口开=${i8.open}；用户表 ${i8.items ? i8.items.length : 'null'} 条`);
+
+/* ---------- I9 拖拽排序：条目（拖到第 3 条之前 → 插到它前面） ---------- */
+const i9 = await evalJS(`(() => {
+  cmplCfgMaterialize(); renderCmplCfg();
+  var cards = document.querySelectorAll('#cmplCfgBody .cmpl-cfg-card');
+  var dt = new DataTransfer();
+  var a = cards[0], c = cards[2];
+  a.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  c.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  var overCls = c.classList.contains('drag-over');
+  c.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  a.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: dt }));
+  var arr = cmplActive();
+  var ls = null; try{ ls = JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){}
+  return { overCls: overCls, order: arr.slice(0, 3).map(function(x){ return x.label; }),
+           persisted: !!(ls && ls.cmpl && ls.cmpl.items && ls.cmpl.items[1].label === '风格包 · 全套'),
+           toast: document.getElementById('toast').innerText.replace(/\s+/g,' ').trim() };
+})()`);
+t('I9 条目拖拽排序：把第 1 条拖到第 3 条之前 → 生效表顺序改变、落盘、dragover 有高亮反馈',
+  i9.overCls && i9.order[0] === '光影逻辑' && i9.order[1] === '风格包 · 全套' && i9.persisted,
+  `dragover 高亮=${i9.overCls}；新序前三条=${JSON.stringify(i9.order)}；已落盘=${i9.persisted}；toast=「${i9.toast}」`);
+
+/* ---------- I10 拖拽排序：分组（把第 1 组拖到第 3 组之前） ---------- */
+const i10 = await evalJS(`(() => {
+  var before = cmplGroupOrder().slice();
+  var heads = document.querySelectorAll('#cmplCfgBody .cmpl-cfg-group');
+  var dt = new DataTransfer();
+  var a = heads[0], b = heads[2];
+  var fromG = a.dataset.group, toG = b.dataset.group;
+  a.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  b.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  b.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  a.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: dt }));
+  var after = cmplGroupOrder();
+  var ls = null; try{ ls = JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){}
+  var headOrder = Array.prototype.map.call(document.querySelectorAll('#cmplCfgBody .cmpl-cfg-group'), function(e){ return e.dataset.group; });
+  var bubbleFirst = null;
+  openBlockEditor('', null);
+  var ta = document.getElementById('blkInput'); ta.value = '#'; ta.setSelectionRange(1, 1); cmplOnInput();
+  var pop = document.getElementById('cmplPop');
+  bubbleFirst = (pop.querySelector('.cmpl-item .cmpl-label') || {}).textContent;
+  cmplClose(); closeBlockEditor();
+  return { before: before, after: after, fromG: fromG, toG: toG, headOrder: headOrder, bubbleFirst: bubbleFirst,
+           gorder: (ls && ls.cmpl && ls.cmpl.gorder) || null };
+})()`);
+t('I10 分组拖拽排序：整组换位 → 组顺序变化、写进 state.cmpl.gorder 落盘、配置窗口与候选气泡同步跟随',
+  i10.after.indexOf(i10.fromG) === i10.after.indexOf(i10.toG) - 1
+  && JSON.stringify(i10.gorder) === JSON.stringify(i10.after)
+  && i10.headOrder[0] === i10.after[0] && i10.bubbleFirst === i10.after[0],
+  `组序 ${JSON.stringify(i10.before)} → ${JSON.stringify(i10.after)}（把「${i10.fromG}」拖到「${i10.toG}」前）；gorder=${JSON.stringify(i10.gorder)}；headOrder=${JSON.stringify(i10.headOrder)}；气泡首组=「${i10.bubbleFirst}」；子句=${[i10.after.indexOf(i10.fromG) === i10.after.indexOf(i10.toG) - 1, JSON.stringify(i10.gorder) === JSON.stringify(i10.after), i10.headOrder[0] === i10.after[0], i10.bubbleFirst === i10.after[0]].join(',')}`);
 
 /* ---------- 截图 ---------- */
 const SHOT = process.argv[2] || '';

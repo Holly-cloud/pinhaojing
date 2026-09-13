@@ -27,20 +27,74 @@ function closeCmplCfg(){
   cmplCfgEditing = null; cmplCfgAdding = false;
   document.getElementById('cmplCfgMask').classList.add('hide');
 }
-/* 分组顺序 = 生效表里首次出现的顺序（用户新组自动排到末尾） */
-function cmplCfgGroups(){
-  var items = cmplActive(), seen = {}, out = [], i, g;
-  for(i = 0; i < items.length; i++){
-    g = items[i].group || '未分组';
-    if(!seen[g]){ seen[g] = 1; out.push(g); }
-  }
-  return out;
+/* 分组顺序 = 组顺序表（cmplGroupOrder，气泡与配置窗口共用一套顺序） */
+function cmplCfgGroups(){ return cmplGroupOrder(); }
+/* 拖拽排序：条目（可跨组 = 顺带改归组） */
+function cmplCfgMoveItem(fromKey, beforeKey){
+  var arr = cmplActive().slice(), fi = -1, i;
+  for(i = 0; i < arr.length; i++) if(arr[i].key === fromKey) fi = i;
+  if(fi < 0) return false;
+  var item = arr.splice(fi, 1)[0];
+  var bi = -1;
+  if(beforeKey) for(i = 0; i < arr.length; i++) if(arr[i].key === beforeKey) bi = i;
+  if(beforeKey && bi < 0){ arr.splice(fi, 0, item); return false; }      /* 落点无效 → 原地还原 */
+  if(bi >= 0) item.group = arr[bi].group || item.group;                  /* 拖到别组 → 归到该组 */
+  if(bi < 0) arr.push(item); else arr.splice(bi, 0, item);
+  cmplSetItems(arr); saveNow();
+  return true;
+}
+/* 拖拽排序：整组（写 state.cmpl.gorder） */
+function cmplCfgMoveGroup(fromG, beforeG){
+  var order = cmplGroupOrder().slice(), fi = order.indexOf(fromG);
+  if(fi < 0) return false;
+  order.splice(fi, 1);
+  var bi = beforeG ? order.indexOf(beforeG) : -1;
+  if(bi < 0) order.push(fromG); else order.splice(bi, 0, fromG);
+  if(!state.cmpl || typeof state.cmpl !== 'object') state.cmpl = { v: CMPL_SEED_V, items: null };
+  state.cmpl.gorder = order;
+  saveNow();
+  return true;
+}
+/* 拖拽排序接线（条目与分组各一套；只允许同类互拖，避免误操作） */
+var cmplCfgDrag = null;
+function cmplCfgDnd(el, type, val){
+  el.draggable = true;
+  el.addEventListener('dragstart', function(e){
+    cmplCfgDrag = { type: type, val: val };
+    try{ e.dataTransfer.setData('text/plain', type + ':' + val); e.dataTransfer.effectAllowed = 'move'; }catch(err){}
+    el.classList.add('dragging');
+  });
+  el.addEventListener('dragend', function(){
+    el.classList.remove('dragging');
+    cmplCfgDrag = null;
+    var over = document.querySelectorAll('#cmplCfgBody .drag-over');
+    for(var i = 0; i < over.length; i++) over[i].classList.remove('drag-over');
+  });
+  el.addEventListener('dragover', function(e){
+    if(!cmplCfgDrag || cmplCfgDrag.type !== type || cmplCfgDrag.val === val) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    el.classList.add('drag-over');
+  });
+  el.addEventListener('dragleave', function(){ el.classList.remove('drag-over'); });
+  el.addEventListener('drop', function(e){
+    e.preventDefault();
+    el.classList.remove('drag-over');
+    var d = cmplCfgDrag;
+    if(!d || d.type !== type) return;
+    var ok = (type === 'group') ? cmplCfgMoveGroup(d.val, val) : cmplCfgMoveItem(d.val, val);
+    cmplCfgDrag = null;
+    if(ok){
+      renderCmplCfg();
+      toast(type === 'group' ? '已调整分组顺序' : '已调整片段顺序（跨组拖 = 改归组）');
+    }
+  });
 }
 function renderCmplCfg(){
   var body = document.getElementById('cmplCfgBody');
   if(!body) return;
   body.innerHTML = '';
-  var items = cmplActive(), q = cmplCfgQ.toLowerCase(), i, it, hit, lastG = null, shown = 0;
+  var all = cmplActive(), q = cmplCfgQ.toLowerCase(), shown = 0, gi, ii, g, gitems, it;
   /* 分组候选（编辑表单的 datalist） */
   var dl = document.getElementById('cmplCfgGroupList');
   if(dl){
@@ -51,26 +105,48 @@ function renderCmplCfg(){
   }
   var hint = document.createElement('div');
   hint.className = 'cmpl-cfg-hint';
-  hint.innerHTML = '片段里可用 <b>${1} ${2}</b> 做槽位（上屏后 Tab 逐位跳）；素材绑定位照你的习惯手写 <b>@</b>。分组名相同的自动归到一组。';
+  hint.innerHTML = '片段里可用 <b>${1} ${2}</b> 做槽位（上屏后 Tab 逐位跳）；素材绑定位照你的习惯手写 <b>@</b>。'
+                 + '拖条目 <b>≡</b> 换位（拖到别的组 = 改归组），拖分组标题 <b>≡</b> 整组换位。';
   body.appendChild(hint);
   if(cmplCfgAdding) body.appendChild(cmplCfgForm(null));
-  for(i = 0; i < items.length; i++){
-    it = items[i];
-    if(cmplCfgEditing === it.key){ body.appendChild(cmplCfgForm(it)); shown++; lastG = null; continue; }
-    if(q){
-      hit = ((it.label || '') + ' ' + (it.body || '') + ' ' + (it.group || '')).toLowerCase().indexOf(q) >= 0;
-      if(!hit) continue;
+  /* 按「组顺序」逐组渲染（组顺序 = cmplGroupOrder：配置里拖出来的顺序，候选气泡共用同一套） */
+  var order = cmplGroupOrder();
+  for(gi = 0; gi < order.length; gi++){
+    g = order[gi];
+    gitems = [];
+    for(ii = 0; ii < all.length; ii++){
+      if((all[ii].group || '未分组') !== g) continue;
+      if(q){
+        it = all[ii];
+        if(((it.label || '') + ' ' + (it.body || '') + ' ' + (it.group || '')).toLowerCase().indexOf(q) < 0
+           && cmplCfgEditing !== it.key) continue;
+      }
+      gitems.push(all[ii]);
     }
-    var g = it.group || '未分组';
-    if(g !== lastG){
-      lastG = g;
-      var gh = document.createElement('div');
-      gh.className = 'cmpl-cfg-group';
-      gh.textContent = g + '  ·  ' + cmplActive().filter(function(x){ return (x.group || '未分组') === g; }).length + ' 条';
-      body.appendChild(gh);
+    var editingHere = false;
+    for(ii = 0; ii < all.length; ii++) if(cmplCfgEditing === all[ii].key && (all[ii].group || '未分组') === g) editingHere = true;
+    if(!gitems.length && !editingHere) continue;
+    var gh = document.createElement('div');
+    gh.className = 'cmpl-cfg-group';
+    gh.dataset.group = g;
+    var grip = document.createElement('span');
+    grip.className = 'cmpl-cfg-grip';
+    grip.textContent = '≡';
+    grip.title = '拖动调整分组顺序';
+    gh.appendChild(grip);
+    var gtx = document.createElement('span');
+    var total = 0;
+    for(ii = 0; ii < all.length; ii++) if((all[ii].group || '未分组') === g) total++;
+    gtx.textContent = g + '  ·  ' + total + ' 条';
+    gh.appendChild(gtx);
+    cmplCfgDnd(gh, 'group', g);
+    body.appendChild(gh);
+    for(ii = 0; ii < gitems.length; ii++){
+      it = gitems[ii];
+      if(cmplCfgEditing === it.key){ body.appendChild(cmplCfgForm(it)); }
+      else{ body.appendChild(cmplCfgRow(it, ii)); }
+      shown++;
     }
-    body.appendChild(cmplCfgRow(it, i));
-    shown++;
   }
   if(!shown){
     var em = document.createElement('div');
@@ -79,11 +155,12 @@ function renderCmplCfg(){
     body.appendChild(em);
   }
 }
-/* 只读行 */
+/* 只读行（可拖拽：拖到别的条目上 = 插到它前面；跨组拖 = 顺带改归组） */
 function cmplCfgRow(it, idx){
   var row = document.createElement('div');
   row.className = 'cmpl-cfg-card';
   row.dataset.idx = idx;
+  cmplCfgDnd(row, 'item', it.key);
   var head = document.createElement('div');
   head.className = 'cmpl-cfg-row';
   var lb = document.createElement('span');
