@@ -253,6 +253,19 @@ body{background:
 .cmpl-cfg-group.drag-over{outline:1px dashed var(--accent);outline-offset:1px;color:var(--accent)}
 .cmpl-cfg-card.dragging{opacity:.45}
 .cmpl-cfg-card.drag-over{border-color:var(--accent);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 0 0 2px rgba(0,113,227,.28)}
+/* v7.8：拖动分组时左侧的顺序小窗 */
+.cmpl-order-pop{position:fixed;z-index:12050;min-width:156px;max-width:260px;padding:6px;
+  background:rgba(252,252,254,.94);-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);
+  border:1px solid rgba(255,255,255,.75);border-radius:12px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 14px 36px rgba(0,0,0,.2)}
+.cmpl-order-pop.hide{display:none}
+.cmpl-order-cap{font-size:10.5px;color:var(--muted);padding:2px 6px 6px;letter-spacing:-.1px}
+.cmpl-order-row{display:flex;align-items:baseline;gap:6px;padding:5px 7px;border-radius:8px;font-size:12.5px;color:var(--text)}
+.cmpl-order-row .cmpl-order-no{flex:0 0 auto;min-width:14px;height:14px;border-radius:4px;background:rgba(0,0,0,.06);
+  color:var(--muted);font-size:10px;line-height:14px;text-align:center;font-variant-numeric:tabular-nums}
+.cmpl-order-row.active{opacity:.45}
+.cmpl-order-row.active::after{content:'← 拖动中';font-size:10px;color:var(--muted);margin-left:auto}
+.cmpl-order-row.over{background:rgba(0,113,227,.14);box-shadow:inset 0 0 0 1px rgba(0,113,227,.4)}
 .cmpl-cfg-card{background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.75);border-radius:12px;padding:8px 10px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 2px 8px rgba(0,0,0,.04)}
 .cmpl-cfg-card.editing{border-color:rgba(0,113,227,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 3px rgba(0,113,227,.10)}
@@ -492,6 +505,8 @@ body.space-pan .canvas.panning,body.space-pan .canvas.panning .block,body.space-
       <button class="btn primary" id="cmplCfgDone">完成</button>
     </div>
   </div>
+  <!-- v7.8：拖动分组时，窗口左侧浮现的顺序小窗（拖到对应行即就位；放 mask 层避免窗口动画的 transform 影响 fixed 定位） -->
+  <div class="cmpl-order-pop hide" id="cmplOrderPop"></div>
 </div>
 
 <script>
@@ -2331,6 +2346,7 @@ function openCmplCfg(){
 }
 function closeCmplCfg(){
   cmplCfgEditing = null; cmplCfgAdding = false;
+  cmplOrderHide();
   document.getElementById('cmplCfgMask').classList.add('hide');
 }
 /* 分组顺序 = 组顺序表（cmplGroupOrder，气泡与配置窗口共用一套顺序） */
@@ -2363,18 +2379,85 @@ function cmplCfgMoveGroup(fromG, beforeG){
 }
 /* 拖拽排序接线（条目与分组各一套；只允许同类互拖，避免误操作） */
 var cmplCfgDrag = null;
+/* ---- 拖动分组时左侧的顺序小窗：一行一组，拖到第 N 行即落到第 N 位 ---- */
+function cmplOrderShow(activeGroup){
+  var pop = document.getElementById('cmplOrderPop');
+  if(!pop) return;
+  pop.innerHTML = '';
+  var order = cmplGroupOrder(), i;
+  var cap = document.createElement('div');
+  cap.className = 'cmpl-order-cap';
+  cap.textContent = '分组顺序（拖到目标行即就位）';
+  pop.appendChild(cap);
+  for(i = 0; i < order.length; i++){
+    (function(g, idx){
+      var row = document.createElement('div');
+      row.className = 'cmpl-order-row' + (g === activeGroup ? ' active' : '');
+      row.dataset.idx = idx; row.dataset.group = g;
+      var no = document.createElement('span'); no.className = 'cmpl-order-no'; no.textContent = (idx + 1);
+      var tx = document.createElement('span'); tx.textContent = g;
+      row.appendChild(no); row.appendChild(tx);
+      if(g !== activeGroup){
+        row.addEventListener('dragover', function(e){
+          if(!cmplCfgDrag || cmplCfgDrag.type !== 'group') return;
+          e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+          row.classList.add('over');
+        });
+        row.addEventListener('dragleave', function(){ row.classList.remove('over'); });
+        row.addEventListener('drop', function(e){
+          e.preventDefault(); row.classList.remove('over');
+          var d = cmplCfgDrag;
+          if(!d || d.type !== 'group') return;
+          if(cmplCfgMoveGroupTo(d.val, idx)){ renderCmplCfg(); toast('已把「' + d.val + '」排到第 ' + (idx + 1) + ' 位'); }
+          cmplCfgDrag = null;
+          cmplOrderHide();
+        });
+      }
+      pop.appendChild(row);
+    })(order[i], i);
+  }
+  /* 定位：默认贴在配置窗口左侧；左侧不够（窄屏）则贴窗口内左上 */
+  var win = document.querySelector('#cmplCfgMask .tpl-win');
+  var r = win ? win.getBoundingClientRect() : { left: 40, top: 80 };
+  pop.classList.remove('hide');
+  var pw = pop.offsetWidth, ph = pop.offsetHeight;
+  var left = r.left - pw - 14;
+  if(left < 12) left = Math.max(12, r.left + 12);
+  var top = Math.min(Math.max(12, r.top + 60), Math.max(12, window.innerHeight - ph - 12));
+  pop.style.left = Math.round(left) + 'px';
+  pop.style.top = Math.round(top) + 'px';
+}
+function cmplOrderHide(){
+  var pop = document.getElementById('cmplOrderPop');
+  if(pop){ pop.classList.add('hide'); pop.innerHTML = ''; }
+}
+/* 拖到顺序小窗的第 idx 位（数组插位语义） */
+function cmplCfgMoveGroupTo(fromG, idx){
+  var order = cmplGroupOrder().slice(), fi = order.indexOf(fromG);
+  if(fi < 0) return false;
+  order.splice(fi, 1);
+  if(idx < 0) idx = 0;
+  if(idx > order.length) idx = order.length;
+  order.splice(idx, 0, fromG);
+  if(!state.cmpl || typeof state.cmpl !== 'object') state.cmpl = { v: CMPL_SEED_V, items: null };
+  state.cmpl.gorder = order;
+  saveNow();
+  return true;
+}
 function cmplCfgDnd(el, type, val){
   el.draggable = true;
   el.addEventListener('dragstart', function(e){
     cmplCfgDrag = { type: type, val: val };
     try{ e.dataTransfer.setData('text/plain', type + ':' + val); e.dataTransfer.effectAllowed = 'move'; }catch(err){}
     el.classList.add('dragging');
+    if(type === 'group') cmplOrderShow(val);      /* 拖分组 → 左侧浮现顺序小窗 */
   });
   el.addEventListener('dragend', function(){
     el.classList.remove('dragging');
     cmplCfgDrag = null;
-    var over = document.querySelectorAll('#cmplCfgBody .drag-over');
-    for(var i = 0; i < over.length; i++) over[i].classList.remove('drag-over');
+    cmplOrderHide();
+    var over = document.querySelectorAll('#cmplCfgBody .drag-over, #cmplOrderPop .over');
+    for(var i = 0; i < over.length; i++) over[i].classList.remove('drag-over', 'over');
   });
   el.addEventListener('dragover', function(e){
     if(!cmplCfgDrag || cmplCfgDrag.type !== type || cmplCfgDrag.val === val) return;

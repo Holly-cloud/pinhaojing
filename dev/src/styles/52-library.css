@@ -12,6 +12,19 @@
 .cmpl-cfg-group.drag-over{outline:1px dashed var(--accent);outline-offset:1px;color:var(--accent)}
 .cmpl-cfg-card.dragging{opacity:.45}
 .cmpl-cfg-card.drag-over{border-color:var(--accent);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 0 0 2px rgba(0,113,227,.28)}
+/* v7.8：拖动分组时左侧的顺序小窗 */
+.cmpl-order-pop{position:fixed;z-index:12050;min-width:156px;max-width:260px;padding:6px;
+  background:rgba(252,252,254,.94);-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);
+  border:1px solid rgba(255,255,255,.75);border-radius:12px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 14px 36px rgba(0,0,0,.2)}
+.cmpl-order-pop.hide{display:none}
+.cmpl-order-cap{font-size:10.5px;color:var(--muted);padding:2px 6px 6px;letter-spacing:-.1px}
+.cmpl-order-row{display:flex;align-items:baseline;gap:6px;padding:5px 7px;border-radius:8px;font-size:12.5px;color:var(--text)}
+.cmpl-order-row .cmpl-order-no{flex:0 0 auto;min-width:14px;height:14px;border-radius:4px;background:rgba(0,0,0,.06);
+  color:var(--muted);font-size:10px;line-height:14px;text-align:center;font-variant-numeric:tabular-nums}
+.cmpl-order-row.active{opacity:.45}
+.cmpl-order-row.active::after{content:'← 拖动中';font-size:10px;color:var(--muted);margin-left:auto}
+.cmpl-order-row.over{background:rgba(0,113,227,.14);box-shadow:inset 0 0 0 1px rgba(0,113,227,.4)}
 .cmpl-cfg-card{background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.75);border-radius:12px;padding:8px 10px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 2px 8px rgba(0,0,0,.04)}
 .cmpl-cfg-card.editing{border-color:rgba(0,113,227,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 3px rgba(0,113,227,.10)}

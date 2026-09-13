@@ -522,6 +522,48 @@ t('I10 分组拖拽排序：整组换位 → 组顺序变化、写进 state.cmpl
   && i10.headOrder[0] === i10.after[0] && i10.bubbleFirst === i10.after[0],
   `组序 ${JSON.stringify(i10.before)} → ${JSON.stringify(i10.after)}（把「${i10.fromG}」拖到「${i10.toG}」前）；gorder=${JSON.stringify(i10.gorder)}；headOrder=${JSON.stringify(i10.headOrder)}；气泡首组=「${i10.bubbleFirst}」；子句=${[i10.after.indexOf(i10.fromG) === i10.after.indexOf(i10.toG) - 1, JSON.stringify(i10.gorder) === JSON.stringify(i10.after), i10.headOrder[0] === i10.after[0], i10.bubbleFirst === i10.after[0]].join(',')}`);
 
+/* ---------- I11 拖分组时左侧浮现「顺序小窗」 ---------- */
+const i11 = await evalJS(`(() => {
+  cmplCfgMaterialize(); renderCmplCfg();
+  var heads = document.querySelectorAll('#cmplCfgBody .cmpl-cfg-group');
+  var dt = new DataTransfer();
+  var a = heads[0], g0 = a.dataset.group;
+  a.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  var pop = document.getElementById('cmplOrderPop');
+  var rows = Array.prototype.map.call(pop.querySelectorAll('.cmpl-order-row'), function(e){ return e.dataset.group; });
+  var rectW = document.querySelector('#cmplCfgMask .tpl-win').getBoundingClientRect();
+  var rectP = pop.getBoundingClientRect();
+  return { open: !pop.classList.contains('hide'), rows: rows, active: pop.querySelectorAll('.cmpl-order-row.active').length,
+           nums: Array.prototype.map.call(pop.querySelectorAll('.cmpl-order-row .cmpl-order-no'), function(e){ return e.textContent; }).join(''),
+           g0: g0, leftOfWin: rectP.right <= rectW.left + 1, cap: (pop.querySelector('.cmpl-order-cap') || {}).textContent };
+})()`);
+t('I11 拖动分组时：窗口左侧浮现顺序小窗（一行一组、带序号、被拖那行标「拖动中」，且整块落在窗口左侧）',
+  i11.open && i11.rows.length >= 7 && i11.rows[0] === i11.g0 && i11.active === 1 && i11.leftOfWin
+  && i11.nums.slice(0, 7) === '1234567',
+  `小窗开=${i11.open} 行数=${i11.rows.length} 序号=${i11.nums} 被拖=${i11.g0} 左侧=${i11.leftOfWin} 标题=「${i11.cap}」`);
+
+/* ---------- I12 拖到小窗第 3 行 → 该组落到第 3 位 ---------- */
+const i12 = await evalJS(`(() => {
+  var pop = document.getElementById('cmplOrderPop');
+  var rows = pop.querySelectorAll('.cmpl-order-row');
+  var fromG = pop.querySelector('.cmpl-order-row.active').dataset.group;
+  var target = rows[2];
+  var dt = new DataTransfer();
+  target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  var overCls = target.classList.contains('over');
+  target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  cmplOrderHide();
+  var after = cmplGroupOrder();
+  var ls = null; try{ ls = JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){}
+  var headOrder = Array.prototype.map.call(document.querySelectorAll('#cmplCfgBody .cmpl-cfg-group'), function(e){ return e.dataset.group; });
+  return { overCls: overCls, fromG: fromG, after: after, idx: after.indexOf(fromG),
+           gorder: (ls && ls.cmpl && ls.cmpl.gorder) || null, popHidden: document.getElementById('cmplOrderPop').classList.contains('hide'),
+           headOk: headOrder[0] === after[0] };
+})()`);
+t('I12 拖到小窗第 3 行：该组落到第 3 位（高亮反馈 + 落盘 + 主列表同步；小窗收起）',
+  i12.overCls && i12.idx === 2 && JSON.stringify(i12.gorder) === JSON.stringify(i12.after) && i12.popHidden && i12.headOk,
+  `把「${i12.fromG}」拖到第 3 行 → 组序=${JSON.stringify(i12.after)}（现在第 ${i12.idx + 1} 位）；gorder 落盘=${JSON.stringify(i12.gorder) === JSON.stringify(i12.after)}；小窗收起=${i12.popHidden}`);
+
 /* ---------- 截图 ---------- */
 const SHOT = process.argv[2] || '';
 if (SHOT) {
@@ -534,7 +576,13 @@ if (SHOT) {
   console.log('截图:', SHOT);
   const SHOT2 = process.argv[3] || '';
   if (SHOT2) {
-    await evalJS(`(() => { state.blocks = [{ id:'s1', text:${JSON.stringify(FIX)}, x:80, y:60 }]; render(); closeBlockEditor(); openCmplCfg(); return 1; })()`);
+    await evalJS(`(() => { state.blocks = [{ id:'s1', text:${JSON.stringify(FIX)}, x:80, y:60 }]; render(); closeBlockEditor(); openCmplCfg();
+      var h = document.querySelector('#cmplCfgBody .cmpl-cfg-group');
+      window.__dt = new DataTransfer();
+      h.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: window.__dt }));
+      var rows = document.querySelectorAll('#cmplOrderPop .cmpl-order-row');
+      if(rows[2]) rows[2].dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: window.__dt }));
+      return 1; })()`);
     await sleep(400);
     const shot2 = await send('Page.captureScreenshot', { format: 'png' });
     fs.writeFileSync(SHOT2, Buffer.from(shot2.data, 'base64'));
