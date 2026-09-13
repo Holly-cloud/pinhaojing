@@ -145,6 +145,12 @@ function hlStatus(fam){
   document.getElementById('stCol').textContent = col;
   document.getElementById('stLen').textContent = v.length;
   document.getElementById('stErr').textContent = errs;
+  /* v7.8：结构提示——当前光标所处的「节」（由符号判定，标记表在 51-struct.js） */
+  var _stEl = document.getElementById('stStruct');
+  if(_stEl){
+    var _lb = structAt(v, p).label;
+    _stEl.textContent = _lb.length > 16 ? (_lb.slice(0, 16) + '…') : _lb;
+  }
 }
 function hlRefresh(){
   var ta = document.getElementById('blkInput');
@@ -161,6 +167,7 @@ var blkCb = null;
 function openBlockEditor(initial, cb){
   document.getElementById('blkInput').value = initial || '';
   blkCb = cb;
+  cmplReset();     /* v7.8：清掉上一次的候选气泡与槽位状态 */
   document.getElementById('blkMask').classList.remove('hide');
   var ta = document.getElementById('blkInput');
   /* v7.6.1 修复：原先 ta.select() 会把整段提示词全选（v6.12 起的行为）——一打字整段就被替换，
@@ -180,4 +187,5 @@ function fitBlkWidth(){
 function closeBlockEditor(){
   document.getElementById('blkMask').classList.add('hide');
   blkCb = null;
+  cmplReset();     /* v7.8：关窗即清候选气泡与槽位状态 */
 }
