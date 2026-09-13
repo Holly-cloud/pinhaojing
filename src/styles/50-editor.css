@@ -1,0 +1,27 @@
+/* v6.12：提示词块编辑窗口 */
+.blk-win{width:560px;max-width:94vw;max-height:96vh;display:flex;flex-direction:column;background:rgba(250,250,252,.92);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);border:1px solid rgba(255,255,255,.7);border-radius:16px;padding:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 24px 64px rgba(0,0,0,.25);overflow-y:auto}  /* v6.14：宽度随内容自适应（JS 测量最长行），高度受屏幕约束 */
+/* v7.6：coding 编辑器 —— 叠层高亮 + 行号栏 + 状态栏 + 逗号错误标红
+   铁律：彩色层 .blk-hl 与编辑层 .blk-input 的排版声明必须逐字一致（字体/行高/内边距/换行算法），否则文字错位 */
+.blk-edit{position:relative;border:1px solid rgba(0,0,0,.14);background:rgba(255,255,255,.85);border-radius:10px;transition:border-color .15s,box-shadow .15s}
+.blk-edit:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.15)}
+.blk-hl,.blk-input{margin:0;padding:10px 12px 10px 52px;border:1px solid transparent;border-radius:10px;
+  font-family:ui-monospace,"Cascadia Mono",Consolas,"SF Mono",Menlo,"Microsoft YaHei",monospace;
+  font-size:13.5px;line-height:1.65;letter-spacing:0;tab-size:4;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal}
+.blk-hl{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:hidden;color:#2f3640}  /* 叙述正文的专属色 = 彩色层基线色 */
+.blk-hl code{font:inherit;white-space:inherit;overflow-wrap:inherit;word-break:inherit}
+.blk-hl .hl-line{position:relative;min-height:1.65em}
+.blk-hl .hl-line>.ln{position:absolute;left:-40px;width:28px;text-align:right;color:rgba(0,0,0,.28);font-size:12px;font-variant-numeric:tabular-nums;user-select:none;pointer-events:none}
+.blk-hl .hl-line.has-err>.ln{color:#c62828;font-weight:600}
+.blk-input{position:relative;z-index:1;display:block;width:100%;height:80vh;min-height:220px;resize:vertical;outline:none;background:transparent;
+  color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--text)}  /* v6.14：编辑区 = 屏幕高度 80%；v7.6：文字透明，由彩色层显形 */
+.blk-input::placeholder{color:var(--muted);-webkit-text-fill-color:var(--muted)}
+.blk-input::selection{background:rgba(0,113,227,.22);-webkit-text-fill-color:#1d1d1f;color:#1d1d1f}
+.hl-brace{color:#a8336b}.hl-paren{color:#b04a12}.hl-angle{color:#00695c}.hl-lent{color:#6d3bbf}
+.hl-quote{color:#0b64b8}.hl-title{color:#2e7d32}.hl-square{color:#3949ab}.hl-punct{color:#8f6a00}
+.hl-err{color:#c62828;text-decoration:underline wavy #c62828;text-decoration-thickness:1px;text-underline-offset:2px}
+.hl-match{background:rgba(0,113,227,.16);border-radius:2px}
+.blk-status{display:flex;align-items:center;gap:16px;padding:6px 12px;border-top:1px solid rgba(0,0,0,.07);
+  font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:11.5px;color:var(--muted);letter-spacing:0}
+.blk-status .sp{flex:1}
+.blk-status b{font-weight:600;color:var(--text)}
+.blk-status .err b{color:#c62828}

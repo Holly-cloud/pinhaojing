@@ -1,0 +1,105 @@
+/* ================== v7 动效（2026-09-11：灵动精致风 · P0 九项） ==================
+   铁律：只动 transform+opacity（GPU 合成零重排）；进入=decelerate、离开=accelerate、叙事=premium ease-out；
+   反馈≤200ms、叙事≤350ms；拖拽/平移/缩放跟手保持 0 延迟（不挂 transition）；数据模型零改动 */
+/* #1 块创建弹入（双击/粘贴/克隆） */
+@keyframes blockIn{from{opacity:0;transform:scale(.94) translateY(6px)}to{opacity:1;transform:none}}
+.block.pop-in{animation:blockIn .16s cubic-bezier(0,0,.2,1)}
+/* #2 块删除收拢（播 110ms 后真正移除） */
+@keyframes delOut{to{opacity:0;transform:scale(.9)}}
+.block.del-anim{animation:delOut .11s cubic-bezier(.4,0,1,1) forwards;pointer-events:none}
+/* #4 拼入吸入（画布块微缩瞬吸） */
+@keyframes suckK{0%{transform:scale(1)}45%{transform:scale(.962)}100%{transform:scale(1)}}
+.block.suck{animation:suckK .17s cubic-bezier(.16,1,.3,1)}
+/* #4b 拼接栏条目弹入落定 */
+@keyframes popIn{from{opacity:0;transform:scale(.96) translateY(4px)}to{opacity:1;transform:none}}
+.sp-pop{animation:popIn .16s cubic-bezier(0,0,.2,1)}
+/* #5 拼入光线生长（pathLength=1 归一化 dash；只给新增连线播放，常态刷新静态不闪） */
+#linkLayer path.lnk-grow{stroke-dasharray:1;stroke-dashoffset:1;animation:lnkGrow .24s cubic-bezier(0,0,.2,1)}
+@keyframes lnkGrow{to{stroke-dashoffset:0}}
+/* #6 拖手光点淡入（出现即 120ms 淡入；消失由重建承担） */
+@keyframes dotIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+.peek-dot{animation:dotIn .12s ease-out}
+/* #7 窗口开合：遮罩淡入 + 窗口弹入（display 切换自动重播；关闭即时=保持 Esc 即时应答） */
+.modal-mask:not(.hide){animation:maskIn .18s ease-out}
+@keyframes maskIn{from{opacity:0}to{opacity:1}}
+.modal-mask:not(.hide)>.modal,.modal-mask:not(.hide)>.tpl-win,.modal-mask:not(.hide)>.blk-win{animation:winIn .24s cubic-bezier(0,0,.2,1)}
+@keyframes winIn{from{opacity:0;transform:scale(.96) translateY(6px)}to{opacity:1;transform:none}}
+/* #8 右键菜单 / 「导」下拉小弹入 */
+.ctx-menu.open{animation:menuIn .12s cubic-bezier(0,0,.2,1)}
+@keyframes menuIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+/* #9 toast 滑入 / 滑出 */
+.toast{animation:toastIn .2s cubic-bezier(0,0,.2,1)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+.toast.toast-out{animation:toastOut .15s cubic-bezier(.4,0,1,1) forwards}
+@keyframes toastOut{to{opacity:0;transform:translate(-50%,6px)}}
+/* 无障碍：系统「减少动态」→ 动效全部降级为直切（功能不变，无 UI 开关） */
+@media (prefers-reduced-motion:reduce){
+  .block.pop-in,.block.del-anim,.block.suck,.sp-pop,#linkLayer path.lnk-grow,.peek-dot,
+  .modal-mask:not(.hide)>.modal,.modal-mask:not(.hide)>.tpl-win,.modal-mask:not(.hide)>.blk-win,
+  .modal-mask:not(.hide),.ctx-menu.open,.toast,.toast.toast-out{animation:none!important}
+}
+
+/* ================== v7.1 动效 · 微交互层（P1 五项 + P2 数字 tick，2026-09-11） ==================
+   策略：尾部覆盖式声明（不改既有行，便于整体回退）；仍只动 transform+opacity */
+/* #10 按钮按压（scale 反馈 90ms decelerate；各按钮 transition 完整保留原有属性） */
+.btn{transition:background .15s,border-color .15s,box-shadow .15s,transform .09s cubic-bezier(0,0,.2,1)}
+.op-btn{transition:transform .09s cubic-bezier(0,0,.2,1)}
+.sp-x,.sp-unit-x,.sp-ub-x{transition:background .15s,color .15s,transform .09s cubic-bezier(0,0,.2,1)}
+.sp-fold{transition:background .15s,transform .09s cubic-bezier(0,0,.2,1)}
+.sp-clear{transition:background .15s,color .15s,transform .09s cubic-bezier(0,0,.2,1)}
+.sp-tpl-fold{transition:background .15s,color .15s,transform .09s cubic-bezier(0,0,.2,1)}
+.sp-tpl-act{transition:background .15s,transform .09s cubic-bezier(0,0,.2,1)}
+.tpl-add{transition:color .15s,border-color .15s,transform .09s cubic-bezier(0,0,.2,1)}
+.tpl-block-op{transition:background .15s,color .15s,transform .09s cubic-bezier(0,0,.2,1)}
+.tpl-chip-x{transition:transform .09s cubic-bezier(0,0,.2,1)}
+.ctx-item{transition:transform .09s cubic-bezier(0,0,.2,1)}
+.btn:active,.op-btn:active,.sp-fold:active,.sp-clear:active,.sp-tpl-fold:active,.tpl-add:active,.sp-tpl-act:active{transform:scale(.96)}
+.sp-x:active,.sp-unit-x:active,.sp-ub-x:active,.tpl-chip-x:active,.tpl-block-op:active{transform:scale(.88)}
+.ctx-item:active{transform:scale(.985)}
+/* #11 块 hover 浮起（-1px + 阴影加深；拖拽/FLIP 的 inline transform 优先级更高，不冲突） */
+.block{transition:box-shadow .15s,transform .15s cubic-bezier(.4,0,.2,1)}
+.block:hover{transform:translateY(-1px)}
+/* #13 选中描边淡入（outline → box-shadow：可过渡，选中/取消 150ms 淡入淡出） */
+.block.selected{outline:none;box-shadow:0 0 0 2px var(--accent),0 2px 10px rgba(0,113,227,.18)}
+.block.selected:hover{box-shadow:0 0 0 2px var(--accent),0 2px 14px rgba(0,113,227,.22)}
+/* #14 拼模式 drop-target 光晕呼吸（1.9s 循环，幅度克制） */
+@keyframes breatheK{0%,100%{box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 4px 14px rgba(0,113,227,.18)}50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 6px 24px rgba(0,113,227,.36)}}
+.sp-unit.drop-target{animation:breatheK 1.9s ease-in-out infinite}
+/* #16 缩放值数字 tick（值变化时 140ms 淡入；动画期间不重播，连续滚轮不闪） */
+@keyframes tickK{from{opacity:.35;transform:scale(.94)}to{opacity:1;transform:none}}
+.btn.tick{animation:tickK .14s cubic-bezier(0,0,.2,1)}
+/* 无障碍：新增动效同样降级（按压/浮起/呼吸/tick 全关） */
+@media (prefers-reduced-motion:reduce){
+  .btn.tick,.sp-unit.drop-target{animation:none!important}
+  .btn:active,.op-btn:active,.sp-x:active,.sp-unit-x:active,.sp-ub-x:active,.sp-fold:active,.sp-clear:active,.sp-tpl-fold:active,.tpl-add:active,.tpl-chip-x:active,.tpl-block-op:active,.ctx-item:active,.sp-tpl-act:active{transform:none!important}
+  .block:hover{transform:none}
+}
+
+/* ================== v7.2 修复（2026-09-11）：拖拽跟手性 ==================
+   根因：v7.1 为 hover 浮起给 .block 加了 transition:transform .15s —— 拖拽每帧写 inline transform 全被 150ms 过渡平滑
+   （实测拖 150px 立即读滞后 115px）。修复：拖拽态/一次性动画态禁过渡（跟手优先），落位后再恢复。 */
+.block.drag{transition:none}
+.block.pop-in,.block.suck{transition:none}
+/* 拖手光点：只在「新增」光点时播入场动画（拖拽/平移中每帧重建不再重复重播，消除闪烁与无谓开销） */
+.peek-dot{animation:none}
+.peek-dot.in{animation:dotIn .12s ease-out}
+
+/* ================== v7.3（2026-09-11）：resetZoom 保持位置 + 拼模式虚影拖拽 ================== */
+/* 拼模式拖拽中的源块标记（位置不动，仅半透明提示「正在被搬运」） */
+.block.splice-src{opacity:.5}
+/* 拼模式虚影：克隆块外观、跟随鼠标；transition 必须 none——否则虚影自身也会被过渡缓动而失去跟手（v7.2 教训） */
+.block-ghost{position:fixed;left:0;top:0;margin:0;z-index:9998;pointer-events:none;opacity:.5;
+  transition:none!important;box-shadow:0 12px 36px rgba(0,0,0,.20);will-change:transform}
+.block-ghost .drag-handle{display:none}   /* 虚影不显示拖手按钮（纯内容预览） */
+
+/* ================== v7.5（2026-09-11）：空格平移 + 拼接栏光线接口 + 文本同步 ================== */
+/* 改进1：空格 + 左键 = 平移画布——光标反馈（画布内一切元素显示 grab，拖拽中 grabbing） */
+body.space-pan .canvas,body.space-pan .canvas .block,body.space-pan .canvas .drag-handle,body.space-pan .canvas .handle-grip{cursor:grab}
+body.space-pan .canvas.panning,body.space-pan .canvas.panning .block,body.space-pan .canvas.panning .drag-handle{cursor:grabbing}
+/* 改进2：拼接栏条目的「渐变朦胧光线接口」——左缘中点渐变光斑（有画布块光线接入时显示） */
+.sp-item,.sp-ublock{position:relative}
+.sp-item.lnk-in::before,.sp-ublock.lnk-in::before{
+  content:'';position:absolute;left:-5px;top:50%;width:10px;height:62%;min-height:16px;max-height:36px;
+  transform:translateY(-50%);border-radius:5px;pointer-events:none;opacity:.85;
+  background:linear-gradient(180deg,rgba(0,113,227,.9),rgba(124,58,237,.8));filter:blur(3px);
+}

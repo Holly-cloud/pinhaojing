@@ -1,0 +1,61 @@
+/* ---- 拼接侧边栏（v5：独立悬浮层，不挤压画布；毛玻璃） ---- */
+.splice-panel{position:fixed;top:70px;right:16px;bottom:16px;width:560px;background:rgba(250,250,252,.46);-webkit-backdrop-filter:saturate(200%) blur(24px);backdrop-filter:saturate(200%) blur(24px);border:1px solid rgba(255,255,255,.65);border-radius:16px;display:flex;flex-direction:column;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 8px 32px rgba(0,0,0,.12);z-index:450;transition:width .15s}
+.splice-panel.collapsed{width:40px}
+.sp-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.06)}
+.sp-title{flex:1;font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;letter-spacing:-.1px}
+.splice-panel.collapsed .sp-head{flex-direction:column;gap:8px;padding:14px 6px;align-items:center;border-bottom:none}
+.splice-panel.collapsed .sp-title{display:none}   /* 折叠态只留单个圆形按钮 */
+.sp-count{font-size:12px;color:var(--muted);background:rgba(0,0,0,.05);border-radius:10px;padding:1px 8px}
+.splice-panel.collapsed .sp-count,.splice-panel.collapsed .sp-body,.splice-panel.collapsed .sp-foot{display:none}
+.sp-fold{border:0;background:transparent;color:var(--muted);font-size:14px;cursor:pointer;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1;transition:background .15s}
+.sp-fold:hover{background:rgba(0,0,0,.06);color:var(--text)}
+.sp-body{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.sp-empty{color:var(--muted);font-size:12.5px;text-align:center;padding:18px 6px;line-height:1.8}
+.sp-item{display:flex;align-items:flex-start;gap:8px;background:rgba(255,255,255,.58);-webkit-backdrop-filter:saturate(180%) blur(16px);backdrop-filter:saturate(180%) blur(16px);border:1px solid rgba(255,255,255,.7);border-radius:14px;padding:8px 10px;cursor:grab;user-select:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 2px 8px rgba(0,0,0,.05)}
+.sp-item.dragging{opacity:.75;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 8px 20px rgba(0,0,0,.14);z-index:2}
+.sp-item:hover{border-color:rgba(255,255,255,.95);background:rgba(255,255,255,.75)}
+.sp-idx{flex:0 0 auto;min-width:20px;height:20px;border-radius:10px;background:var(--accent);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:600}
+.sp-text{flex:1;min-width:0;font-size:12.5px;color:var(--text);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;word-break:break-all}
+.sp-x{flex:0 0 auto;border:0;background:transparent;color:rgba(0,0,0,.32);font-size:14px;cursor:pointer;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1;transition:background .15s,color .15s}
+.sp-x:hover{color:#d64545;background:#fdeeee}
+/* ---- 模板单元窗口（v6.6：拼接栏内圆角窗口，含前后缀行与内部 prompt 块小窗） ---- */
+.sp-unit{display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:saturate(180%) blur(16px);backdrop-filter:saturate(180%) blur(16px);border:1px solid rgba(255,255,255,.75);border-radius:16px;padding:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 3px 10px rgba(0,0,0,.05)}
+.sp-unit.active{outline:2px solid var(--accent);outline-offset:1px}
+.sp-unit-head{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.sp-unit-name{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px}
+.sp-unit-tag{flex:0 0 auto;font-size:11px;color:#fff;background:var(--accent);border-radius:9px;padding:1px 8px;letter-spacing:-.1px}
+.sp-unit-x{flex:0 0 auto;border:0;background:transparent;color:rgba(0,0,0,.32);font-size:13px;cursor:pointer;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1;transition:background .15s,color .15s}
+.sp-unit-x:hover{color:#d64545;background:#fdeeee}
+.sp-unit-line{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.sp-unit-prefix,.sp-unit-suffix{font-size:12px;background:rgba(0,113,227,.08);border:1px solid rgba(0,113,227,.22);color:var(--accent);border-radius:9px;padding:2px 8px;letter-spacing:-.1px}
+.sp-unit-suffix{background:rgba(255,159,28,.08);border-color:rgba(255,159,28,.25);color:#c06f00}
+.sp-unit-body{display:flex;flex-direction:column;gap:5px}
+.sp-unit-empty{font-size:12px;color:var(--muted);text-align:center;padding:6px 4px;letter-spacing:-.1px}
+.sp-ublock{display:flex;align-items:flex-start;gap:6px;background:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.85);border-radius:11px;padding:6px 8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 4px rgba(0,0,0,.04)}
+.sp-ub-text{flex:1;min-width:0;font-size:12px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-all;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.sp-ub-x{flex:0 0 auto;border:0;background:transparent;color:rgba(0,0,0,.3);font-size:12px;cursor:pointer;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1;transition:background .15s,color .15s}
+.sp-ub-x:hover{color:#d64545;background:#fdeeee}
+.sp-foot{padding:10px;border-top:1px solid rgba(0,0,0,.06);display:flex;flex-direction:column;gap:6px}
+.sp-foot-row{display:flex;align-items:center;gap:6px}  /* v6.18：拼按钮 + 复制 + 清空 同行 */
+#spSplice{min-width:44px;padding:0 12px;font-size:14px}  /* v6.18：拼模式开关 */
+.sp-copy{flex:1;justify-content:center;font-size:14px;padding:9px 12px}
+.sp-clear{align-self:flex-end;border:0;background:transparent;color:var(--muted);font-size:12px;cursor:pointer;padding:4px 12px;border-radius:10px;transition:background .15s,color .15s}
+.sp-clear:hover{color:#d64545;background:#fdeeee}
+/* ---- 拼接栏模板（v6：多预设单元，每单元容纳多 prompt 块；套用=替换当前拼接） ---- */
+.sp-tpl{border-top:1px solid rgba(0,0,0,.06);padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.sp-tpl-bar{display:flex;align-items:center;gap:6px}
+.sp-tpl-save{flex:1;justify-content:center;min-height:30px;padding:0 10px;font-size:12.5px;border-radius:11px}
+.sp-tpl-fold{flex:0 0 auto;border:0;background:transparent;color:var(--muted);font-size:12px;cursor:pointer;padding:4px 10px;border-radius:10px;transition:background .15s,color .15s;white-space:nowrap}
+.sp-tpl-fold:hover{background:rgba(0,0,0,.06);color:var(--text)}
+.sp-tpl-list{display:none;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto}
+.sp-tpl-list.open{display:flex}
+.sp-tpl-item{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7);border-radius:11px;padding:5px 8px}
+.sp-tpl-name{flex:1;min-width:0;font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-tpl-num{font-size:11px;color:var(--muted);background:rgba(0,0,0,.05);border-radius:8px;padding:0 6px;flex:0 0 auto}
+.sp-tpl-act{border:0;background:transparent;color:var(--accent);font-size:12px;cursor:pointer;padding:3px 8px;border-radius:8px;flex:0 0 auto;transition:background .15s}
+.sp-tpl-act:hover{background:rgba(0,113,227,.10)}
+.sp-tpl-act.primary{background:rgba(0,113,227,.85);color:#fff;font-weight:500}  /* v6.18：套用 = 主题色主操作 */
+.sp-tpl-act.primary:hover{background:rgba(10,123,228,.92)}
+.sp-tpl-act.danger{color:var(--muted)}
+.sp-tpl-act.danger:hover{color:#d64545;background:#fdeeee}
+.sp-tpl-empty{color:var(--muted);font-size:12px;text-align:center;padding:8px 4px}

@@ -1,0 +1,43 @@
+.block{position:absolute;background:rgba(255,255,255,.5);-webkit-backdrop-filter:saturate(150%) blur(12px);backdrop-filter:saturate(150%) blur(12px);border:0;border-radius:12px;box-shadow:0 1px 5px rgba(0,0,0,.04);display:flex;gap:4px;padding:10px 8px;transition:box-shadow .15s}  /* v6.16：无边框窗口（除拖手外），轻盈无框 */
+.block:hover{z-index:7000;box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.block.drag{z-index:8000;box-shadow:0 4px 16px rgba(0,0,0,.10);cursor:grabbing}
+.block.peek{z-index:9900}  /* v6.16：拖手被遮挡时悬停光点临时置顶，鼠标离开恢复 */
+.block.active{z-index:6000}  /* v6.17：最近被点击/编辑过的块置顶（遮挡关系受操作记录影响）——hover 7000/drag 8000/peek 9900 仍可临时盖过 */
+.block.rf{will-change:transform}  /* v6.18：缩放后强制重绘触发类（修复放大后文字模糊：浏览器 transform scale 光栅化滞留，重绘后按新缩放渲染） */
+.block.selected{outline:2px solid var(--accent);outline-offset:1px;box-shadow:0 2px 10px rgba(0,113,227,.18)}  /* v6.1：多选高亮 */
+.drag-handle{position:relative;z-index:9999;flex:0 0 30px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px 2px;color:#9aa4b5;background:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.9);border-radius:10px;user-select:none;touch-action:none;box-shadow:0 1px 3px rgba(0,0,0,.06)}  /* v6.15：纵向布局 = 顶部「拼」+ 中部拖点 + 底部「删」 */
+.drag-handle:hover{color:#4d5769;background:rgba(255,255,255,.95)}
+.handle-grip{flex:1;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:2.5px;padding:2px 0;cursor:grab;min-height:26px}
+.handle-grip:active{cursor:grabbing}
+.handle-grip i{display:block;width:3.5px;height:3.5px;border-radius:50%;background:currentColor}
+.block-text{flex:1;min-width:0;min-height:84px;border:1px solid transparent;outline:none;background:transparent;font-size:13.5px;color:var(--text);padding:6px;border-radius:10px;resize:none;line-height:1.65;overflow:hidden;font-family:inherit;letter-spacing:-.1px;white-space:pre;overflow-wrap:normal;word-break:normal}  /* v6：文本不自动换行，整行完整显示 */
+.block-text:focus{background:rgba(255,255,255,.55);border-color:rgba(255,255,255,.75);box-shadow:inset 0 1px 3px rgba(0,0,0,.04)}
+/* v6.15：右侧按钮列移除——块功能按钮简化为拖手上「拼」（顶部）+「删」（底部），复制/克隆等收进右键菜单 */
+.op-btn.handle-btn{min-width:0;width:100%;height:22px;padding:0;font-size:11.5px;border-radius:7px;line-height:1}
+.op-btn.handle-btn.splice{color:#d64545;font-weight:600;background:rgba(214,69,69,.09)}  /* v6.15：「拼」常显红色（主操作醒目），继承 v6.10 语义 */
+.op-btn.handle-btn.splice:hover{background:rgba(214,69,69,.18);color:#d64545}
+.op-btn{border:0;background:transparent;color:var(--muted);font-size:12px;cursor:pointer;padding:4px 0;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;min-width:46px;height:26px}
+.op-btn:hover{background:rgba(0,0,0,.05);color:var(--text)}
+.op-btn.danger:hover{color:#d64545;background:rgba(214,69,69,.10)}
+/* v6.16：拖手被遮挡的朦胧渐变色光点（hover 临时置顶对应块） */
+#peekLayer{position:fixed;inset:0;pointer-events:none;z-index:9997}
+.peek-dot{position:fixed;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:radial-gradient(circle, rgba(0,113,227,.55) 0%, rgba(124,58,237,.28) 50%, transparent 72%);cursor:grab;pointer-events:auto;box-shadow:0 0 10px rgba(0,113,227,.4),0 0 4px rgba(124,58,237,.35);transition:transform .12s ease,box-shadow .12s ease}
+.peek-dot:hover{transform:scale(1.4);box-shadow:0 0 16px rgba(0,113,227,.6),0 0 6px rgba(124,58,237,.5)}
+/* v6.16：拼接光线层（画布块 ↔ 拼接栏条目，朦胧渐变色） */
+#linkLayer{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:440}
+#linkLayer path.lnk{fill:none;stroke-width:2}
+#linkLayer circle.lnk-dot{stroke-width:1.5}
+/* v6.16：图片块（无边框窗口，仅展示 + 删按钮左下角 hover 浮现） */
+.block-img{padding:0;background:transparent;box-shadow:none;border-radius:12px;overflow:hidden}
+.block-img:hover{box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.block-img .block-img-el{display:block;width:100%;height:100%;object-fit:fill;border-radius:12px;background:#fff;cursor:default}
+.op-btn.block-img-del{position:absolute;left:8px;bottom:8px;min-width:0;width:auto;height:22px;padding:0 10px;font-size:11.5px;border-radius:8px;background:rgba(255,255,255,.9);box-shadow:0 1px 5px rgba(0,0,0,.14);color:#d64545;opacity:0;visibility:hidden;transition:opacity .15s,visibility 0s .15s}  /* v6.17：图片块无拖手，按钮回到左下角 left:8 */
+.block-img:hover .block-img-del,.block-img.drag .block-img-del,.block-img.peek .block-img-del{opacity:1;visibility:visible;transition:opacity .15s,visibility 0s}
+.op-btn.block-img-del:hover{background:rgba(214,69,69,.16);color:#d64545}
+.empty{position:absolute;left:16px;right:16px;top:38%;text-align:center;color:var(--muted);font-size:14px;pointer-events:none;transform:translateY(-50%)}
+.empty span{font-size:12.5px}
+.hint{position:fixed;left:24px;bottom:10px;color:rgba(0,0,0,.3);font-size:12px;pointer-events:none;user-select:none}  /* v6.21：底部说明小字已移除（保留样式备用） */
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:rgba(29,29,31,.7);-webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);color:#fff;font-size:13px;padding:9px 16px;border-radius:12px;display:flex;align-items:center;gap:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 28px rgba(0,0,0,.28);z-index:99;max-width:80vw}
+.toast button{background:transparent;border:1px solid rgba(255,255,255,.55);color:#fff;border-radius:10px;font-size:12px;padding:3px 12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.toast button:hover{background:rgba(255,255,255,.15)}
+.toast.hide{display:none}
