@@ -1,0 +1,130 @@
+
+var LS_KEY = 'storyboard-prompt-panel:v1';
+var BACKUP_KEY = LS_KEY + ':backup';
+var state = null;
+var saveTimer = null;
+var toastTimer = null;
+var drag = null;      /* 块拖拽：{idx,startX,startY,origX,origY,lastX,lastY,el}；v6.1 支持 group 组拖 */
+var panning = null;   /* 画布平移：{startX,startY,panX,panY,x,y} */
+var panVel = null;    /* v6.1 画布平移惯性速度 */
+var panLooping = false;
+var panEndX = 0, panEndY = 0;   /* v6.1 惯性滑行终点（拖动最后目标，防过冲） */
+var selected = [];    /* v6.1 多选：选中块 id 列表（内存态，刷新不保留） */
+var MIN_BLOCK_W = 140;   /* 空块/短行的最小块宽；块宽随最长行自适应（v6） */
+
+function uid(){ return 'b_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+function defaultState(){
+  return {
+    app: 'storyboard-prompt-panel',
+    version: 12,
+    zoom: 1,
+    title: '未命名分镜',
+    pan: { x: 0, y: 0 },
+    splice: { items: [], activeUnitId: null },
+    collapsed: false,
+    templates: [],
+    blocks: [{
+      id: uid(),
+      text: '示例块：这是一段提示词——雨夜小巷，霓虹倒映在水洼里，镜头缓慢推近，侦探撑伞走来。\n\n第二段：角色停步回望，眼神警惕，雨水沿帽沿滑落。\n\n左键拖把手=移动位置；右键菜单或点「拼」可加入右侧拼接栏，按顺序拼成整条 prompt。',
+      x: 20,
+      y: 20
+    }]
+  };
+}
+/* v1 列表数据补网格坐标（仅迁移用） */
+function gridPos(i){
+  return { x: 20 + (i % 4) * 360, y: 20 + Math.floor(i / 4) * 150 };
+}
+/* 兼容 v1~v10：补 x/y、pan、zoom、splice、collapsed，标题字段丢弃；块 id 过滤失效引用；v10 模板结构 units 化；v11 模板无名称/无块配置 */
+function migrate(d){
+  var blocks = d.blocks.filter(function(b){ return b && b.type !== 'image'; }).map(function(b, i){
+    var pos = (typeof b.x === 'number' && typeof b.y === 'number') ? { x: b.x, y: b.y } : gridPos(i);
+    return { id: b.id || uid(), text: b.text || '', x: pos.x, y: pos.y };
+  });   /* v6.16：图片块仅会话内，防御性剔除（须在 map 前过滤——map 已剥离 type 字段） */
+  var pan = (d.pan && typeof d.pan.x === 'number' && typeof d.pan.y === 'number') ? { x: d.pan.x, y: d.pan.y } : { x: 0, y: 0 };
+  var ids = {};
+  blocks.forEach(function(b){ ids[b.id] = 1; });
+  /* v6.6：拼接栏条目化——平铺块条目 + 模板单元窗口条目；旧 order 平铺迁移为块条目（依旧平铺） */
+  var spliceItems = [];
+  if(d.splice && Array.isArray(d.splice.items)){
+    spliceItems = d.splice.items.filter(function(it){
+      if(it && it.type === 'unit') return typeof it.name === 'string' && Array.isArray(it.blockIds);
+      return it && typeof it.id === 'string' && ids[it.id];
+    }).map(function(it){
+      if(it.type === 'unit'){
+        return {
+          type: 'unit', id: it.id || uid(), name: it.name,
+          prefixes: Array.isArray(it.prefixes) ? it.prefixes.map(String).filter(Boolean) : [],
+          suffixes: Array.isArray(it.suffixes) ? it.suffixes.map(String).filter(Boolean) : [],
+          blockIds: it.blockIds.filter(function(bid){ return ids[bid]; })
+        };
+      }
+      return { type: 'block', id: it.id };
+    });
+  }else if(Array.isArray(d.order)){
+    spliceItems = d.order.filter(function(id){ return ids[id]; }).map(function(id){ return { type: 'block', id: id }; });
+  }
+  var lastUnitId = null;
+  spliceItems.forEach(function(it){ if(it.type === 'unit') lastUnitId = it.id; });
+  var activeUnitId = (d.splice && typeof d.splice.activeUnitId === 'string' && spliceItems.some(function(it){ return it.type === 'unit' && it.id === d.splice.activeUnitId; })) ? d.splice.activeUnitId : lastUnitId;
+  /* v6.13（version 11）：模板 = 任意数量单元；单元 = 仅前缀值们 + 后缀值们（提示词块不是模板的一部分，中间为拼入容器）；模板名称移除（序号区分） */
+  var templates = Array.isArray(d.templates) ? d.templates.filter(function(t){
+    return t && typeof t === 'object';
+  }).map(function(t){
+    var units = [];
+    if(Array.isArray(t.units) && t.units.length){
+      units = t.units.filter(function(u){ return u && typeof u === 'object'; }).map(function(u){
+        return {
+          id: u.id || uid(),
+          prefixes: Array.isArray(u.prefixes) ? u.prefixes.map(String).filter(Boolean) : [],
+          suffixes: Array.isArray(u.suffixes) ? u.suffixes.map(String).filter(Boolean) : []
+        };
+      });
+    }else{
+      units = [{
+        id: uid(),
+        prefixes: Array.isArray(t.prefixes) ? t.prefixes.map(String).filter(Boolean) : (typeof t.prefix === 'string' && t.prefix ? [t.prefix] : []),
+        suffixes: Array.isArray(t.suffixes) ? t.suffixes.map(String).filter(Boolean) : (typeof t.suffix === 'string' && t.suffix ? [t.suffix] : [])
+      }];
+    }
+    return { id: t.id || uid(), units: units };
+  }) : [];
+  return { app: 'storyboard-prompt-panel', version: 12, title: d.title || '未命名分镜', pan: pan, zoom: (typeof d.zoom === 'number' && d.zoom > 0 && d.zoom <= 4) ? d.zoom : 1, splice: { items: spliceItems, activeUnitId: activeUnitId }, collapsed: !!d.collapsed, templates: templates, blocks: blocks };
+}
+
+function load(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if(raw){
+      var d = JSON.parse(raw);
+      if(d && d.app === 'storyboard-prompt-panel' && Array.isArray(d.blocks)){
+        state = migrate(d);
+        document.title = '拼好镜';
+        render();
+        renderTplList();
+        if(d.version < 11) saveNow();
+        return;
+      }
+    }
+  }catch(e){}
+  state = defaultState();
+  document.title = '拼好镜';
+  render();
+  renderTplList();
+  saveNow();
+}
+
+function scheduleSave(){ if(saveTimer) clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 400); }
+function flush(){ if(saveTimer){ clearTimeout(saveTimer); saveTimer = null; } saveNow(); }
+/* v6.16：序列化前剔除图片块（图片块仅会话内存在，不落盘不导出） */
+function sanitizeState(){
+  var c = JSON.parse(JSON.stringify(state));
+  c.blocks = (c.blocks || []).filter(function(b){ return b.type !== 'image'; });
+  return c;
+}
+function saveNow(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(sanitizeState())); }
+  catch(e){ toast('保存失败：' + e.message); }
+}
+

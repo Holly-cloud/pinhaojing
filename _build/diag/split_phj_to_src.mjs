@@ -13,7 +13,8 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..');          // 项目根
 const WITH_JS = process.argv.includes('--js');
-const BASELINE = process.argv.find(a => a.endsWith('.html')) || path.join(ROOT, 'PHJ.html');
+const BASELINE = process.argv.find(a => a.endsWith('.html')) || path.join(ROOT, '_build/snapshots/PHJ_v7.7_baseline.html');
+/* 默认从「施工前基线快照」切，而不是当前 PHJ.html —— 分支上 PHJ.html 已是构建产物（带 banner、样式已内联） */
 
 const CSS_SPLIT = [
   ['styles/00-base.css', 8, 27], ['styles/10-canvas.css', 28, 70], ['styles/20-menu.css', 71, 79],
