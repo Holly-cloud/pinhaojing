@@ -172,16 +172,41 @@ await type('#台词');
 await key('Enter');
 const h9a = await evalJS(`(() => { var ta = document.getElementById('blkInput');
   return { v: ta.value, caret: ta.selectionStart, slots: cmplSlots ? cmplSlots.slice() : null, marker: /\\$\\{/.test(ta.value) }; })()`);
-await type('周夫子');
+await type('干嘛呢');
 const h9b = await evalJS(`(() => { var ta = document.getElementById('blkInput'); return { v: ta.value, caret: ta.selectionStart, slots: cmplSlots ? cmplSlots.slice() : null }; })()`);
 await key('Tab');
 const h9c = await evalJS(`(() => { var ta = document.getElementById('blkInput'); return { caret: ta.selectionStart, slots: cmplSlots ? cmplSlots.slice() : null }; })()`);
-t('H9 槽位：${n} 标记上屏即被吃掉（文档里不留标记）、光标落第一个槽位（{{node:|}} 的 id 位）',
-  !h9a.marker && h9a.v.indexOf('说【{{node:}}音色】：“”') >= 0 && h9a.caret === h9a.v.indexOf('}}'),
-  `上屏=「${h9a.v}」 光标=${h9a.caret}（期望 ${h9a.v.indexOf('}}')}） 槽位=${JSON.stringify(h9a.slots)}`);
-t('H10 槽位跟踪：槽位内打字后续槽位同步位移；Tab 跳到下一个槽位（引号内）',
-  h9b.v === '说【{{node:周夫子}}音色】：“”' && h9c.caret === h9b.v.indexOf('“') + 1 && h9c.slots && h9c.slots.length === 2,
-  `打字后=「${h9b.v}」；Tab 后光标=${h9c.caret}（期望 ${h9b.v.indexOf('“') + 1}）；槽位=${JSON.stringify(h9c.slots)}`);
+t('H9 槽位：${n} 标记上屏即被吃掉（文档里不留标记）、光标落第一个槽位（引号内台词位）',
+  !h9a.marker && h9a.v === '说【@音色】：“”' && h9a.caret === h9a.v.indexOf('“') + 1,
+  `上屏=「${h9a.v}」 光标=${h9a.caret}（期望 ${h9a.v.indexOf('“') + 1}） 槽位=${JSON.stringify(h9a.slots)}`);
+t('H10 槽位跟踪：槽位内打字后续槽位同步位移；多槽位片段（角色+说+音色）Tab 跳到下一个槽位',
+  h9b.v === '说【@音色】：“干嘛呢”' && h9c.slots === null && h9c.caret === h9b.caret,
+  `打字后=「${h9b.v}」；末槽位后 Tab → 槽位模式结束（slots=${JSON.stringify(h9c.slots)}）`);
+
+/* ---------- H10b 多槽位：角色槽 → Tab → 台词槽（检查位移同步） ---------- */
+await evalJS(`(() => { openBlockEditor('', null); return 1; })()`);
+await sleep(150);
+await type('#角色');
+await key('Enter');
+const h10b0 = await evalJS(`(() => { var ta = document.getElementById('blkInput'); return { v: ta.value, slots: cmplSlots ? cmplSlots.slice() : null }; })()`);
+await type('周夫子');
+await key('Tab');
+const h10b1 = await evalJS(`(() => { var ta = document.getElementById('blkInput'); return { v: ta.value, caret: ta.selectionStart, slots: cmplSlots ? cmplSlots.slice() : null }; })()`);
+t('H10b 两槽位片段：角色槽打字后 Tab 跳到台词槽（槽位位置随输入右移）',
+  h10b0.v === '说【@音色】：“”' && h10b1.v === '周夫子说【@音色】：“”' && h10b1.caret === h10b1.v.indexOf('“') + 1 && h10b1.slots && h10b1.slots.length === 2,
+  `上屏=「${h10b0.v}」→ 打字+Tab 后=「${h10b1.v}」光标=${h10b1.caret}（期望 ${h10b1.v.indexOf('“') + 1}）槽位=${JSON.stringify(h10b1.slots)}`);
+
+/* ---------- H10c 候选表里不出现 `{{node:…}}`（素材绑定位一律用 @） ---------- */
+const h10c = await evalJS(`(() => {
+  var bad = [], all = 0;
+  for(var gi = 0; gi < CMPL_GROUPS.length; gi++) for(var ii = 0; ii < CMPL_GROUPS[gi].items.length; ii++){
+    all++;
+    if(CMPL_GROUPS[gi].items[ii].body.indexOf('{{node:') >= 0) bad.push(CMPL_GROUPS[gi].label + '/' + CMPL_GROUPS[gi].items[ii].label);
+  }
+  return { all: all, bad: bad, hasAt: CMPL_GROUPS[1].items[0].body.indexOf('@') >= 0 };
+})()`);
+t('H10c 候选片段里不写 `{{node:…}}`（那是画布自动生成的引用；素材绑定位统一用 `@`）',
+  h10c.bad.length === 0 && h10c.hasAt, `候选 ${h10c.all} 条，违规 ${h10c.bad.length} 条${h10c.bad.length ? '：' + h10c.bad.join('、') : ''}`);
 
 /* ---------- H16 数字键跳位：`#` 后按 5 → 第 5 条直接上屏（输入法式，不用方向键） ---------- */
 await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.value = ${JSON.stringify(FIX)}; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset(); return 1; })()`);
