@@ -1,3 +1,6 @@
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 /* 开发态检查（指导书第 10 节 P3）：src/index.html 直接双击（file://）能否正常跑
    用法：headless Edge --remote-debugging-port=9222 起好后： node _build/diag/probe_dev_index.mjs
    断言：① 无 Console/页面报错；② 16 条 <script src> 全部加载、样式 7 条外链；
@@ -40,7 +43,7 @@ async function realClick(x, y) {
   await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
 }
 
-const HERE_URL = 'file:///' + encodeURI('D:/Hermes_Store/拼好镜/src/index.html');
+const HERE_URL = pathToFileURL(path.resolve(HERE, '../../src/index.html')).href;
 await send('Page.enable'); await send('Runtime.enable'); await send('Log.enable');
 await send('Page.addScriptToEvaluateOnNewDocument', { source: 'try{ localStorage.clear(); }catch(e){}' });
 await send('Page.navigate', { url: HERE_URL });
