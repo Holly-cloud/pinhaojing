@@ -311,6 +311,133 @@ const h15 = await evalJS(`(() => {
 t('H15 结构层未改动着色引擎（v7.7 台词区豁免语义保持：引号内逗号不计错误）',
   h15.errs === h15.expect, `错误数=${h15.errs}（期望 ${h15.expect}）`);
 
+/* ========== I 组（v7.8 补全配置窗口：浏览 / 修改 / 新增） ========== */
+/* 前置：把上一组留下的编辑器窗口关掉（否则顶栏按钮被遮罩盖住，点不到）；并把片段库复位成「未物化」 */
+await evalJS(`(() => { closeBlockEditor(); closeCmplCfg(); state.cmpl = { v: CMPL_SEED_V, items: null }; cmplInvalidate(); return 1; })()`);
+
+/* ---------- I1 顶栏入口 + 首开物化 + 全量列出 ---------- */
+const i0 = await evalJS(`({ hasBtn: !!document.getElementById('btnCmpl'), hiddenBefore: document.getElementById('cmplCfgMask').classList.contains('hide'), seedLen: cmplSeedItems().length, materialized: Array.isArray(state.cmpl && state.cmpl.items) })`);
+await click('#btnCmpl');
+const i1 = await evalJS(`(() => {
+  var cards = document.querySelectorAll('#cmplCfgBody .cmpl-cfg-card').length;
+  var ls = null; try{ ls = JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){}
+  return { open: !document.getElementById('cmplCfgMask').classList.contains('hide'), cards: cards,
+           items: state.cmpl && Array.isArray(state.cmpl.items) ? state.cmpl.items.length : -1,
+           persisted: !!(ls && ls.cmpl && Array.isArray(ls.cmpl.items)),
+           title: (document.querySelector('#cmplCfgMask .tpl-title') || {}).textContent };
+})()`);
+t('I1 顶栏「补」入口打开补全配置窗口；首次打开即把内置表物化成用户表并落盘（条目数一致）',
+  i0.hasBtn && i0.hiddenBefore && !i0.materialized && i1.open && i1.cards === i1.items && i1.items === i0.seedLen && i1.persisted,
+  `内置 ${i0.seedLen} 条 → 窗口列出 ${i1.cards} 张卡 / 用户表 ${i1.items} 条；已落盘=${i1.persisted}；标题=「${i1.title}」`);
+
+/* ---------- I2 按组归并 + 搜索框可用 ---------- */
+const i2 = await evalJS(`(() => ({
+  groups: document.querySelectorAll('#cmplCfgBody .cmpl-cfg-group').length,
+  distinct: (function(){ var s = {}, n = 0; cmplActive().forEach(function(x){ var g = x.group || '未分组'; if(!s[g]){ s[g] = 1; n++; } }); return n; })(),
+  hasSearch: !!document.getElementById('cmplCfgSearch'), listOpts: document.querySelectorAll('#cmplCfgGroupList option').length
+}))()`);
+t('I2 片段按组归并展示（组标题数 = 生效表里去重后的组数）+ 搜索框与分组候选就位',
+  i2.groups === i2.distinct && i2.hasSearch && i2.listOpts === i2.distinct,
+  `组标题 ${i2.groups} / 去重组数 ${i2.distinct}；分组候选 ${i2.listOpts} 项`);
+
+/* ---------- I3 修改内置片段：表单预填 → 保存 → 生效表与候选气泡同步 ---------- */
+const i3before = await evalJS(`(() => { var f = cmplActive()[0]; return { key: f.key, label: f.label, len: f.body.length }; })()`);
+await click('#cmplCfgBody .cmpl-cfg-card [data-act="edit"]');
+const i3form = await evalJS(`(() => ({
+  editing: document.querySelectorAll('#cmplCfgBody .cmpl-cfg-card.editing').length,
+  label: (document.getElementById('cmplCfgLabelIn') || {}).value,
+  group: (document.getElementById('cmplCfgGroupIn') || {}).value,
+  len: ((document.getElementById('cmplCfgBodyIn') || {}).value || '').length
+}))()`);
+await evalJS(`(() => {
+  var li = document.getElementById('cmplCfgLabelIn'), bi = document.getElementById('cmplCfgBodyIn');
+  li.value = '光影逻辑（我的改版）'; bi.value = '【光影逻辑】 这是我改过的版本，专门用来验收配置窗口。';
+  return 1;
+})()`);
+await click('#cmplCfgSave');
+const i3after = await evalJS(`(() => {
+  var f = cmplActive()[0];
+  var ls = null; try{ ls = JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){}
+  openBlockEditor('', null);
+  var ta = document.getElementById('blkInput'); ta.focus(); ta.setSelectionRange(0, 0);
+  ta.value = '#'; ta.setSelectionRange(1, 1); cmplOnInput();
+  var pop = document.getElementById('cmplPop');
+  var rows = Array.prototype.map.call(pop.querySelectorAll('.cmpl-item'), function(e){ return e.textContent; });
+  cmplClose(); closeBlockEditor();
+  return { label: f.label, body: f.body, lsBody: ls && ls.cmpl.items[0].body, editorStillOpen: false, rows: rows.slice(0, 3) };
+})()`);
+t('I3 改内置片段：点「编辑」表单预填原值 → 保存后生效表/localStorage 同步更新，候选气泡里立刻是改后的内容',
+  i3form.editing === 1 && i3form.label === i3before.label && i1.cards === i0.seedLen
+  && i3after.label === '光影逻辑（我的改版）' && i3after.body.length !== i3before.len && i3after.lsBody === i3after.body,
+  `表单预填「${i3form.label}」(${i3form.len} 字符) → 保存后「${i3after.label}」(${i3after.body.length} 字符)；落盘一致=${i3after.lsBody === i3after.body}`);
+
+/* ---------- I4 新增自定义片段（带槽位）→ 候选命中并正确上屏 ---------- */
+await evalJS(`(() => { if(document.getElementById('cmplCfgMask').classList.contains('hide')) openCmplCfg(); return 1; })()`);
+await click('#cmplCfgNew');
+await evalJS(`(() => {
+  document.getElementById('cmplCfgGroupIn').value = '我的常用';
+  document.getElementById('cmplCfgLabelIn').value = '环绕半圈句';
+  document.getElementById('cmplCfgNoteIn').value = '自建';
+  document.getElementById('cmplCfgBodyIn').value = '然后 镜头环绕@\${1}半圈，速度\${2}。';
+  return 1;
+})()`);
+await click('#cmplCfgSave');
+const i4 = await evalJS(`(() => {
+  var found = null; cmplActive().forEach(function(x){ if(x.label === '环绕半圈句') found = x; });
+  openBlockEditor('', null);
+  var ta = document.getElementById('blkInput'); ta.focus(); ta.value = '#环绕半圈'; ta.setSelectionRange(5, 5); cmplOnInput();
+  var hit = cmplItems.length ? cmplItems[0].label : null;
+  return { exists: !!found, group: found && found.group, note: found && found.note, len: cmplActive().length, hit: hit };
+})()`);
+await key('Enter');
+const i4b = await evalJS(`(() => { var ta = document.getElementById('blkInput');
+  return { v: ta.value, slots: cmplSlots ? cmplSlots.slice() : null, caret: ta.selectionStart }; })()`);
+t('I4 新增自建片段（含 ${n} 槽位）：保存后进生效表、按标签搜索命中、上屏后槽位就位',
+  i4.exists && i4.group === '我的常用' && i4.note === '自建' && i4.hit === '环绕半圈句'
+  && i4b.v === '然后 镜头环绕@半圈，速度。' && i4b.slots && i4b.slots.length === 2,
+  `新片段在表=${i4.exists}（组「${i4.group}」）；候选首条=「${i4.hit}」；上屏=「${i4b.v}」槽位=${JSON.stringify(i4b.slots)}`);
+
+/* ---------- I5 删除 + 撤销 ---------- */
+await evalJS(`closeBlockEditor()`);
+const i5before = await evalJS(`cmplActive().length`);
+await evalJS(`(() => { var k = null; cmplActive().forEach(function(x){ if(x.label === '环绕半圈句') k = x.key; }); cmplCfgDel(k); return 1; })()`);
+const i5mid = await evalJS(`(() => ({ len: cmplActive().length, toast: document.getElementById('toast').innerText.replace(/\s+/g,' ').trim(), hasUndo: !!document.querySelector('#toast button') }))()`);
+await evalJS(`(() => { var b = document.querySelector('#toast button'); if(b) b.click(); return 1; })()`);
+const i5after = await evalJS(`cmplActive().length`);
+t('I5 删除片段：生效表立即减一，toast 带「撤销」，撤销后恢复原状',
+  i5mid.len === i5before - 1 && i5mid.hasUndo && i5after === i5before,
+  `删除 ${i5before} → ${i5mid.len} → 撤销后 ${i5after}；toast=「${i5mid.toast}」`);
+
+/* ---------- I6 恢复内置默认 ---------- */
+await click('#cmplCfgReset');
+const i6 = await evalJS(`({ items: state.cmpl.items, len: cmplActive().length, seed: cmplSeedItems().length, cards: document.querySelectorAll('#cmplCfgBody .cmpl-cfg-card').length })`);
+t('I6 「恢复内置默认」清空用户表（items=null）并回落内置片段库',
+  i6.items === null && i6.len === i6.seed && i6.cards === i6.seed,
+  `items=${JSON.stringify(i6.items)}；生效 ${i6.len} 条 = 内置 ${i6.seed} 条；窗口列出 ${i6.cards} 张`);
+
+/* ---------- I7 存储往返 + 旧数据迁移（无 cmpl 的 v12 文件） ---------- */
+const i7 = await evalJS(`(() => {
+  cmplCfgMaterialize();
+  var arr = cmplActive().slice();
+  arr[0] = { key: arr[0].key, group: arr[0].group, label: '往返测试', note: '', body: '往返测试内容', block: false };
+  cmplSetItems(arr); saveNow();
+  var back = migrate(JSON.parse(localStorage.getItem(LS_KEY)));
+  var old = migrate({ app: 'storyboard-prompt-panel', version: 12, blocks: [] });
+  return { roundTrip: back.cmpl.items[0].label, version: back.version, oldHidden: old.cmpl.items, oldV: old.version, oldBlocks: old.blocks.length };
+})()`);
+t('I7 存储往返（state → localStorage → migrate 后仍在）+ 旧版数据（无 cmpl）迁移后回落内置、版本升到 13',
+  i7.roundTrip === '往返测试' && i7.version === 13 && i7.oldHidden === null && i7.oldV === 13 && i7.oldBlocks === 0,
+  `往返=${i7.roundTrip}｜version=${i7.version}｜旧数据 cmpl.items=${JSON.stringify(i7.oldHidden)}（null=用内置）`);
+
+/* ---------- I8 Esc 关窗 + 回到干净状态 ---------- */
+await evalJS(`(() => { cmplCfgReset(); closeCmplCfg(); openCmplCfg(); return 1; })()`);
+await key('Escape');
+const i8 = await evalJS(`({ open: !document.getElementById('cmplCfgMask').classList.contains('hide'), items: state.cmpl.items, seed: cmplSeedItems().length })`);
+await evalJS(`(() => { cmplCfgReset(); return 1; })()`);
+t('I8 配置窗口内按 Esc 关窗（关窗后片段库保持已物化状态；末尾已复位）',
+  !i8.open && Array.isArray(i8.items) && i8.items.length === i8.seed,
+  `窗口开=${i8.open}；用户表 ${i8.items ? i8.items.length : 'null'} 条`);
+
 /* ---------- 截图 ---------- */
 const SHOT = process.argv[2] || '';
 if (SHOT) {
@@ -321,11 +448,19 @@ if (SHOT) {
   const shot = await send('Page.captureScreenshot', { format: 'png' });
   fs.writeFileSync(SHOT, Buffer.from(shot.data, 'base64'));
   console.log('截图:', SHOT);
+  const SHOT2 = process.argv[3] || '';
+  if (SHOT2) {
+    await evalJS(`(() => { state.blocks = [{ id:'s1', text:${JSON.stringify(FIX)}, x:80, y:60 }]; render(); closeBlockEditor(); openCmplCfg(); return 1; })()`);
+    await sleep(400);
+    const shot2 = await send('Page.captureScreenshot', { format: 'png' });
+    fs.writeFileSync(SHOT2, Buffer.from(shot2.data, 'base64'));
+    console.log('截图:', SHOT2);
+  }
 }
 
 const pass = R.filter(r => r.pass).length;
-console.log('=== v7.8 H 组验收（真机 headless Edge + CDP）===');
+console.log('=== v7.8 验收（真机 headless Edge + CDP）：H 组 候选/槽位/复制 + I 组 补全配置 ===');
 for (const r of R) console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.name}  ${r.detail}`);
-console.log(`\nH 组合计 ${pass}/${R.length}`);
+console.log(`\nH+I 组合计 ${pass}/${R.length}`);
 ws.close();
 process.exit(pass === R.length ? 0 : 1);

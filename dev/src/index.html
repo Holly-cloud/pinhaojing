@@ -11,12 +11,15 @@
 <link rel="stylesheet" href="./styles/40-window.css">
 <link rel="stylesheet" href="./styles/50-editor.css">
 <link rel="stylesheet" href="./styles/51-complete.css">
+<link rel="stylesheet" href="./styles/52-library.css">
 <link rel="stylesheet" href="./styles/90-effects.css">
 </head>
 <body>
 <div class="topbar">
   <button class="btn primary" id="btnArrange" title="一键整理：所有块自上而下左对齐">整</button>
   <button class="btn" id="btnMenu" title="导入 / 导出">导</button>
+  <!-- v7.8：补全配置入口（片段库：浏览 / 修改 / 新增） -->
+  <button class="btn" id="btnCmpl" title="补全配置：浏览 / 修改 / 新增候选片段（编辑器里输入 # 触发）">补</button>
   <button class="btn" id="btnZoom" title="画布缩放：Ctrl+滚轮缩放 ｜ 点击恢复 100%">100%</button>
   <input type="file" id="fileInput" accept=".json,application/json" hidden>
 </div>
@@ -109,6 +112,23 @@
   </div>
 </div>
 
+<!-- v7.8：补全配置窗口（片段库：浏览 / 修改 / 新增；数据随 导出 JSON 一起走） -->
+<div class="modal-mask hide" id="cmplCfgMask">
+  <div class="tpl-win" tabindex="-1">
+    <div class="tpl-head">
+      <span class="tpl-title">补全配置</span>
+      <input class="cmpl-cfg-search" id="cmplCfgSearch" placeholder="搜索片段…" spellcheck="false">
+      <button class="btn primary tpl-new" id="cmplCfgNew">＋ 新增片段</button>
+    </div>
+    <div class="tpl-body" id="cmplCfgBody"></div>
+    <datalist id="cmplCfgGroupList"></datalist>
+    <div class="tpl-foot cmpl-cfg-foot">
+      <button class="btn" id="cmplCfgReset" title="丢弃你的改动与新增，回到内置片段库">恢复内置默认</button>
+      <button class="btn primary" id="cmplCfgDone">完成</button>
+    </div>
+  </div>
+</div>
+
 <script src="./js/00-header.js"></script>
 <script src="./js/10-state.js"></script>
 <script src="./js/15-clipboard.js"></script>
@@ -120,6 +140,7 @@
 <script src="./js/50-editor.js"></script>
 <script src="./js/51-struct.js"></script>
 <script src="./js/52-complete.js"></script>
+<script src="./js/53-library.js"></script>
 <script src="./js/55-menu.js"></script>
 <script src="./js/60-keyboard.js"></script>
 <script src="./js/62-block-size.js"></script>

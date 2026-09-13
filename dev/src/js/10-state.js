@@ -17,13 +17,14 @@ function uid(){ return 'b_' + Date.now().toString(36) + Math.random().toString(3
 function defaultState(){
   return {
     app: 'storyboard-prompt-panel',
-    version: 12,
+    version: 13,
     zoom: 1,
     title: '未命名分镜',
     pan: { x: 0, y: 0 },
     splice: { items: [], activeUnitId: null },
     collapsed: false,
     templates: [],
+    cmpl: { v: 1, items: null },   /* v7.8：补全片段库（null = 用内置表；数组 = 用户表） */
     blocks: [{
       id: uid(),
       text: '示例块：这是一段提示词——雨夜小巷，霓虹倒映在水洼里，镜头缓慢推近，侦探撑伞走来。\n\n第二段：角色停步回望，眼神警惕，雨水沿帽沿滑落。\n\n左键拖把手=移动位置；右键菜单或点「拼」可加入右侧拼接栏，按顺序拼成整条 prompt。',
@@ -90,7 +91,31 @@ function migrate(d){
     }
     return { id: t.id || uid(), units: units };
   }) : [];
-  return { app: 'storyboard-prompt-panel', version: 12, title: d.title || '未命名分镜', pan: pan, zoom: (typeof d.zoom === 'number' && d.zoom > 0 && d.zoom <= 4) ? d.zoom : 1, splice: { items: spliceItems, activeUnitId: activeUnitId }, collapsed: !!d.collapsed, templates: templates, blocks: blocks };
+  /* v7.8（version 13）：补全片段库 —— cmpl.items 缺省为 null（＝用内置表）；已物化的用户表逐条校验；
+     内置表版本升级（CMPL_SEED_V 变大）时把用户表里没有的新内置条目并进去（用户改过的不动） */
+  var cmplIn = (d.cmpl && typeof d.cmpl === 'object') ? d.cmpl : null;
+  var cmpl = { v: (cmplIn && typeof cmplIn.v === 'number') ? cmplIn.v : CMPL_SEED_V, items: null };
+  if(cmplIn && Array.isArray(cmplIn.items)){
+    cmpl.items = cmplIn.items.filter(function(x){
+      return x && typeof x.body === 'string';
+    }).map(function(x){
+      return {
+        key: (typeof x.key === 'string' && x.key) ? x.key : ('u_' + Math.random().toString(36).slice(2, 9)),
+        group: typeof x.group === 'string' ? x.group : '',
+        label: typeof x.label === 'string' ? x.label : '',
+        note: typeof x.note === 'string' ? x.note : '',
+        body: x.body,
+        block: !!x.block
+      };
+    });
+    if(cmpl.v < CMPL_SEED_V){
+      var have = {};
+      cmpl.items.forEach(function(x){ have[x.key] = 1; });
+      cmplSeedItems().forEach(function(x){ if(!have[x.key]) cmpl.items.push(x); });
+      cmpl.v = CMPL_SEED_V;
+    }
+  }
+  return { app: 'storyboard-prompt-panel', version: 13, title: d.title || '未命名分镜', pan: pan, zoom: (typeof d.zoom === 'number' && d.zoom > 0 && d.zoom <= 4) ? d.zoom : 1, splice: { items: spliceItems, activeUnitId: activeUnitId }, collapsed: !!d.collapsed, templates: templates, cmpl: cmpl, blocks: blocks };
 }
 
 function load(){
@@ -103,7 +128,7 @@ function load(){
         document.title = '拼好镜';
         render();
         renderTplList();
-        if(d.version < 11) saveNow();
+        if(d.version < 13) saveNow();   /* v7.8：升到 13（补全片段库）时把新结构落盘 */
         return;
       }
     }

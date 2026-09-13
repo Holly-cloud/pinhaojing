@@ -1,0 +1,27 @@
+/* v7.8：补全配置窗口（片段库）——沿用 .tpl-win 体系，只补本窗口特有的行/表单样式 */
+.cmpl-cfg-search{width:190px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.85);border-radius:9px;padding:5px 9px;
+  font-size:13px;color:var(--text);outline:none;letter-spacing:-.1px}
+.cmpl-cfg-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12)}
+.cmpl-cfg-hint{margin:0 0 2px;padding:8px 10px;border-radius:10px;background:rgba(0,113,227,.06);border:1px solid rgba(0,113,227,.14);
+  color:var(--muted);font-size:12px;line-height:1.6;letter-spacing:-.1px}
+.cmpl-cfg-hint b{color:var(--accent);font-weight:600}
+.cmpl-cfg-group{font-size:11.5px;color:var(--muted);letter-spacing:.02em;padding:6px 2px 0;margin-top:2px}
+.cmpl-cfg-card{background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.75);border-radius:12px;padding:8px 10px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 2px 8px rgba(0,0,0,.04)}
+.cmpl-cfg-card.editing{border-color:rgba(0,113,227,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 3px rgba(0,113,227,.10)}
+.cmpl-cfg-card.adding{border-color:rgba(0,113,227,.5);border-style:dashed}
+.cmpl-cfg-row{display:flex;align-items:baseline;gap:8px}
+.cmpl-cfg-label{font-size:13px;color:var(--text);white-space:nowrap;letter-spacing:-.1px}
+.cmpl-cfg-preview{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:11.5px}
+.cmpl-cfg-field{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.cmpl-cfg-fl{font-size:11.5px;color:var(--muted);flex:0 0 auto;letter-spacing:-.1px}
+.cmpl-cfg-input{flex:1 1 auto;min-width:0;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.9);border-radius:8px;
+  padding:5px 8px;font-size:12.5px;color:var(--text);outline:none;letter-spacing:-.1px}
+.cmpl-cfg-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12)}
+.cmpl-cfg-body{width:100%;min-height:86px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.9);border-radius:9px;
+  padding:7px 9px;font-family:ui-monospace,"Cascadia Mono",Consolas,Menlo,"Microsoft YaHei",monospace;font-size:12.5px;
+  line-height:1.6;color:var(--text);outline:none;resize:vertical}
+.cmpl-cfg-body:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12)}
+.cmpl-cfg-ops{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.cmpl-cfg-ops .btn{min-height:30px;padding:0 12px;font-size:12.5px;border-radius:11px}
+.tpl-foot.cmpl-cfg-foot{justify-content:space-between}

@@ -239,6 +239,33 @@ body{background:
 /* 状态栏结构位（v7.8） */
 .blk-status .grp.struct b{color:var(--accent)}
 @media (prefers-reduced-motion:reduce){.cmpl-pop{animation:none}}
+/* v7.8：补全配置窗口（片段库）——沿用 .tpl-win 体系，只补本窗口特有的行/表单样式 */
+.cmpl-cfg-search{width:190px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.85);border-radius:9px;padding:5px 9px;
+  font-size:13px;color:var(--text);outline:none;letter-spacing:-.1px}
+.cmpl-cfg-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12)}
+.cmpl-cfg-hint{margin:0 0 2px;padding:8px 10px;border-radius:10px;background:rgba(0,113,227,.06);border:1px solid rgba(0,113,227,.14);
+  color:var(--muted);font-size:12px;line-height:1.6;letter-spacing:-.1px}
+.cmpl-cfg-hint b{color:var(--accent);font-weight:600}
+.cmpl-cfg-group{font-size:11.5px;color:var(--muted);letter-spacing:.02em;padding:6px 2px 0;margin-top:2px}
+.cmpl-cfg-card{background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.75);border-radius:12px;padding:8px 10px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 2px 8px rgba(0,0,0,.04)}
+.cmpl-cfg-card.editing{border-color:rgba(0,113,227,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 3px rgba(0,113,227,.10)}
+.cmpl-cfg-card.adding{border-color:rgba(0,113,227,.5);border-style:dashed}
+.cmpl-cfg-row{display:flex;align-items:baseline;gap:8px}
+.cmpl-cfg-label{font-size:13px;color:var(--text);white-space:nowrap;letter-spacing:-.1px}
+.cmpl-cfg-preview{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:11.5px}
+.cmpl-cfg-field{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.cmpl-cfg-fl{font-size:11.5px;color:var(--muted);flex:0 0 auto;letter-spacing:-.1px}
+.cmpl-cfg-input{flex:1 1 auto;min-width:0;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.9);border-radius:8px;
+  padding:5px 8px;font-size:12.5px;color:var(--text);outline:none;letter-spacing:-.1px}
+.cmpl-cfg-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12)}
+.cmpl-cfg-body{width:100%;min-height:86px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.9);border-radius:9px;
+  padding:7px 9px;font-family:ui-monospace,"Cascadia Mono",Consolas,Menlo,"Microsoft YaHei",monospace;font-size:12.5px;
+  line-height:1.6;color:var(--text);outline:none;resize:vertical}
+.cmpl-cfg-body:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12)}
+.cmpl-cfg-ops{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.cmpl-cfg-ops .btn{min-height:30px;padding:0 12px;font-size:12.5px;border-radius:11px}
+.tpl-foot.cmpl-cfg-foot{justify-content:space-between}
 /* ================== v7 动效（2026-09-11：灵动精致风 · P0 九项） ==================
    铁律：只动 transform+opacity（GPU 合成零重排）；进入=decelerate、离开=accelerate、叙事=premium ease-out；
    反馈≤200ms、叙事≤350ms；拖拽/平移/缩放跟手保持 0 延迟（不挂 transition）；数据模型零改动 */
@@ -350,6 +377,8 @@ body.space-pan .canvas.panning,body.space-pan .canvas.panning .block,body.space-
 <div class="topbar">
   <button class="btn primary" id="btnArrange" title="一键整理：所有块自上而下左对齐">整</button>
   <button class="btn" id="btnMenu" title="导入 / 导出">导</button>
+  <!-- v7.8：补全配置入口（片段库：浏览 / 修改 / 新增） -->
+  <button class="btn" id="btnCmpl" title="补全配置：浏览 / 修改 / 新增候选片段（编辑器里输入 # 触发）">补</button>
   <button class="btn" id="btnZoom" title="画布缩放：Ctrl+滚轮缩放 ｜ 点击恢复 100%">100%</button>
   <input type="file" id="fileInput" accept=".json,application/json" hidden>
 </div>
@@ -442,6 +471,23 @@ body.space-pan .canvas.panning,body.space-pan .canvas.panning .block,body.space-
   </div>
 </div>
 
+<!-- v7.8：补全配置窗口（片段库：浏览 / 修改 / 新增；数据随 导出 JSON 一起走） -->
+<div class="modal-mask hide" id="cmplCfgMask">
+  <div class="tpl-win" tabindex="-1">
+    <div class="tpl-head">
+      <span class="tpl-title">补全配置</span>
+      <input class="cmpl-cfg-search" id="cmplCfgSearch" placeholder="搜索片段…" spellcheck="false">
+      <button class="btn primary tpl-new" id="cmplCfgNew">＋ 新增片段</button>
+    </div>
+    <div class="tpl-body" id="cmplCfgBody"></div>
+    <datalist id="cmplCfgGroupList"></datalist>
+    <div class="tpl-foot cmpl-cfg-foot">
+      <button class="btn" id="cmplCfgReset" title="丢弃你的改动与新增，回到内置片段库">恢复内置默认</button>
+      <button class="btn primary" id="cmplCfgDone">完成</button>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
 /* ============ 拼好镜 · 单文件版 · v5.4 ============
@@ -480,7 +526,7 @@ body.space-pan .canvas.panning,body.space-pan .canvas.panning .block,body.space-
    v7.6：独立编辑窗口改造为 coding 编辑器（2026-09-13 拍板三轮）——① 叠层高亮：彩色层 <pre> 托底 + textarea 文字透明（caret/::selection 可见），零依赖自研通用符号 tokenizer，引擎零领域语义（不为符号预设"代表什么内容"）；② 行号栏（绝对定位、不占文本流、软换行续行不编号）；③ 状态栏（行·列·字符·错误符号数）；④ 光标处括号配对高亮；⑤ 等宽字体；⑥「错误符号表」（，,）红色 + 波浪下划线 + 行号标红，优先级高于符号族且不参与配对；七族低饱和配色（对比度 ≥4.76:1）；⑦ 画布块拖手列新增「⤢ 放大」按钮（单块语义、写回不 trim、同步拼接栏与光线）；数据模型零改动（version 12 保持）
    v7.6.1：修复「打开独立编辑器默认全选文本」——`openBlockEditor()` 里的 `ta.select()`（v6.12 起行为）会把整段提示词选中，一打字即被整段替换；改为 `focusCaretEnd(ta)`（光标落文末、无选区，与画布内联编辑一致）+ 开窗后 `hlSyncBox()` 同步彩色层滚动
    v7.7：文本编辑器「台词区」豁免（2026-09-13 拍板 5 问）——被**一行内成对的中文双引号“ ”包住**的错误符号（，/,）一律无视：随所在层级族色正常显示、不计入状态栏错误数、不使行号标红；边界**仅中文双引号**（半角 " 不算）、**未闭合不算台词区**（照旧标红）、引号内再嵌成对符号（{}/() 等）**里层同样豁免**；错误计数改为与着色**同源**（复用分类结果，不再用正则单独数逗号）；数据模型零改动（version 12 保持）
-   v7.8：编辑器「结构层 + 结构感知补全 + 复制全文」（2026-09-13，分支 feat/editor-blocks）——① **结构层**（51-struct.js）：按**符号**把文本切成「节」（起手式/画面开始/叙事正文/分镜/风格包·属性/硬性要求），领域语义只活在 STRUCT_MARKS 标记表里，**着色引擎的零领域语义口径不动**；状态栏新增「节」显示当前所在结构；② **候选气泡**（52-complete.js）：输入 `#` 触发（语料 0 次出现；初版 `\` 在中文输入法下会出顿号，已按 Holly 反馈换 `#`），键鼠双模（↑↓ / **Enter·Tab 一键补全** / **数字 1..9 直取该条** / 鼠标点选，mousedown+preventDefault 保焦点）、**按当前节置顶**、中文输入法组合态门控、Tab 不逃逸焦点；候选内容来自**规律而非照搬**——镜头句 = 141 句的语法槽位，词表 = 实际用词 + **标注未用过的**（推拉移跟环绕升降甩/远大全景/主观视角），唯一逐字引用的是「风格包」5 段+硬性要求（项目级定型件，44/53 条共用、占这类 prompt 63%）；③ **槽位** `${n}`：上屏后 Tab 逐位跳（轮盘的前置）；④ **复制全文**按钮 + Ctrl+Shift+C（取 textarea.value，不走渲染层）；数据模型零改动（version 12 保持） */
+   v7.8：编辑器「结构层 + 结构感知补全 + 复制全文」（2026-09-13，分支 feat/editor-blocks）——① **结构层**（51-struct.js）：按**符号**把文本切成「节」（起手式/画面开始/叙事正文/分镜/风格包·属性/硬性要求），领域语义只活在 STRUCT_MARKS 标记表里，**着色引擎的零领域语义口径不动**；状态栏新增「节」显示当前所在结构；② **候选气泡**（52-complete.js）：输入 `#` 触发（语料 0 次出现；初版 `\` 在中文输入法下会出顿号，已按 Holly 反馈换 `#`），键鼠双模（↑↓ / **Enter·Tab 一键补全** / **数字 1..9 直取该条** / 鼠标点选，mousedown+preventDefault 保焦点）、**按当前节置顶**、中文输入法组合态门控、Tab 不逃逸焦点；候选内容来自**规律而非照搬**——镜头句 = 141 句的语法槽位，词表 = 实际用词 + **标注未用过的**（推拉移跟环绕升降甩/远大全景/主观视角），唯一逐字引用的是「风格包」5 段+硬性要求（项目级定型件，44/53 条共用、占这类 prompt 63%）；③ **槽位** `${n}`：上屏后 Tab 逐位跳（轮盘的前置）；④ **复制全文**按钮 + Ctrl+Shift+C（取 textarea.value，不走渲染层）；⑤ **补全配置窗口**（顶栏「补」）：浏览/修改/新增片段，首次打开把内置表物化成用户表，数据落 `state.cmpl` 随导出 JSON 走；数据模型 version 12 → **13**（新字段 `cmpl`，缺失即回落内置表） */
 
 var LS_KEY = 'storyboard-prompt-panel:v1';
 var BACKUP_KEY = LS_KEY + ':backup';
@@ -500,13 +546,14 @@ function uid(){ return 'b_' + Date.now().toString(36) + Math.random().toString(3
 function defaultState(){
   return {
     app: 'storyboard-prompt-panel',
-    version: 12,
+    version: 13,
     zoom: 1,
     title: '未命名分镜',
     pan: { x: 0, y: 0 },
     splice: { items: [], activeUnitId: null },
     collapsed: false,
     templates: [],
+    cmpl: { v: 1, items: null },   /* v7.8：补全片段库（null = 用内置表；数组 = 用户表） */
     blocks: [{
       id: uid(),
       text: '示例块：这是一段提示词——雨夜小巷，霓虹倒映在水洼里，镜头缓慢推近，侦探撑伞走来。\n\n第二段：角色停步回望，眼神警惕，雨水沿帽沿滑落。\n\n左键拖把手=移动位置；右键菜单或点「拼」可加入右侧拼接栏，按顺序拼成整条 prompt。',
@@ -573,7 +620,31 @@ function migrate(d){
     }
     return { id: t.id || uid(), units: units };
   }) : [];
-  return { app: 'storyboard-prompt-panel', version: 12, title: d.title || '未命名分镜', pan: pan, zoom: (typeof d.zoom === 'number' && d.zoom > 0 && d.zoom <= 4) ? d.zoom : 1, splice: { items: spliceItems, activeUnitId: activeUnitId }, collapsed: !!d.collapsed, templates: templates, blocks: blocks };
+  /* v7.8（version 13）：补全片段库 —— cmpl.items 缺省为 null（＝用内置表）；已物化的用户表逐条校验；
+     内置表版本升级（CMPL_SEED_V 变大）时把用户表里没有的新内置条目并进去（用户改过的不动） */
+  var cmplIn = (d.cmpl && typeof d.cmpl === 'object') ? d.cmpl : null;
+  var cmpl = { v: (cmplIn && typeof cmplIn.v === 'number') ? cmplIn.v : CMPL_SEED_V, items: null };
+  if(cmplIn && Array.isArray(cmplIn.items)){
+    cmpl.items = cmplIn.items.filter(function(x){
+      return x && typeof x.body === 'string';
+    }).map(function(x){
+      return {
+        key: (typeof x.key === 'string' && x.key) ? x.key : ('u_' + Math.random().toString(36).slice(2, 9)),
+        group: typeof x.group === 'string' ? x.group : '',
+        label: typeof x.label === 'string' ? x.label : '',
+        note: typeof x.note === 'string' ? x.note : '',
+        body: x.body,
+        block: !!x.block
+      };
+    });
+    if(cmpl.v < CMPL_SEED_V){
+      var have = {};
+      cmpl.items.forEach(function(x){ have[x.key] = 1; });
+      cmplSeedItems().forEach(function(x){ if(!have[x.key]) cmpl.items.push(x); });
+      cmpl.v = CMPL_SEED_V;
+    }
+  }
+  return { app: 'storyboard-prompt-panel', version: 13, title: d.title || '未命名分镜', pan: pan, zoom: (typeof d.zoom === 'number' && d.zoom > 0 && d.zoom <= 4) ? d.zoom : 1, splice: { items: spliceItems, activeUnitId: activeUnitId }, collapsed: !!d.collapsed, templates: templates, cmpl: cmpl, blocks: blocks };
 }
 
 function load(){
@@ -586,7 +657,7 @@ function load(){
         document.title = '拼好镜';
         render();
         renderTplList();
-        if(d.version < 11) saveNow();
+        if(d.version < 13) saveNow();   /* v7.8：升到 13（补全片段库）时把新结构落盘 */
         return;
       }
     }
@@ -1806,6 +1877,7 @@ var CMPL_TRIGGER = '#';            /* 触发符：语料 53 条中 0 次出现�
 var CMPL_MAX_QUERY = 14;           /* 触发符后最多跟多少字符算查询 */
 var CMPL_PER_GROUP = 4;            /* 无查询时每组先露几条 */
 var CMPL_DIGIT_JUMP = 9;           /* 候选前 N 条可用数字键 1..N 直接上屏（输入法式） */
+var CMPL_SEED_V = 1;               /* 内置表版本：日后往内置表加条目时 +1，迁移会把新条目并入用户表 */
 var CMPL_GROUP_HINT = { 风格包: 'style', 硬性要求: 'tail', 起手式: 'anchor', 结构件: 'mark', 镜头句: 'body', 景别: 'body', 运镜: 'body', 台词: 'body' };
 
 var CMPL_STYLE = [
@@ -1911,32 +1983,66 @@ function cmplQueryAt(ta){
   }
   return null;
 }
-/* 候选池：按查询过滤 + 命中质量（名称 > 正文）+ 按当前节置顶；无查询时每组先露 CMPL_PER_GROUP 条 */
-function cmplBuild(query, region){
-  var q = String(query || '').toLowerCase(), pool = [], gi, ii, g, it;
+/* ---- 生效表（v7.8：内置表 / 用户表；配置界面见 53-library.js）----
+   数据：state.cmpl = { v: 内置表版本, items: null | [{key, group, label, note, body, block}] }
+        items === null → 用内置表；一旦在配置界面里动过，就物化成用户表（可为空数组 = 用户清空） */
+function cmplSeedItems(){
+  var out = [], gi, ii, g, it;
   for(gi = 0; gi < CMPL_GROUPS.length; gi++){
     g = CMPL_GROUPS[gi];
     for(ii = 0; ii < g.items.length; ii++){
       it = g.items[ii];
-      if(!q && ii >= CMPL_PER_GROUP) continue;
-      var score = cmplScore(g.label, it, q, region);
-      if(score < 0) continue;
-      pool.push({ group: g.label, note: it.note, label: it.label, body: it.body, block: it.block, score: score, ord: pool.length });
+      out.push({ key: 'b:' + gi + ':' + ii, group: g.label, label: it.label, note: it.note || '', body: it.body, block: !!it.block });
     }
+  }
+  return out;
+}
+var _cmplCache = null, _cmplCacheSrc = null;
+function cmplActive(){
+  var c = (typeof state !== 'undefined' && state) ? state.cmpl : null;
+  var src = (c && Array.isArray(c.items)) ? c.items : null;
+  if(_cmplCache && _cmplCacheSrc === src) return _cmplCache;
+  _cmplCacheSrc = src;
+  _cmplCache = src ? src.slice() : cmplSeedItems();
+  return _cmplCache;
+}
+function cmplInvalidate(){ _cmplCache = null; _cmplCacheSrc = null; }
+function cmplNewKey(){ return 'u_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+/* 写回用户表（整表替换 → 缓存必然失效；调用方负责 saveNow） */
+function cmplSetItems(arr){
+  if(!state.cmpl || typeof state.cmpl !== 'object') state.cmpl = { v: CMPL_SEED_V, items: null };
+  state.cmpl.items = arr || null;
+  state.cmpl.v = CMPL_SEED_V;
+  cmplInvalidate();
+}
+
+/* 候选池：按查询过滤 + 命中质量（名称 > 正文）+ 按当前节置顶；无查询时每组先露 CMPL_PER_GROUP 条 */
+function cmplBuild(query, region){
+  var all = cmplActive(), q = String(query || '').toLowerCase(), pool = [], perGroup = {}, i, it, g;
+  for(i = 0; i < all.length; i++){
+    it = all[i];
+    if(!q){
+      g = it.group || '未分组';
+      perGroup[g] = (perGroup[g] || 0) + 1;
+      if(perGroup[g] > CMPL_PER_GROUP) continue;
+    }
+    var score = cmplScore(it, q, region);
+    if(score < 0) continue;
+    pool.push({ group: it.group || '未分组', note: it.note, label: it.label, body: it.body, block: it.block, score: score, ord: pool.length });
   }
   /* 稳定排序：命中质量 → 本节相关（score 里已含 -0.5）→ 原顺序 */
   pool.sort(function(a, b){ return (a.score - b.score) || (a.ord - b.ord); });
   return pool.slice(0, 24);
 }
 /* 命中评分：0 = 名称前缀命中 / 1 = 名称命中 / 2 = 正文命中（弱）；-1 = 不命中；本节相关组再 -0.5 提前 */
-function cmplScore(groupLabel, it, q, region){
-  var s;
+function cmplScore(it, q, region){
+  var groupLabel = it.group || '未分组', s;
   if(!q) s = 0;
   else{
-    var gl = groupLabel.toLowerCase(), lb = it.label.toLowerCase();
+    var gl = groupLabel.toLowerCase(), lb = String(it.label || '').toLowerCase();
     if(gl.indexOf(q) === 0 || lb.indexOf(q) === 0) s = 0;
     else if(gl.indexOf(q) >= 0 || lb.indexOf(q) >= 0) s = 1;
-    else if(it.body.toLowerCase().indexOf(q) >= 0) s = 2;
+    else if(String(it.body || '').toLowerCase().indexOf(q) >= 0) s = 2;
     else return -1;
   }
   if(CMPL_GROUP_HINT[groupLabel] === region) s -= 0.5;
@@ -2126,6 +2232,187 @@ function cmplBind(){
   document.getElementById('blkCopy').addEventListener('click', blkCopyAll);
 }
 document.addEventListener('DOMContentLoaded', cmplBind);
+
+/* ==================== v7.8 补全配置界面（片段库：浏览 / 修改 / 新增） ====================
+   入口：顶栏「补」。窗口形态沿用模板定制窗口（.tpl-win 体系）。
+   数据：生效表见 52-complete.js（state.cmpl）。首次打开即把内置表**物化**成用户表——之后一切改动都在用户表上，
+        内置表只在「恢复内置默认」时回来。改完写 localStorage（随「导出 JSON」一起走）。
+   片段内容可用：`${1}` `${2}` 槽位（上屏后 Tab 逐位跳）；素材绑定位照 Holly 的习惯手写 `@`。
+   ================================================================= */
+var cmplCfgQ = '', cmplCfgEditing = null, cmplCfgAdding = false;
+
+function cmplCfgMaterialize(){
+  if(!state.cmpl || !Array.isArray(state.cmpl.items)){
+    cmplSetItems(cmplSeedItems());
+    saveNow();
+  }
+}
+function openCmplCfg(){
+  cmplCfgMaterialize();
+  cmplCfgQ = ''; cmplCfgEditing = null; cmplCfgAdding = false;
+  var s = document.getElementById('cmplCfgSearch');
+  if(s) s.value = '';
+  renderCmplCfg();
+  document.getElementById('cmplCfgMask').classList.remove('hide');
+  var se = document.getElementById('cmplCfgSearch');
+  if(se) se.focus();
+}
+function closeCmplCfg(){
+  cmplCfgEditing = null; cmplCfgAdding = false;
+  document.getElementById('cmplCfgMask').classList.add('hide');
+}
+/* 分组顺序 = 生效表里首次出现的顺序（用户新组自动排到末尾） */
+function cmplCfgGroups(){
+  var items = cmplActive(), seen = {}, out = [], i, g;
+  for(i = 0; i < items.length; i++){
+    g = items[i].group || '未分组';
+    if(!seen[g]){ seen[g] = 1; out.push(g); }
+  }
+  return out;
+}
+function renderCmplCfg(){
+  var body = document.getElementById('cmplCfgBody');
+  if(!body) return;
+  body.innerHTML = '';
+  var items = cmplActive(), q = cmplCfgQ.toLowerCase(), i, it, hit, lastG = null, shown = 0;
+  /* 分组候选（编辑表单的 datalist） */
+  var dl = document.getElementById('cmplCfgGroupList');
+  if(dl){
+    dl.innerHTML = '';
+    cmplCfgGroups().forEach(function(g2){
+      var o = document.createElement('option'); o.value = g2; dl.appendChild(o);
+    });
+  }
+  var hint = document.createElement('div');
+  hint.className = 'cmpl-cfg-hint';
+  hint.innerHTML = '片段里可用 <b>${1} ${2}</b> 做槽位（上屏后 Tab 逐位跳）；素材绑定位照你的习惯手写 <b>@</b>。分组名相同的自动归到一组。';
+  body.appendChild(hint);
+  if(cmplCfgAdding) body.appendChild(cmplCfgForm(null));
+  for(i = 0; i < items.length; i++){
+    it = items[i];
+    if(cmplCfgEditing === it.key){ body.appendChild(cmplCfgForm(it)); shown++; lastG = null; continue; }
+    if(q){
+      hit = ((it.label || '') + ' ' + (it.body || '') + ' ' + (it.group || '')).toLowerCase().indexOf(q) >= 0;
+      if(!hit) continue;
+    }
+    var g = it.group || '未分组';
+    if(g !== lastG){
+      lastG = g;
+      var gh = document.createElement('div');
+      gh.className = 'cmpl-cfg-group';
+      gh.textContent = g + '  ·  ' + cmplActive().filter(function(x){ return (x.group || '未分组') === g; }).length + ' 条';
+      body.appendChild(gh);
+    }
+    body.appendChild(cmplCfgRow(it, i));
+    shown++;
+  }
+  if(!shown){
+    var em = document.createElement('div');
+    em.className = 'tpl-empty';
+    em.textContent = q ? '没有匹配的片段' : '片段库是空的（可「＋ 新增片段」或「恢复内置默认」）';
+    body.appendChild(em);
+  }
+}
+/* 只读行 */
+function cmplCfgRow(it, idx){
+  var row = document.createElement('div');
+  row.className = 'cmpl-cfg-card';
+  row.dataset.idx = idx;
+  var head = document.createElement('div');
+  head.className = 'cmpl-cfg-row';
+  var lb = document.createElement('span');
+  lb.className = 'cmpl-cfg-label';
+  lb.textContent = it.label || '(未命名)';
+  head.appendChild(lb);
+  if(it.note){
+    var nt = document.createElement('span');
+    nt.className = 'cmpl-note';
+    nt.textContent = it.note;
+    head.appendChild(nt);
+  }
+  var pv = document.createElement('span');
+  pv.className = 'cmpl-cfg-preview';
+  pv.textContent = String(it.body || '').replace(/\s+/g, ' ').slice(0, 60);
+  head.appendChild(pv);
+  var ed = document.createElement('button');
+  ed.className = 'tpl-block-op'; ed.textContent = '编辑'; ed.dataset.act = 'edit'; ed.dataset.key = it.key;
+  var dl = document.createElement('button');
+  dl.className = 'tpl-block-op danger'; dl.textContent = '删除'; dl.dataset.act = 'del'; dl.dataset.key = it.key;
+  head.appendChild(ed); head.appendChild(dl);
+  row.appendChild(head);
+  return row;
+}
+/* 编辑/新增表单（it = null 表示新增） */
+function cmplCfgForm(it){
+  var isNew = !it;
+  var src = it || { key: '', group: (cmplCfgGroups()[0] || '镜头句'), label: '', note: '', body: '', block: false };
+  var card = document.createElement('div');
+  card.className = 'cmpl-cfg-card editing';
+  if(isNew) card.classList.add('adding');
+
+  var r1 = document.createElement('div'); r1.className = 'cmpl-cfg-field';
+  var gl = document.createElement('span'); gl.className = 'cmpl-cfg-fl'; gl.textContent = '分组';
+  var gi = document.createElement('input'); gi.className = 'cmpl-cfg-input'; gi.id = 'cmplCfgGroupIn'; gi.value = src.group || '';
+  gi.setAttribute('list', 'cmplCfgGroupList'); gi.placeholder = '如：镜头句 / 我的常用';
+  r1.appendChild(gl); r1.appendChild(gi);
+
+  var r2 = document.createElement('div'); r2.className = 'cmpl-cfg-field';
+  var ll = document.createElement('span'); ll.className = 'cmpl-cfg-fl'; ll.textContent = '标签';
+  var li = document.createElement('input'); li.className = 'cmpl-cfg-input'; li.id = 'cmplCfgLabelIn'; li.value = src.label || '';
+  li.placeholder = '候选里显示的名字（也是搜索命中项）';
+  var nl = document.createElement('span'); nl.className = 'cmpl-cfg-fl'; nl.textContent = '备注';
+  var ni = document.createElement('input'); ni.className = 'cmpl-cfg-input'; ni.id = 'cmplCfgNoteIn'; ni.value = src.note || '';
+  ni.placeholder = '可选，如「未用过」';
+  r2.appendChild(ll); r2.appendChild(li); r2.appendChild(nl); r2.appendChild(ni);
+
+  var bl = document.createElement('div'); bl.className = 'cmpl-cfg-fl'; bl.textContent = '内容';
+  var bi = document.createElement('textarea'); bi.className = 'cmpl-cfg-body'; bi.id = 'cmplCfgBodyIn'; bi.spellcheck = false; bi.value = src.body || '';
+  bi.placeholder = '上屏的原文；槽位写 ${1} ${2}';
+
+  var op = document.createElement('div'); op.className = 'cmpl-cfg-ops';
+  var ok = document.createElement('button'); ok.className = 'btn primary'; ok.id = 'cmplCfgSave'; ok.textContent = '保存';
+  var cc = document.createElement('button'); cc.className = 'btn'; cc.id = 'cmplCfgCancel'; cc.textContent = '取消';
+  op.appendChild(ok); op.appendChild(cc);
+
+  card.appendChild(r1); card.appendChild(r2); card.appendChild(bl); card.appendChild(bi); card.appendChild(op);
+  return card;
+}
+/* 读表单 → 写回用户表 */
+function cmplCfgSave(){
+  var gi = document.getElementById('cmplCfgGroupIn'), li = document.getElementById('cmplCfgLabelIn'),
+      ni = document.getElementById('cmplCfgNoteIn'), bi = document.getElementById('cmplCfgBodyIn');
+  if(!gi || !bi) return;
+  var body = bi.value;
+  if(!body.trim()){ toast('内容不能为空'); return; }
+  var label = li.value.trim() || body.replace(/\s+/g, ' ').slice(0, 12);
+  var arr = cmplActive().slice();
+  if(cmplCfgAdding){
+    arr.push({ key: cmplNewKey(), group: gi.value.trim() || '未分组', label: label, note: ni.value.trim(), body: body, block: false });
+    cmplCfgAdding = false;
+  }else{
+    for(var i = 0; i < arr.length; i++){
+      if(arr[i].key === cmplCfgEditing){
+        arr[i] = { key: arr[i].key, group: gi.value.trim() || '未分组', label: label, note: ni.value.trim(), body: body, block: !!arr[i].block };
+        break;
+      }
+    }
+    cmplCfgEditing = null;
+  }
+  cmplSetItems(arr);
+  saveNow();
+  renderCmplCfg();
+  toast('已保存片段：' + label);
+}
+function cmplCfgDel(key){
+  var before = cmplActive().slice(), gone = null;
+  var arr = before.filter(function(x){ if(x.key === key){ gone = x; return false; } return true; });
+  cmplSetItems(arr); saveNow(); renderCmplCfg();
+  toast('已删除片段' + (gone ? '：' + (gone.label || '') : ''), { label: '撤销', fn: function(){ cmplSetItems(before); saveNow(); renderCmplCfg(); toast('已恢复片段'); } });
+}
+function cmplCfgReset(){
+  cmplSetItems(null); saveNow(); renderCmplCfg();
+  toast('已恢复内置片段库（共 ' + cmplSeedItems().length + ' 条）');
+}
 /* ---- 命名模态框（v6：替代原生 prompt，headless/嵌入环境不可靠；v6.4 多字段通用版） ---- */
 var modalCb = null;
 function openModal(title, fields, cb){
@@ -3009,6 +3296,38 @@ document.addEventListener('DOMContentLoaded', function(){
     else{ toast('没有空行可移除'); }
   });
   document.getElementById('blkCancel').addEventListener('click', closeBlockEditor);
+  /* v7.8：补全配置窗口（片段库：浏览 / 修改 / 新增） */
+  document.getElementById('btnCmpl').addEventListener('click', openCmplCfg);
+  document.getElementById('cmplCfgSearch').addEventListener('input', function(){ cmplCfgQ = this.value.trim(); renderCmplCfg(); });
+  document.getElementById('cmplCfgNew').addEventListener('click', function(){
+    cmplCfgEditing = null; cmplCfgAdding = true; renderCmplCfg();
+    var b = document.getElementById('cmplCfgBody'); if(b) b.scrollTop = 0;
+    var i = document.getElementById('cmplCfgLabelIn'); if(i) i.focus();
+  });
+  document.getElementById('cmplCfgDone').addEventListener('click', closeCmplCfg);
+  document.getElementById('cmplCfgReset').addEventListener('click', cmplCfgReset);
+  document.getElementById('cmplCfgMask').addEventListener('click', function(e){ if(e.target.id === 'cmplCfgMask') closeCmplCfg(); });
+  document.getElementById('cmplCfgBody').addEventListener('click', function(e){
+    var t = e.target;
+    if(t.id === 'cmplCfgSave'){ cmplCfgSave(); return; }
+    if(t.id === 'cmplCfgCancel'){ cmplCfgEditing = null; cmplCfgAdding = false; renderCmplCfg(); return; }
+    var btn = t.closest ? t.closest('button[data-act]') : null;
+    if(!btn) return;
+    if(btn.dataset.act === 'edit'){
+      cmplCfgAdding = false; cmplCfgEditing = btn.dataset.key; renderCmplCfg();
+      var g = document.getElementById('cmplCfgGroupIn'); if(g){ g.focus(); g.select(); }
+    }else if(btn.dataset.act === 'del'){
+      cmplCfgDel(btn.dataset.key);
+    }
+  });
+  /* 配置窗口内：Esc 退回列表（不关窗）；Ctrl/⌘+Enter 保存 */
+  document.getElementById('cmplCfgBody').addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){ e.stopPropagation(); cmplCfgEditing = null; cmplCfgAdding = false; renderCmplCfg(); return; }
+    if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); cmplCfgSave(); }
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !document.getElementById('cmplCfgMask').classList.contains('hide')) closeCmplCfg();
+  });
   document.getElementById('blkMask').addEventListener('click', function(e){ if(e.target.id === 'blkMask') closeBlockEditor(); });
   document.addEventListener('keydown', function(e){
     if(e.key === 'Escape' && !document.getElementById('blkMask').classList.contains('hide')) closeBlockEditor();

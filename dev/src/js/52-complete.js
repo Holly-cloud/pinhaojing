@@ -14,6 +14,7 @@ var CMPL_TRIGGER = '#';            /* 触发符：语料 53 条中 0 次出现�
 var CMPL_MAX_QUERY = 14;           /* 触发符后最多跟多少字符算查询 */
 var CMPL_PER_GROUP = 4;            /* 无查询时每组先露几条 */
 var CMPL_DIGIT_JUMP = 9;           /* 候选前 N 条可用数字键 1..N 直接上屏（输入法式） */
+var CMPL_SEED_V = 1;               /* 内置表版本：日后往内置表加条目时 +1，迁移会把新条目并入用户表 */
 var CMPL_GROUP_HINT = { 风格包: 'style', 硬性要求: 'tail', 起手式: 'anchor', 结构件: 'mark', 镜头句: 'body', 景别: 'body', 运镜: 'body', 台词: 'body' };
 
 var CMPL_STYLE = [
@@ -119,32 +120,66 @@ function cmplQueryAt(ta){
   }
   return null;
 }
-/* 候选池：按查询过滤 + 命中质量（名称 > 正文）+ 按当前节置顶；无查询时每组先露 CMPL_PER_GROUP 条 */
-function cmplBuild(query, region){
-  var q = String(query || '').toLowerCase(), pool = [], gi, ii, g, it;
+/* ---- 生效表（v7.8：内置表 / 用户表；配置界面见 53-library.js）----
+   数据：state.cmpl = { v: 内置表版本, items: null | [{key, group, label, note, body, block}] }
+        items === null → 用内置表；一旦在配置界面里动过，就物化成用户表（可为空数组 = 用户清空） */
+function cmplSeedItems(){
+  var out = [], gi, ii, g, it;
   for(gi = 0; gi < CMPL_GROUPS.length; gi++){
     g = CMPL_GROUPS[gi];
     for(ii = 0; ii < g.items.length; ii++){
       it = g.items[ii];
-      if(!q && ii >= CMPL_PER_GROUP) continue;
-      var score = cmplScore(g.label, it, q, region);
-      if(score < 0) continue;
-      pool.push({ group: g.label, note: it.note, label: it.label, body: it.body, block: it.block, score: score, ord: pool.length });
+      out.push({ key: 'b:' + gi + ':' + ii, group: g.label, label: it.label, note: it.note || '', body: it.body, block: !!it.block });
     }
+  }
+  return out;
+}
+var _cmplCache = null, _cmplCacheSrc = null;
+function cmplActive(){
+  var c = (typeof state !== 'undefined' && state) ? state.cmpl : null;
+  var src = (c && Array.isArray(c.items)) ? c.items : null;
+  if(_cmplCache && _cmplCacheSrc === src) return _cmplCache;
+  _cmplCacheSrc = src;
+  _cmplCache = src ? src.slice() : cmplSeedItems();
+  return _cmplCache;
+}
+function cmplInvalidate(){ _cmplCache = null; _cmplCacheSrc = null; }
+function cmplNewKey(){ return 'u_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+/* 写回用户表（整表替换 → 缓存必然失效；调用方负责 saveNow） */
+function cmplSetItems(arr){
+  if(!state.cmpl || typeof state.cmpl !== 'object') state.cmpl = { v: CMPL_SEED_V, items: null };
+  state.cmpl.items = arr || null;
+  state.cmpl.v = CMPL_SEED_V;
+  cmplInvalidate();
+}
+
+/* 候选池：按查询过滤 + 命中质量（名称 > 正文）+ 按当前节置顶；无查询时每组先露 CMPL_PER_GROUP 条 */
+function cmplBuild(query, region){
+  var all = cmplActive(), q = String(query || '').toLowerCase(), pool = [], perGroup = {}, i, it, g;
+  for(i = 0; i < all.length; i++){
+    it = all[i];
+    if(!q){
+      g = it.group || '未分组';
+      perGroup[g] = (perGroup[g] || 0) + 1;
+      if(perGroup[g] > CMPL_PER_GROUP) continue;
+    }
+    var score = cmplScore(it, q, region);
+    if(score < 0) continue;
+    pool.push({ group: it.group || '未分组', note: it.note, label: it.label, body: it.body, block: it.block, score: score, ord: pool.length });
   }
   /* 稳定排序：命中质量 → 本节相关（score 里已含 -0.5）→ 原顺序 */
   pool.sort(function(a, b){ return (a.score - b.score) || (a.ord - b.ord); });
   return pool.slice(0, 24);
 }
 /* 命中评分：0 = 名称前缀命中 / 1 = 名称命中 / 2 = 正文命中（弱）；-1 = 不命中；本节相关组再 -0.5 提前 */
-function cmplScore(groupLabel, it, q, region){
-  var s;
+function cmplScore(it, q, region){
+  var groupLabel = it.group || '未分组', s;
   if(!q) s = 0;
   else{
-    var gl = groupLabel.toLowerCase(), lb = it.label.toLowerCase();
+    var gl = groupLabel.toLowerCase(), lb = String(it.label || '').toLowerCase();
     if(gl.indexOf(q) === 0 || lb.indexOf(q) === 0) s = 0;
     else if(gl.indexOf(q) >= 0 || lb.indexOf(q) >= 0) s = 1;
-    else if(it.body.toLowerCase().indexOf(q) >= 0) s = 2;
+    else if(String(it.body || '').toLowerCase().indexOf(q) >= 0) s = 2;
     else return -1;
   }
   if(CMPL_GROUP_HINT[groupLabel] === region) s -= 0.5;
