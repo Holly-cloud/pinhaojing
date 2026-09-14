@@ -1,6 +1,8 @@
 /* 拼好镜 v7.7 · 独立编辑器「左右空白」实测（只读探针）
    用法：先起 headless Edge --remote-headless --remote-debugging-port=9222，再 node recon_editor_space.mjs
    ※ 调试端口：优先读 PHJ_BROWSER_PORT，缺省 9222（与 run-gate / verify_* 同款口径）。
+   ⚠️ 一次性探针（留档）：本脚本是 2026-09-13 采集当时的**一次性只读探针**，其 TMP / PRODUCT 依赖当时的暂存目录
+     （D:/Hermes_Store/_小汐临时/ 与当时产物路径），**迁移后不可直接复跑**；如需复用请自行改这两个常量（本目录不做相对化）。
    目的：量出 .blk-win 在 1920x1080 下的真实几何 + 左右可布置面积 + 出截图 */
 import path from 'node:path';
 import { readFileSync, writeFileSync } from 'node:fs';

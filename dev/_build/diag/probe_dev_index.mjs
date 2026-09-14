@@ -4,16 +4,23 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 /* 开发态检查（指导书第 10 节 P3）：src/index.html 直接双击（file://）能否正常跑
    用法：headless Edge --remote-debugging-port=9222 起好后： node _build/diag/probe_dev_index.mjs
-   断言：① 无 Console/页面报错；② 全部 <script src> 与样式外链加载（条数由 dev/src/ 目录实况推导，
-         不再写死片数——v7.8 起为 19 片 JS / 9 片 CSS，写死会在加片后假红）；
+   断言：① 无 Console/页面报错；② 切片完好性（两步，取代旧的写死条数）——
+         ②a 片数下限：实际加载的 JS/CSS 片数 ≥ 基线（抓「文件与标签一起删」的一致删除）；
+         ②b 目录↔页面一致：src/ 目录计数 == 页面 <script src>/<link> 条数（抓「加了片但忘接线」）；
         ③ 骨架渲染出块、拼接栏与顶栏在位、样式真生效；④ 跨片全局函数可用（证明加载顺序正确）；
         ⑤ 编辑器能开（真实鼠标点「⤢ 放大」）、带入块文本、能打字、着色层与状态栏随之更新；
         ⑥ localStorage 正常写入。
    已知差异（指导书第 7 节）：只有第 1 片带 'use strict'，开发态第 2 片起跑在非严格模式 —— 属预期。
 */
 const SRC_DIR = path.resolve(HERE, '../../src');
+/* 目录实况（供「目录↔页面一致」断言） */
 const EXPECT_JS  = readdirSync(path.join(SRC_DIR, 'js')).filter(f => f.endsWith('.js')).length;
 const EXPECT_CSS = readdirSync(path.join(SRC_DIR, 'styles')).filter(f => f.endsWith('.css')).length;
+/* 片数「下限」基线（golden 下限，抓一致删除）——沿革：v7.7 = 16/7 → v7.8 = 19/9。
+   只作下限：以后加片无需改这里（加片不会触发下限）；减片（哪怕文件与 <script> 标签一起删）会红。
+   之所以同时保留「下限」与「目录↔页面一致」两步，是为了既不假红（加片）、又不丢保护（减片）：
+   仅用目录实况做等值断言会产生自指——删一片则期望值同降、断言反而通过（QA 反例 A）。 */
+const BASE_JS_MIN = 19, BASE_CSS_MIN = 9;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const PORT = process.env.PHJ_BROWSER_PORT || '9222';   /* 调试端口：run-gate.mjs 经此环境变量传入，缺省 9222 */
 const list = await (await fetch('http://127.0.0.1:' + PORT + '/json/list')).json();
@@ -64,8 +71,12 @@ const R = []; const t = (name, cond, info) => { R.push([name, !!cond]); console.
 console.log('=== 开发态检查：' + HERE_URL + ' ===');
 t('页面标题正常', (await evalJS('document.title')) === '拼好镜', 'title=' + await evalJS('document.title'));
 t('URL 确为 src/index.html', (await evalJS('location.pathname')).endsWith('/src/index.html'));
-t(EXPECT_JS + ' 条 <script src> 全部外链', (await evalJS('document.querySelectorAll("script[src]").length')) === EXPECT_JS, 'n=' + await evalJS('document.querySelectorAll("script[src]").length'));
-t('样式为 ' + EXPECT_CSS + ' 条外链', (await evalJS('document.querySelectorAll("link[rel=stylesheet]").length')) === EXPECT_CSS, 'n=' + await evalJS('document.querySelectorAll("link[rel=stylesheet]").length'));
+const domJsNow  = await evalJS('document.querySelectorAll("script[src]").length');
+const domCssNow = await evalJS('document.querySelectorAll("link[rel=stylesheet]").length');
+t('切片数下限：实际加载 JS ≥ ' + BASE_JS_MIN + ' / CSS ≥ ' + BASE_CSS_MIN + '（v7.8 基线，抓一致删除）',
+  domJsNow >= BASE_JS_MIN && domCssNow >= BASE_CSS_MIN, 'dom=' + domJsNow + '/' + domCssNow);
+t('切片目录↔页面一致：readdir 计数 == 外链条数（抓加片漏接线）',
+  domJsNow === EXPECT_JS && domCssNow === EXPECT_CSS, 'dir=' + EXPECT_JS + '/' + EXPECT_CSS + ' dom=' + domJsNow + '/' + domCssNow);
 t('骨架渲染出块', (await evalJS('document.querySelectorAll(".block").length')) > 0, 'blocks=' + await evalJS('document.querySelectorAll(".block").length'));
 t('拼接栏在位', await evalJS('!!document.getElementById("spSplice") || !!document.querySelector(".splice-panel")'));
 t('样式真生效（.block 有背景色）', (await evalJS('getComputedStyle(document.querySelector(".block")).backgroundColor')) !== 'rgba(0, 0, 0, 0)', await evalJS('getComputedStyle(document.querySelector(".block")).backgroundColor'));

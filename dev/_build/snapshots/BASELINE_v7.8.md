@@ -28,10 +28,10 @@ v7.8 起 `verify_build_equivalence.mjs` 的默认语义 = **构建可复现**：
 | 比对基准 | `dev/_build/snapshots/PHJ_v7.8_20260913.html`（逐字节相同） |
 | 切片 | CSS **9 片 / 384 行**；JS **19 片 / 3235 行**（`wc -l` 口径；构建逐片打印的行数含每片末尾换行，合计 393 / 3254） |
 
-切片清单（构建输出，2026-09-14 实测）：
+切片清单（`wc -l` 口径，2026-09-14 实测）：
 
-- CSS（9）：`00-base.css` 20 ｜ `10-canvas.css` 43 ｜ `20-menu.css` 9 ｜ `30-splice.css` 61 ｜ `40-window.css` 51 ｜ `50-editor.css` 27 ｜ `51-complete.css` 22 ｜ `52-library.css` 46 ｜ `90-effects.css` 105
-- JS（19）：`00-header.js` 38 ｜ `10-state.js` 156 ｜ `15-clipboard.js` 45 ｜ `20-render.js` 30 ｜ `25-overlay.js` 164 ｜ `30-selection.js` 107 ｜ `35-splice.js` 237 ｜ `40-template.js` 322 ｜ `50-editor.js` 191 ｜ `51-struct.js` 83 ｜ `52-complete.js` 436 ｜ `53-library.js` 364 ｜ `55-menu.js` 142 ｜ `60-keyboard.js` 46 ｜ `62-block-size.js` 145 ｜ `64-zoom.js` 63 ｜ `66-pan.js` 56 ｜ `68-drag.js` 297 ｜ `90-boot.js` 315
+- CSS（9）：`00-base.css` 20 ｜ `10-canvas.css` 43 ｜ `20-menu.css` 9 ｜ `30-splice.css` 61 ｜ `40-window.css` 51 ｜ `50-editor.css` 27 ｜ `51-complete.css` 22 ｜ `52-library.css` 46 ｜ `90-effects.css` 105（逐片之和 = 384）
+- JS（19）：`00-header.js` 38 ｜ `10-state.js` 156 ｜ `15-clipboard.js` 45 ｜ `20-render.js` 30 ｜ `25-overlay.js` 164 ｜ `30-selection.js` 107 ｜ `35-splice.js` 237 ｜ `40-template.js` 322 ｜ `50-editor.js` 191 ｜ `51-struct.js` 83 ｜ `52-complete.js` 436 ｜ `53-library.js` 364 ｜ `55-menu.js` 142 ｜ `60-keyboard.js` 46 ｜ `62-block-size.js` 144 ｜ `64-zoom.js` 63 ｜ `66-pan.js` 55 ｜ `68-drag.js` 297 ｜ `90-boot.js` 315（逐片之和 = 3235）
 
 ## 回归闸门（并入 master 后实测）
 
