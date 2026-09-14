@@ -1,0 +1,46 @@
+/* v7.8：补全配置窗口（片段库）——沿用 .tpl-win 体系，只补本窗口特有的行/表单样式 */
+.cmpl-cfg-search{width:190px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.85);border-radius:9px;padding:5px 9px;
+  font-size:13px;color:var(--text);outline:none;letter-spacing:-.1px}
+.cmpl-cfg-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12)}
+.cmpl-cfg-hint{margin:0 0 2px;padding:8px 10px;border-radius:10px;background:rgba(0,113,227,.06);border:1px solid rgba(0,113,227,.14);
+  color:var(--muted);font-size:12px;line-height:1.6;letter-spacing:-.1px}
+.cmpl-cfg-hint b{color:var(--accent);font-weight:600}
+.cmpl-cfg-group{font-size:11.5px;color:var(--muted);letter-spacing:.02em;padding:6px 2px 0;margin-top:2px;
+  display:flex;align-items:center;gap:5px;border-radius:6px;cursor:grab}
+.cmpl-cfg-group .cmpl-cfg-grip{font-size:12px;opacity:.55;letter-spacing:-.1px}
+.cmpl-cfg-group.dragging{opacity:.45}
+.cmpl-cfg-group.drag-over{outline:1px dashed var(--accent);outline-offset:1px;color:var(--accent)}
+.cmpl-cfg-card.dragging{opacity:.45}
+.cmpl-cfg-card.drag-over{border-color:var(--accent);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 0 0 2px rgba(0,113,227,.28)}
+/* v7.8：拖动分组时左侧的顺序小窗 */
+.cmpl-order-pop{position:fixed;z-index:12050;min-width:156px;max-width:260px;padding:6px;
+  background:rgba(252,252,254,.94);-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);
+  border:1px solid rgba(255,255,255,.75);border-radius:12px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 14px 36px rgba(0,0,0,.2)}
+.cmpl-order-pop.hide{display:none}
+.cmpl-order-cap{font-size:10.5px;color:var(--muted);padding:2px 6px 6px;letter-spacing:-.1px}
+.cmpl-order-row{display:flex;align-items:baseline;gap:6px;padding:5px 7px;border-radius:8px;font-size:12.5px;color:var(--text)}
+.cmpl-order-row .cmpl-order-no{flex:0 0 auto;min-width:14px;height:14px;border-radius:4px;background:rgba(0,0,0,.06);
+  color:var(--muted);font-size:10px;line-height:14px;text-align:center;font-variant-numeric:tabular-nums}
+.cmpl-order-row.active{opacity:.45}
+.cmpl-order-row.active::after{content:'← 拖动中';font-size:10px;color:var(--muted);margin-left:auto}
+.cmpl-order-row.over{background:rgba(0,113,227,.14);box-shadow:inset 0 0 0 1px rgba(0,113,227,.4)}
+.cmpl-cfg-card{background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.75);border-radius:12px;padding:8px 10px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 2px 8px rgba(0,0,0,.04)}
+.cmpl-cfg-card.editing{border-color:rgba(0,113,227,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 3px rgba(0,113,227,.10)}
+.cmpl-cfg-card.adding{border-color:rgba(0,113,227,.5);border-style:dashed}
+.cmpl-cfg-row{display:flex;align-items:baseline;gap:8px}
+.cmpl-cfg-label{font-size:13px;color:var(--text);white-space:nowrap;letter-spacing:-.1px}
+.cmpl-cfg-preview{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:11.5px}
+.cmpl-cfg-field{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.cmpl-cfg-fl{font-size:11.5px;color:var(--muted);flex:0 0 auto;letter-spacing:-.1px}
+.cmpl-cfg-input{flex:1 1 auto;min-width:0;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.9);border-radius:8px;
+  padding:5px 8px;font-size:12.5px;color:var(--text);outline:none;letter-spacing:-.1px}
+.cmpl-cfg-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12)}
+.cmpl-cfg-body{width:100%;min-height:86px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.9);border-radius:9px;
+  padding:7px 9px;font-family:ui-monospace,"Cascadia Mono",Consolas,Menlo,"Microsoft YaHei",monospace;font-size:12.5px;
+  line-height:1.6;color:var(--text);outline:none;resize:vertical}
+.cmpl-cfg-body:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12)}
+.cmpl-cfg-ops{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.cmpl-cfg-ops .btn{min-height:30px;padding:0 12px;font-size:12.5px;border-radius:11px}
+.tpl-foot.cmpl-cfg-foot{justify-content:space-between}

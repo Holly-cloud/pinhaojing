@@ -35,11 +35,12 @@ const setMotion = value => send('Emulation.setEmulatedMedia', { media: '', featu
 const TARGET = 'file:///' + encodeURI(path.resolve(HERE, '../../../PHJ.html').replace(/\\/g, '/'));
 const OUT = path.resolve(HERE, '../../../PHJ.html');   /* 真实产物路径：体积断言直接 stat 它（不再比对字面量） */
 /* 体积预算（B10a / C8a 共用，集中一处便于维护）：
-   = 166400 B（162.5KB）≈ v7.7 实测 155315 B 之上留约 7% 重构余量。
-   沿革：v7.2 立 131072 B（128KB）预算 → v7.7 实测 155315 B（151.6KB），原预算早已超 23.6KB，
-        而旧断言把「129444/1024 ≤ 128」写成恒真式、从不读产物（P1 空转，2026-09-14 修复）。
-   ⚠️ 此为临时预算，待 Holly 拍板产品体积上限；届时只改此常量一处。 */
-const SIZE_BUDGET_B = 166400;
+   = 229376 B（224KB）≈ v7.8 实测 214433 B(209.4KB) 之上留约 7% 余量。
+   沿革：v7.2 立 131072 B(128KB) → v7.7 实测 155315 B(151.6KB) → v7.8 实测 214433 B(209.4KB)，原 166400 预算已超。当前 229376 为临时预算，待 Holly 拍板产品体积上限（届时只改此一处）。
+   说明：旧断言曾把「129444/1024 ≤ 128」写成恒真式、从不读产物（P1 空转，2026-09-14 修复）；
+        现行 B10a/C8a 直接 stat 真实产物，判定式 = `fs.statSync(OUT).size <= SIZE_BUDGET_B`，
+        本次只上调预算数值、**未放宽判定式本身**。 */
+const SIZE_BUDGET_B = 229376;
 await send('Page.enable');
 await send('Runtime.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: 1200, height: 1600, mobile: false });

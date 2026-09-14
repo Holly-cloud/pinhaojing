@@ -10,12 +10,16 @@
 <link rel="stylesheet" href="./styles/30-splice.css">
 <link rel="stylesheet" href="./styles/40-window.css">
 <link rel="stylesheet" href="./styles/50-editor.css">
+<link rel="stylesheet" href="./styles/51-complete.css">
+<link rel="stylesheet" href="./styles/52-library.css">
 <link rel="stylesheet" href="./styles/90-effects.css">
 </head>
 <body>
 <div class="topbar">
   <button class="btn primary" id="btnArrange" title="一键整理：所有块自上而下左对齐">整</button>
   <button class="btn" id="btnMenu" title="导入 / 导出">导</button>
+  <!-- v7.8：补全配置入口（片段库：浏览 / 修改 / 新增） -->
+  <button class="btn" id="btnCmpl" title="补全配置：浏览 / 修改 / 新增候选片段（编辑器里输入 # 触发）">补</button>
   <button class="btn" id="btnZoom" title="画布缩放：Ctrl+滚轮缩放 ｜ 点击恢复 100%">100%</button>
   <input type="file" id="fileInput" accept=".json,application/json" hidden>
 </div>
@@ -87,7 +91,10 @@
     <div class="blk-edit">
       <pre class="blk-hl" aria-hidden="true"><code id="blkHl"></code></pre>
       <textarea class="blk-input" id="blkInput" spellcheck="false" placeholder="输入提示词内容"></textarea>
+      <!-- v7.8：候选气泡（结构感知补全；`#` 触发） -->
+      <div class="cmpl-pop hide" id="cmplPop"></div>
       <div class="blk-status">
+        <span class="grp struct" title="当前所在结构（由符号判定）">节 <b id="stStruct">—</b></span>
         <span class="grp">行 <b id="stLine">1</b>，列 <b id="stCol">1</b></span>
         <span class="grp">字符 <b id="stLen">0</b></span>
         <span class="grp err"><b id="stErr">0</b> 处错误符号</span>
@@ -97,11 +104,31 @@
     </div>
     <div class="modal-actions">
       <button class="btn" id="blkStrip" title="删除所有空行（每行文字紧挨）">移除空行</button>
+      <button class="btn" id="blkCopy" title="把编辑器里的整段文本复制到剪贴板（Ctrl+Shift+C）">⧉ 复制全文</button>
       <div style="flex:1"></div>
       <button class="btn" id="blkCancel">取消</button>
       <button class="btn primary" id="blkOk">确定</button>
     </div>
   </div>
+</div>
+
+<!-- v7.8：补全配置窗口（片段库：浏览 / 修改 / 新增；数据随 导出 JSON 一起走） -->
+<div class="modal-mask hide" id="cmplCfgMask">
+  <div class="tpl-win" tabindex="-1">
+    <div class="tpl-head">
+      <span class="tpl-title">补全配置</span>
+      <input class="cmpl-cfg-search" id="cmplCfgSearch" placeholder="搜索片段…" spellcheck="false">
+      <button class="btn primary tpl-new" id="cmplCfgNew">＋ 新增片段</button>
+    </div>
+    <div class="tpl-body" id="cmplCfgBody"></div>
+    <datalist id="cmplCfgGroupList"></datalist>
+    <div class="tpl-foot cmpl-cfg-foot">
+      <button class="btn" id="cmplCfgReset" title="丢弃你的改动与新增，回到内置片段库">恢复内置默认</button>
+      <button class="btn primary" id="cmplCfgDone">完成</button>
+    </div>
+  </div>
+  <!-- v7.8：拖动分组时，窗口左侧浮现的顺序小窗（拖到对应行即就位；放 mask 层避免窗口动画的 transform 影响 fixed 定位） -->
+  <div class="cmpl-order-pop hide" id="cmplOrderPop"></div>
 </div>
 
 <script src="./js/00-header.js"></script>
@@ -113,6 +140,9 @@
 <script src="./js/35-splice.js"></script>
 <script src="./js/40-template.js"></script>
 <script src="./js/50-editor.js"></script>
+<script src="./js/51-struct.js"></script>
+<script src="./js/52-complete.js"></script>
+<script src="./js/53-library.js"></script>
 <script src="./js/55-menu.js"></script>
 <script src="./js/60-keyboard.js"></script>
 <script src="./js/62-block-size.js"></script>

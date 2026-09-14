@@ -1,14 +1,19 @@
 import path from 'node:path';
+import { readdirSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 /* 开发态检查（指导书第 10 节 P3）：src/index.html 直接双击（file://）能否正常跑
    用法：headless Edge --remote-debugging-port=9222 起好后： node _build/diag/probe_dev_index.mjs
-   断言：① 无 Console/页面报错；② 16 条 <script src> 全部加载、样式 7 条外链；
+   断言：① 无 Console/页面报错；② 全部 <script src> 与样式外链加载（条数由 dev/src/ 目录实况推导，
+         不再写死片数——v7.8 起为 19 片 JS / 9 片 CSS，写死会在加片后假红）；
         ③ 骨架渲染出块、拼接栏与顶栏在位、样式真生效；④ 跨片全局函数可用（证明加载顺序正确）；
         ⑤ 编辑器能开（真实鼠标点「⤢ 放大」）、带入块文本、能打字、着色层与状态栏随之更新；
         ⑥ localStorage 正常写入。
-   已知差异（指导书第 7 节）：只有第 1 片带 'use strict'，开发态 2~16 片跑在非严格模式 —— 属预期。
+   已知差异（指导书第 7 节）：只有第 1 片带 'use strict'，开发态第 2 片起跑在非严格模式 —— 属预期。
 */
+const SRC_DIR = path.resolve(HERE, '../../src');
+const EXPECT_JS  = readdirSync(path.join(SRC_DIR, 'js')).filter(f => f.endsWith('.js')).length;
+const EXPECT_CSS = readdirSync(path.join(SRC_DIR, 'styles')).filter(f => f.endsWith('.css')).length;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const PORT = process.env.PHJ_BROWSER_PORT || '9222';   /* 调试端口：run-gate.mjs 经此环境变量传入，缺省 9222 */
 const list = await (await fetch('http://127.0.0.1:' + PORT + '/json/list')).json();
@@ -59,8 +64,8 @@ const R = []; const t = (name, cond, info) => { R.push([name, !!cond]); console.
 console.log('=== 开发态检查：' + HERE_URL + ' ===');
 t('页面标题正常', (await evalJS('document.title')) === '拼好镜', 'title=' + await evalJS('document.title'));
 t('URL 确为 src/index.html', (await evalJS('location.pathname')).endsWith('/src/index.html'));
-t('16 条 <script src> 全部外链', (await evalJS('document.querySelectorAll("script[src]").length')) === 16, 'n=' + await evalJS('document.querySelectorAll("script[src]").length'));
-t('样式为 7 条外链', (await evalJS('document.querySelectorAll("link[rel=stylesheet]").length')) === 7);
+t(EXPECT_JS + ' 条 <script src> 全部外链', (await evalJS('document.querySelectorAll("script[src]").length')) === EXPECT_JS, 'n=' + await evalJS('document.querySelectorAll("script[src]").length'));
+t('样式为 ' + EXPECT_CSS + ' 条外链', (await evalJS('document.querySelectorAll("link[rel=stylesheet]").length')) === EXPECT_CSS, 'n=' + await evalJS('document.querySelectorAll("link[rel=stylesheet]").length'));
 t('骨架渲染出块', (await evalJS('document.querySelectorAll(".block").length')) > 0, 'blocks=' + await evalJS('document.querySelectorAll(".block").length'));
 t('拼接栏在位', await evalJS('!!document.getElementById("spSplice") || !!document.querySelector(".splice-panel")'));
 t('样式真生效（.block 有背景色）', (await evalJS('getComputedStyle(document.querySelector(".block")).backgroundColor')) !== 'rgba(0, 0, 0, 0)', await evalJS('getComputedStyle(document.querySelector(".block")).backgroundColor'));

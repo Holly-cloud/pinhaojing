@@ -6,12 +6,13 @@
           → 无论成败回收浏览器与临时 profile → 汇总各闸门通过数 → 语义化退出码。
 
    闸门顺序（与 README「改完必过的闸门」一致）：
-     [1] 构建           dev/build.mjs                       期望 155315 B
-     [2] 等价性校验     verify/verify_build_equivalence.mjs 期望 PASS（严格）
+     [1] 构建           dev/build.mjs                       期望 214433 B
+     [2] 等价性校验     verify/verify_build_equivalence.mjs 期望 PASS（构建可复现：含 banner 逐字节一致）
      [3] 回归 verify_v7 verify/verify_v7.mjs                期望 85/85
      [4] F 组 verify_v76 verify/verify_v76.mjs              期望 18/18
      [5] G 组 verify_v77 verify/verify_v77.mjs              期望 16/16
-     [6] 开发态         diag/probe_dev_index.mjs             期望 18/18
+     [6] v7.8 verify_v78 verify/verify_v78.mjs              期望 H+I 35/35
+     [7] 开发态         diag/probe_dev_index.mjs             期望 18/18
 
    环境变量：
      PHJ_BROWSER      浏览器 exe 绝对路径（**硬覆盖**：设置后即以其为准；不可用则报错退出 10，绝不静默回落到自动探测）
@@ -20,7 +21,8 @@
    退出码（语义化）：
      0  = 全绿
      1  = 构建失败         2 = 等价性失败      3 = verify_v7 失败
-     4  = verify_v76 失败  5 = verify_v77 失败 6 = probe_dev_index 失败
+     4  = verify_v76 失败  5 = verify_v77 失败 6 = verify_v78 失败
+     7  = probe_dev_index 失败
      10 = 未找到浏览器     11 = 未找到空闲端口 12 = CDP 就绪超时
 
    为什么本 runner 必须自己「起浏览器 → 跑断言 → 杀进程」：
@@ -47,6 +49,7 @@ const SCRIPTS = {
   v7:     path.join(HERE, 'verify', 'verify_v7.mjs'),
   v76:    path.join(HERE, 'verify', 'verify_v76.mjs'),
   v77:    path.join(HERE, 'verify', 'verify_v77.mjs'),
+  v78:    path.join(HERE, 'verify', 'verify_v78.mjs'),
   devidx: path.join(HERE, 'diag', 'probe_dev_index.mjs'),
 };
 
@@ -56,7 +59,8 @@ const GATE_META = {
   v7:     { no: 3, label: '回归 verify_v7',         code: 3 },
   v76:    { no: 4, label: 'F 组 verify_v76',        code: 4 },
   v77:    { no: 5, label: 'G 组 verify_v77',        code: 5 },
-  devidx: { no: 6, label: '开发态 probe_dev_index', code: 6 },
+  v78:    { no: 6, label: 'v7.8 verify_v78',        code: 6 },
+  devidx: { no: 7, label: '开发态 probe_dev_index', code: 7 },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -216,7 +220,7 @@ async function main() {
     console.log('▶ CDP 就绪：' + (ver['Browser'] || 'headless') + '\n');
 
     /* ---- [1] 构建 ---- */
-    console.log('\n━━━ [1/6] 构建：dev/build.mjs ━━━');
+    console.log('\n━━━ [1/7] 构建：dev/build.mjs ━━━');
     {
       const r = runNode(SCRIPTS.build, port); emit(r);
       let size = null;
@@ -227,17 +231,17 @@ async function main() {
     }
 
     /* ---- [2] 等价性 ---- */
-    console.log('\n━━━ [2/6] 等价性：verify_build_equivalence.mjs ━━━');
+    console.log('\n━━━ [2/7] 等价性：verify_build_equivalence.mjs ━━━');
     {
       const r = runNode(SCRIPTS.equiv, port); emit(r);
-      const detail = r.status === 0 ? 'PASS（严格）' : r.status === 2 ? '仅格式差异（非严格）' : 'FAIL';
+      const detail = r.status === 0 ? 'PASS（构建可复现）' : r.status === 2 ? '历史语义/仅格式差异（非严格）' : 'FAIL';
       const ok = r.status === 0;
       results.push({ key: 'equiv', ok, detail });
       if (!ok) { exitCode = 2; return exitCode; }
     }
 
     /* ---- [3] verify_v7 ---- */
-    console.log('\n━━━ [3/6] 回归：verify_v7.mjs ━━━');
+    console.log('\n━━━ [3/7] 回归：verify_v7.mjs ━━━');
     {
       const r = runNode(SCRIPTS.v7, port); emit(r);
       const n = num(r.stdout, /结果：(\d+)\s*通过\s*\/\s*(\d+)\s*失败/);
@@ -247,7 +251,7 @@ async function main() {
     }
 
     /* ---- [4] verify_v76 ---- */
-    console.log('\n━━━ [4/6] F 组：verify_v76.mjs ━━━');
+    console.log('\n━━━ [4/7] F 组：verify_v76.mjs ━━━');
     {
       const r = runNode(SCRIPTS.v76, port); emit(r);
       const n = num(r.stdout, /F 组合计\s*(\d+)\/(\d+)/);
@@ -257,7 +261,7 @@ async function main() {
     }
 
     /* ---- [5] verify_v77 ---- */
-    console.log('\n━━━ [5/6] G 组：verify_v77.mjs ━━━');
+    console.log('\n━━━ [5/7] G 组：verify_v77.mjs ━━━');
     {
       const r = runNode(SCRIPTS.v77, port); emit(r);
       const n = num(r.stdout, /G 组合计\s*(\d+)\/(\d+)/);
@@ -266,14 +270,24 @@ async function main() {
       if (!ok) { exitCode = 5; return exitCode; }
     }
 
-    /* ---- [6] probe_dev_index ---- */
-    console.log('\n━━━ [6/6] 开发态：probe_dev_index.mjs ━━━');
+    /* ---- [6] verify_v78 ---- */
+    console.log('\n━━━ [6/7] v7.8：verify_v78.mjs ━━━');
+    {
+      const r = runNode(SCRIPTS.v78, port); emit(r);
+      const n = num(r.stdout, /H\+I 组合计\s*(\d+)\/(\d+)/);
+      const ok = r.status === 0;
+      results.push({ key: 'v78', ok, detail: n ? 'H+I ' + n[0] + '/' + n[1] : '未取到汇总（exit ' + r.status + '）' });
+      if (!ok) { exitCode = 6; return exitCode; }
+    }
+
+    /* ---- [7] probe_dev_index ---- */
+    console.log('\n━━━ [7/7] 开发态：probe_dev_index.mjs ━━━');
     {
       const r = runNode(SCRIPTS.devidx, port); emit(r);
       const n = num(r.stdout, /开发态合计\s*(\d+)\/(\d+)/);
       const ok = r.status === 0;
       results.push({ key: 'devidx', ok, detail: n ? n[0] + '/' + n[1] : '未取到汇总（exit ' + r.status + '）' });
-      if (!ok) { exitCode = 6; return exitCode; }
+      if (!ok) { exitCode = 7; return exitCode; }
     }
 
     exitCode = 0;
@@ -297,7 +311,7 @@ const padW = (s, n) => s + ' '.repeat(Math.max(0, n - dispWidth(s)));
 function renderSummary(results, exitCode, elapsedMs) {
   const by = new Map(results.map((r) => [r.key, r]));
   console.log('\n╔════════════════════ 闸门汇总 ════════════════════╗');
-  for (const key of ['build', 'equiv', 'v7', 'v76', 'v77', 'devidx']) {
+  for (const key of ['build', 'equiv', 'v7', 'v76', 'v77', 'v78', 'devidx']) {
     const meta = GATE_META[key];
     const r = by.get(key);
     const mark = r && r.ok ? '✅' : (r ? '❌' : '⏭️');
@@ -308,7 +322,7 @@ function renderSummary(results, exitCode, elapsedMs) {
   const passed = results.filter((r) => r.ok).length;
   console.log('╚══════════════════════════════════════════════════╝');
   if (exitCode === 0) {
-    console.log('  结果：6/6 全绿 ✅   （耗时 ' + (elapsedMs / 1000).toFixed(1) + 's）');
+    console.log('  结果：7/7 全绿 ✅   （耗时 ' + (elapsedMs / 1000).toFixed(1) + 's）');
   } else {
     const failed = GATE_META[results.find((r) => !r.ok)?.key];
     console.log('  结果：' + passed + '/' + ran + ' 通过 ❌ —— ' +

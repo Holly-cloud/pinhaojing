@@ -134,6 +134,38 @@ document.addEventListener('DOMContentLoaded', function(){
     else{ toast('没有空行可移除'); }
   });
   document.getElementById('blkCancel').addEventListener('click', closeBlockEditor);
+  /* v7.8：补全配置窗口（片段库：浏览 / 修改 / 新增） */
+  document.getElementById('btnCmpl').addEventListener('click', openCmplCfg);
+  document.getElementById('cmplCfgSearch').addEventListener('input', function(){ cmplCfgQ = this.value.trim(); renderCmplCfg(); });
+  document.getElementById('cmplCfgNew').addEventListener('click', function(){
+    cmplCfgEditing = null; cmplCfgAdding = true; renderCmplCfg();
+    var b = document.getElementById('cmplCfgBody'); if(b) b.scrollTop = 0;
+    var i = document.getElementById('cmplCfgLabelIn'); if(i) i.focus();
+  });
+  document.getElementById('cmplCfgDone').addEventListener('click', closeCmplCfg);
+  document.getElementById('cmplCfgReset').addEventListener('click', cmplCfgReset);
+  document.getElementById('cmplCfgMask').addEventListener('click', function(e){ if(e.target.id === 'cmplCfgMask') closeCmplCfg(); });
+  document.getElementById('cmplCfgBody').addEventListener('click', function(e){
+    var t = e.target;
+    if(t.id === 'cmplCfgSave'){ cmplCfgSave(); return; }
+    if(t.id === 'cmplCfgCancel'){ cmplCfgEditing = null; cmplCfgAdding = false; renderCmplCfg(); return; }
+    var btn = t.closest ? t.closest('button[data-act]') : null;
+    if(!btn) return;
+    if(btn.dataset.act === 'edit'){
+      cmplCfgAdding = false; cmplCfgEditing = btn.dataset.key; renderCmplCfg();
+      var g = document.getElementById('cmplCfgGroupIn'); if(g){ g.focus(); g.select(); }
+    }else if(btn.dataset.act === 'del'){
+      cmplCfgDel(btn.dataset.key);
+    }
+  });
+  /* 配置窗口内：Esc 退回列表（不关窗）；Ctrl/⌘+Enter 保存 */
+  document.getElementById('cmplCfgBody').addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){ e.stopPropagation(); cmplCfgEditing = null; cmplCfgAdding = false; renderCmplCfg(); return; }
+    if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); cmplCfgSave(); }
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !document.getElementById('cmplCfgMask').classList.contains('hide')) closeCmplCfg();
+  });
   document.getElementById('blkMask').addEventListener('click', function(e){ if(e.target.id === 'blkMask') closeBlockEditor(); });
   document.addEventListener('keydown', function(e){
     if(e.key === 'Escape' && !document.getElementById('blkMask').classList.contains('hide')) closeBlockEditor();
