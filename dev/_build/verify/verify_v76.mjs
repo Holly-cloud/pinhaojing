@@ -6,7 +6,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
    真机口径：全部走真实 DOM 事件与真实鼠标点击（Input.dispatchMouseEvent），不做内部函数直调取巧。 */
 import fs from 'node:fs';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const list = await (await fetch('http://127.0.0.1:9222/json/list')).json();
+const PORT = process.env.PHJ_BROWSER_PORT || '9222';   /* 调试端口：run-gate.mjs 经此环境变量传入，缺省 9222 */
+const list = await (await fetch('http://127.0.0.1:' + PORT + '/json/list')).json();
 const page = list.find(t => t.type === 'page' && !t.url.startsWith('edge://') && !t.url.startsWith('chrome-extension://'));
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = () => rej(new Error('ws error')); });

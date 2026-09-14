@@ -7,7 +7,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
    拍板口径（2026-09-13，5 问）：边界＝仅中文双引号“ ”｜未闭合不算台词区｜完全无视（族色+不计状态栏+行号不标红）｜嵌套里层也豁免 */
 import fs from 'node:fs';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const list = await (await fetch('http://127.0.0.1:9222/json/list')).json();
+const PORT = process.env.PHJ_BROWSER_PORT || '9222';   /* 调试端口：run-gate.mjs 经此环境变量传入，缺省 9222 */
+const list = await (await fetch('http://127.0.0.1:' + PORT + '/json/list')).json();
 const page = list.find(t => t.type === 'page' && !t.url.startsWith('edge://') && !t.url.startsWith('chrome-extension://'));
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = () => rej(new Error('ws error')); });

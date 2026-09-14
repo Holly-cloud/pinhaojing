@@ -1,7 +1,7 @@
 # 拼好镜 · README（交接入口）
 
 > 状态：**v7.7 已交付 + 架构重构已并入 master（2026-09-13）**
-> 位置：**`D:\Hermes_Store\AA-Dev\拼好镜\`**（2026-09-13 由 `D:\Hermes_Store\拼好镜\` 整体迁入，见文末「目录位置沿革」）
+> 位置：**本仓库根目录**（即本 README 所在目录，内含交付物 `PHJ.html` 与开发目录 `dev/`；2026-09-13 曾整体迁入 `AA-Dev` 命名空间，历史盘符路径仅作沿革记录、见文末「目录位置沿革」，**不作为当前位置依据**）
 > 交付物 = 根目录 `PHJ.html`（双击即用）；开发用品全在 `dev/`（源码 `dev/src/`，改完跑 `node dev/build.mjs`，命令与闸门见下文「重构后怎么用」）
 
 ## 交接摘要
@@ -85,12 +85,14 @@
 | 日常改功能 | 改 `dev/src/`（`styles/` 7 片 / `js/` 16 片）→ `node dev/build.mjs` → 双击 `PHJ.html` |
 | 开发态直接看效果（**不用构建**） | 双击 `dev/src/index.html`（传统 `<script src>` + 外链 CSS，`file://` 实测可用；差异见下） |
 | 出交付版 | `node dev/build.mjs` → 产物 `PHJ.html` **155315 B**（基线 155224 + banner 91） |
-| **改完必过的闸门** | `node dev/build.mjs && node dev/_build/verify/verify_build_equivalence.mjs && node dev/_build/verify/verify_v7.mjs && node dev/_build/verify/verify_v76.mjs && node dev/_build/verify/verify_v77.mjs` → 期望：**等价性 ✅ PASS（严格）｜ 85/85 ｜ F 18/18 ｜ G 16/16** |
-| 开发态自检 | 起 headless Edge（`--remote-debugging-port=9222`）→ `node dev/_build/diag/probe_dev_index.mjs` → 期望 **18/18** |
+| **改完必过的闸门** | `node dev/_build/run-gate.mjs` → 期望：**等价性 ✅ PASS（严格）｜ 85/85 ｜ F 18/18 ｜ G 16/16 ｜ 开发态 18/18**（一键自包含：自动起/收 headless 浏览器，无需人工干预） |
+| 开发态自检（已含在 run-gate 内；单独跑需某浏览器已监听 `PHJ_BROWSER_PORT`，**非自包含**） | `node dev/_build/diag/probe_dev_index.mjs` → 期望 **18/18**（调试端口经 `PHJ_BROWSER_PORT`，缺省 9222） |
 | 回退 | `git checkout master`（重构前单文件形态）｜彻底回退 `git reset --hard c52a561` |
 | 试用满意后合并 | `git checkout master && git merge refactor/src-tree` |
 
-> 回归脚本（verify_*）需要先起 headless Edge：`"…/msedge.exe" --headless=new --remote-debugging-port=9222 --user-data-dir=<临时目录> about:blank`；跑完杀进程、删临时目录。
+> **一键闸门（推荐）**：`node dev/_build/run-gate.mjs` 一条命令跑完全部步骤——自动定位浏览器（Edge/Chrome；`PHJ_BROWSER` 为**硬覆盖**：设置后即以其为准、不可用则报错退出 10，绝不静默回落）、自动选空闲调试端口（`PHJ_BROWSER_PORT` 指定起始端口，占用自动顺延）、起 headless 浏览器 → 依次执行 构建 / 等价性 / verify_v7 / verify_v76 / verify_v77 / probe_dev_index → **无论成败回收浏览器与临时 profile**。退出码语义化：`0` 全绿，非 `0` 指明失败闸门。**无需人工先起浏览器、也无需手工杀进程。**
+> 异常终止后的清理：若 runner 被强杀（SIGKILL 等）而非正常退出，`finally` 不会执行，可能残留浏览器进程与 `%TEMP%\phj_gate_*` profile 目录。手动清理：`taskkill /F /IM msedge.exe`（或对应浏览器进程名）关闭残留浏览器，再删除 `%TEMP%\phj_gate_*` 目录。
+> 环境钉桩说明（维护要点）：`verify_v7.mjs` 进入 B/C 组断言前，会在 CDP 页目标会话层把 `prefers-reduced-motion` 钉成 `no-preference`（B9/C7 两组测降级时临时钉回 `reduce`、测完恢复）——否则 headless Edge 默认 `reduce` 会命中 `90-effects.css` 的正当无障碍降级，使 11 项动效断言在换机后假红。这是为了让闸门在任意环境可复现，**未放宽任何断言语义**。
 > 开发态已知差异（可接受）：只有第 1 片带 `'use strict'`，故第 2~16 片在开发态按非严格模式执行；**构建产物是单一 `<script>`，严格模式覆盖全量**，与重构前一致。
 > 切分口径与自检：`dev/_build/diag/split_phj_to_src.mjs`（可按第 5/6 节行段从基线快照重新切出 `src/`，逐片断言与基线逐字一致）。
 

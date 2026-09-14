@@ -1,10 +1,23 @@
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 /* 拼好镜 v7.0 headless 验收：
-   功能回归（v6.21 十项全量）+ 动效专项（P0 九项：块创建弹入/删除收拢/一键整理 FLIP/拼入吸入+条目弹入+光线生长/光点淡入/窗口弹开/菜单弹入/toast 滑入滑出/reduce-motion 降级） */
+   功能回归（v6.21 十项全量）+ 动效专项（P0 九项：块创建弹入/删除收拢/一键整理 FLIP/拼入吸入+条目弹入+光线生长/光点淡入/窗口弹开/菜单弹入/toast 滑入滑出/reduce-motion 降级）
+
+   ★ 环境钉桩（勿删，见下）：headless Edge 152 的 prefers-reduced-motion 默认为 reduce，
+     会命中 90-effects.css 里正当的无障碍降级（@media (prefers-reduced-motion:reduce){…animation:none}），
+     使 B/C 组的动效/过渡断言（B5a/B6a/B6b/B6c/B7a/B8a/C1b/C2a/C5a/C6a/C6c 共 11 项）在换机/换浏览器后
+     必现「假红」（实测值 animationName:none / transform:none，并非应用缺陷）。
+     启动参数 --force-prefers-reduced-motion=no-preference 实测无效，必须在 CDP 页目标会话层模拟：
+     进断言前用 Emulation.setEmulatedMedia 把 prefers-reduced-motion 钉成 no-preference；
+     B9/C7 两组本身是「测降级行为」，于组内临时钉回 reduce、测完恢复 no-preference。
+     本模拟是页目标会话级的：与后续断言同处一条 CDP 连接即持续生效，且随连接关闭自动失效。
+     注意：钉桩只用于让闸门在任意环境可复现，绝不放宽任何断言的语义。
+   ※ 调试端口：优先读 PHJ_BROWSER_PORT（run-gate.mjs 传入），缺省 9222。 */
+const PORT = process.env.PHJ_BROWSER_PORT || '9222';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const list = await (await fetch('http://127.0.0.1:9222/json/list')).json();
+const list = await (await fetch('http://127.0.0.1:' + PORT + '/json/list')).json();
 const page = list.find(t => t.type === 'page' && !t.url.startsWith('edge://') && !t.url.startsWith('chrome-extension://'));
 if (!page) throw new Error('no page target');
 const ws = new WebSocket(page.webSocketDebuggerUrl);
@@ -17,14 +30,25 @@ async function evalJS(expr) {
   if (r.exceptionDetails) throw new Error('EVAL ERR: ' + JSON.stringify(r.exceptionDetails).slice(0, 400));
   return r.result && r.result.value;
 }
+/* 钉桩媒体特性（页目标会话级）：value ∈ 'no-preference' | 'reduce' */
+const setMotion = value => send('Emulation.setEmulatedMedia', { media: '', features: [{ name: 'prefers-reduced-motion', value }] });
 const TARGET = 'file:///' + encodeURI(path.resolve(HERE, '../../../PHJ.html').replace(/\\/g, '/'));
+const OUT = path.resolve(HERE, '../../../PHJ.html');   /* 真实产物路径：体积断言直接 stat 它（不再比对字面量） */
+/* 体积预算（B10a / C8a 共用，集中一处便于维护）：
+   = 166400 B（162.5KB）≈ v7.7 实测 155315 B 之上留约 7% 重构余量。
+   沿革：v7.2 立 131072 B（128KB）预算 → v7.7 实测 155315 B（151.6KB），原预算早已超 23.6KB，
+        而旧断言把「129444/1024 ≤ 128」写成恒真式、从不读产物（P1 空转，2026-09-14 修复）。
+   ⚠️ 此为临时预算，待 Holly 拍板产品体积上限；届时只改此常量一处。 */
+const SIZE_BUDGET_B = 166400;
 await send('Page.enable');
 await send('Runtime.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: 1200, height: 1600, mobile: false });
+await setMotion('no-preference');   /* ← 钉桩：进断言前先钉成 no-preference（须在 navigate 前；会话级，持续覆盖后续断言） */
 await send('Page.addScriptToEvaluateOnNewDocument', { source: 'try{ localStorage.clear(); }catch(e){}' });
 await send('Page.navigate', { url: TARGET });
 for (let i = 0; i < 30; i++) { if (await evalJS('document.readyState === "complete"')) break; await sleep(200); }
 await sleep(400);
+console.log('  媒体特性回读: prefers-reduced-motion:reduce = ' + await evalJS("matchMedia('(prefers-reduced-motion: reduce)').matches") + '（期望 false，钉桩已生效）');
 console.log('  视口回读: ' + await evalJS('innerWidth + "x" + innerHeight') + '（deviceMetricsOverride 在 headless 下可能不生效——坐标类断言需按实际视口选点）');
 
 let pass = 0, fail = 0;
@@ -179,15 +203,17 @@ const b8b = await evalJS(`(() => { const t = document.getElementById('toast'); r
 ok('B8b. toast 自动滑出并隐藏', b8b === true);
 
 console.log('── B9. prefers-reduced-motion 降级 ──');
-await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+await setMotion('reduce');   /* 本组测降级：临时钉回 reduce */
 await evalJS(`toast('降级测试');`);
 const b9 = await evalJS(`getComputedStyle(document.getElementById('toast')).animationName`);
 ok('B9a. reduce-motion 下 toast 动画直切（none）', b9 === 'none', b9);
-await send('Emulation.setEmulatedMedia', { features: [] });
+await setMotion('no-preference');   /* 测完恢复钉桩，保证后续 C 组动效断言不被降级规则关掉 */
 
-console.log('── B10. 体积增量预算 ──');
-const sizeKB = 129444 / 1024;
-ok('B10a. 单文件体积 ≤128KB（v7.0~v7.2 累计增量 ≈13KB）', sizeKB <= 128, sizeKB.toFixed(1) + 'KB');
+console.log('── B10. 单文件体积预算 ──');
+/* 读真实产物字节（旧版把 129444/1024 写成恒真式、从不读 PHJ.html → 空转） */
+const b10SizeB = fs.statSync(OUT).size;
+console.log('    体积实测：' + b10SizeB + ' B / 预算 ' + SIZE_BUDGET_B + ' B（' + OUT.replace(/\\/g, '/').replace(/^.*\//, '') + '，真实 stat）');
+ok('B10a. 单文件体积 ≤ 预算（实测产物字节）', b10SizeB <= SIZE_BUDGET_B, '实测 ' + b10SizeB + ' B / 预算 ' + SIZE_BUDGET_B + ' B');
 
 console.log('══════ C. 微交互层（v7.1 · P1 五项 + P2 tick） ══════');
 /* C 组前置：重置到干净布局（3 块互不重叠——避免上层块/peek 光点抢鼠标命中，导致 hover/拖拽作用不到目标块） */
@@ -301,7 +327,7 @@ await sleep(260);
 ok('C6c. 动画结束后 class 自动移除', await evalJS(`!document.getElementById('btnZoom').classList.contains('tick')`));
 
 console.log('── C7. reduced-motion 覆盖新增动效 ──');
-await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+await setMotion('reduce');   /* 本组测降级：临时钉回 reduce */
 const c7 = await evalJS(`(() => {
   const b = document.getElementById('btnZoom'); b.classList.add('tick');
   const an = getComputedStyle(b).animationName; b.classList.remove('tick');
@@ -310,7 +336,7 @@ const c7 = await evalJS(`(() => {
   return an + '|' + an2;
 })()`);
 ok('C7a. reduce-motion 下 tick/呼吸均直切', c7 === 'none|none', c7);
-await send('Emulation.setEmulatedMedia', { features: [] });
+await setMotion('no-preference');   /* 测完恢复钉桩 */
 
 console.log('── C9. 拖拽跟手量化（v7.2 修复核心） ──');
 /* 干净状态：单块 */
@@ -344,7 +370,10 @@ ok('C9b. 跟手：移 150px 后立即读，滞后 ≤5px（修复前实测 115px
 ok('C9c. 松手落位：位置保持 + 过渡已恢复（0.15s）', Math.abs(c9post.left - expectLeft) <= 5 && /0\.15s/.test(c9post.trans) && c9post.tf === '', JSON.stringify(c9post));
 
 console.log('── C8. 体积 ──');
-ok('C8a. 单文件 ≤128KB（v7.2 = 126.4KB）', 129444 / 1024 <= 128, (129444 / 1024).toFixed(1) + 'KB');
+/* 读真实产物字节（旧版把 129444/1024 写成恒真式、从不读 PHJ.html → 空转） */
+const c8SizeB = fs.statSync(OUT).size;
+console.log('    体积实测：' + c8SizeB + ' B / 预算 ' + SIZE_BUDGET_B + ' B（真实 stat）');
+ok('C8a. 单文件体积 ≤ 预算（实测产物字节）', c8SizeB <= SIZE_BUDGET_B, '实测 ' + c8SizeB + ' B / 预算 ' + SIZE_BUDGET_B + ' B');
 
 console.log('══════ D. v7.3 优化（resetZoom 保持位置 + 拼模式虚影） ══════');
 

@@ -10,7 +10,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
    已知差异（指导书第 7 节）：只有第 1 片带 'use strict'，开发态 2~16 片跑在非严格模式 —— 属预期。
 */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const list = await (await fetch('http://127.0.0.1:9222/json/list')).json();
+const PORT = process.env.PHJ_BROWSER_PORT || '9222';   /* 调试端口：run-gate.mjs 经此环境变量传入，缺省 9222 */
+const list = await (await fetch('http://127.0.0.1:' + PORT + '/json/list')).json();
 const page = list.find(t => t.type === 'page' && !t.url.startsWith('edge://') && !t.url.startsWith('chrome-extension://'));
 if (!page) throw new Error('no page target');
 const ws = new WebSocket(page.webSocketDebuggerUrl);
