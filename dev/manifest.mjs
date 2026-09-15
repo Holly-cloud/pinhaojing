@@ -14,12 +14,19 @@
    —— 本清单**只描述源码结构**，不改变交付物形态。
 
    ★ = v7.8 新增片（51-struct/52-complete/53-library）；本稿把它们纳入 P2（Q8）。
-   ⚠️ 2026-09-15 更新：本清单里 52-complete 的「内置中性示例表」描述已被 **v7.8.2 撤销**
-      （Holly 认定风格包即语料的一部分，52-complete 已恢复真实风格包内置）。**历史留档，勿据此施工**；
-      当前现状见 dev/_build/snapshots/BASELINE_v7.8.2.md。
+   ✅ 2026-09-15 更新：本清单描述**已按 v7.8.2 现状校准**——风格包位于**内置**（Q7「资产分离 /
+      降为中性示例」已由 v7.8.2 撤销；Holly 认定风格包即语料的一部分），52-complete 的 resp 已改写
+      为事实陈述。当前现状以 dev/_build/snapshots/BASELINE_v7.8.2.md 为准。
+   ── 变更记录 ──────────────────────────────────────────────────────────────
+   · v0.1-draft-2026-09-15（相对 v0-draft-2026-09-14）：按 v7.8.2 现状校准——
+     (1) 52-complete 的 resp 去「内置中性示例表（无私有资产）」，改为「内置风格包（＝v7.8 原文
+         逐字，5 段 + 硬性要求）+ 生效表回落 + 资产导入/导出」；
+     (2) 原「失效警告 / 勿据此施工」行改为「已同步」说明；
+     (3) PENDING 第 5 条「资产导入/导出放置」由「本轮归入」改为**已交付**事实（P2 是否单立
+         editor/asset 的开放问题保留）。
    ============================================================================ */
 
-export const MANIFEST_VERSION = 'v0-draft-2026-09-14';
+export const MANIFEST_VERSION = 'v0.1-draft-2026-09-15';
 
 /* 分层：core（无 DOM 状态/持久）→ editor（纯引擎 + 窗口）→ view（DOM 生成）
         → interact（输入路由）→ shell（外壳/启动）。箭头 = 允许的依赖方向。 */
@@ -64,7 +71,7 @@ export const MODULES = [
     resp: '★结构层（节解析）：STRUCT_MARKS 单表 + structMap/structAt/structSummary；零 DOM、零私有资产（只认符号 风格：/硬性要求：/【…】）' },
   { id: 'complete', path: 'src/editor/complete.js', from: ['52-complete.js'], layer: 'editor',
     exports: ['PHJ.complete'], deps: ['ns', 'store', 'persist', 'struct'],
-    resp: '★候选引擎：触发/评分/两级气泡/槽位 ${n}；**内置中性示例表**（无私有资产）+ 生效表回落 + 资产导入/导出' },
+    resp: '★候选引擎：触发/评分/两级气泡/槽位 ${n}；**内置风格包**（＝v7.8 原文逐字，5 段 + 硬性要求）+ 生效表回落 + 资产导入/导出' },
   { id: 'library', path: 'src/editor/library.js', from: ['53-library.js'], layer: 'editor',
     exports: ['PHJ.library'], deps: ['ns', 'store', 'complete'],
     resp: '★片段库配置界面（浏览/改/增/删/排序/导入导出/恢复内置默认；改 state.cmpl）' },
@@ -138,7 +145,7 @@ export const PENDING = [
   'core/store 与 core/persist 是否合并（当前分开：迁移/存储契约与状态分离，便于单测）。',
   'interact/pointer 收纳 4 片（selection/zoom/pan/drag）是否过粗——评估后或拆 pointer/gestures。',
   'PHJ.define/require（ns.js）是否值得引入：若只用"定义时注册 + 启动时按 manifest 顺序执行"，可省 ns.js（更少代码）。',
-  'editor/complete 的资产导入/导出放置：本轮归入 complete（就近）；P2 是否单立 editor/asset。',
+  'editor/complete 的资产导入/导出放置：**已在 v7.8.1 交付并保留至今**，落在 complete（就近）；P2 是否单立 editor/asset（开放）。',
   '模块目录命名（core/view/editor/interact）与 src 现有 00/10/… 编号片的过渡映射是否一次到位。',
 ];
 
