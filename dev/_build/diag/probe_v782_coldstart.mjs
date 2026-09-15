@@ -7,6 +7,7 @@
         （7 条：全套 + 5 段 + 硬性要求），且不含任何「示例（请替换）」标记。
      C2 **逐字活断言**：内置 cmplSeedItems() 的「风格包」组 body 与 v7.8 原文（运行时从
         dev/_build/snapshots/PHJ_v7.8_20260913.html 提取的夹具）**逐字相同**（5 段 + 硬性要求）。
+   期望结果：在 v7.8.2 交付产物上 C0/C1/C2 全 PASS（合计 3/3），退出码 0。
    退出码：0 = 全绿；1 = 存在失败（证伪用：故意改字后应退出 1）。 */
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';

@@ -499,7 +499,7 @@ const i6 = await evalJS(`(() => {
   return { seedAllPresent: seedAllPresent, keptLabels: keptLabels, len: act.length, seed: seed.length,
            hasUser: keptLabels.indexOf('环绕半圈句') >= 0, hasEdited: keptLabels.indexOf('风格段（我的改版）') >= 0 };
 })()`);
-t('I6 「恢复内置默认」= **先确认** → 丢弃内置示例并重注新内置表，**保留 asset/user**（不静默删用户资产）',
+t('I6 「恢复内置默认」= **先确认** → 丢弃内置 seed 片段并重注内置片段库，**保留 asset/user**（不静默删用户资产）',
   i6ask.modalOpen && i6.seedAllPresent && i6.hasUser && i6.hasEdited && i6.len === i6.seed + i6.keptLabels.length,
   `先确认=${i6ask.modalOpen}（标题=「${i6ask.title}」）；重注内置全在=${i6.seedAllPresent}；保留 ${i6.keptLabels.length} 条=${JSON.stringify(i6.keptLabels)}；生效 ${i6.len} 条（内置 ${i6.seed}）`);
 
