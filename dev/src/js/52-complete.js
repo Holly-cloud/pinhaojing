@@ -5,8 +5,8 @@
    键鼠双模：↑↓ 切换 / Enter·Tab 一键补全 / 数字 1..9 直取该条（输入法式跳位） / Esc 关闭 / 鼠标点选（mousedown+preventDefault 保住焦点与光标）。
    结构感知：候选按「当前节」（51-struct.js）置顶——写风格包时风格段在前，写叙事时镜头句在前。
    槽位：片段里的 `${n}` 是占位标记（只在常量里存在，上屏时被吃掉）→ 上屏后 Tab 逐位跳。
-   数据来源（不照搬语料，全部来自规律；逐字引用的只有你的「风格包」——那是项目级资产，不是片段）：
-     · 风格包 5 段 + 硬性要求 —— 你的定型件原文（44/53 条共用，占这类 prompt 的 63%）
+   数据来源（不照搬语料，全部来自规律；v7.8.1 起内置表**不含任何真实用户私有写作资产**）：
+     · 风格包 —— 内置只放**中性示例（请替换）**；真实风格包属**你的数据**，经「补」窗口 →「导入写作资产」一次性载入（本机文件、不走网络）
      · 镜头句 —— 141 句镜头句的语法：{连接词}{运镜}{主体}{动作}{台词}
      · 词表 —— 你的实际用词（9 运镜 / 3 连接 / 3 台词动词）+ **标注你从没用过的**（未用过徽章）
    ================================================================= */
@@ -17,30 +17,32 @@ var CMPL_DIGIT_JUMP = 9;           /* 候选前 N 条可用数字键 1..N 直接
 var CMPL_SEED_V = 1;               /* 内置表版本：日后往内置表加条目时 +1，迁移会把新条目并入用户表 */
 var CMPL_GROUP_HINT = { 风格包: 'style', 硬性要求: 'tail', 起手式: 'anchor', 结构件: 'mark', 镜头句: 'body', 景别: 'body', 运镜: 'body', 台词: 'body' };
 
-var CMPL_STYLE = [
-  { label: '光影逻辑', body: '【光影逻辑】 遵循「暖主体、冷环境、柔面光、轻轮廓」；侧前低位暖柔光铺脸，暗部弱补光，窗外暖光勾勒发丝；室外日戏侧前柔化日光或月光，半阴漫射提亮面部，背景保留建筑日照质感，杜绝硬光直打，人物面部干净柔和。' },
-  { label: 'CG 风格', body: '【CG 风格】 高质量写实 CG 古风甜宠质感，温柔克制，精致干净；色彩统一木棕、土黄、灰瓦、灰蓝、米白、雾青低饱和体系，' },
-  { label: '镜头构图', body: '【镜头构图】 电影级 CG 镜头，等效 50-85mm 中焦为主，无广角畸变；浅景深渲染，人物清晰锐利、背景虚化可辨不抢戏；适度前景遮挡。' },
-  { label: '渲染质感', body: '【渲染质感】 中低对比度，柔亮中间调，暗部保留细节，高光压控不过曝；统一色相秩序，木构土墙偏暖米棕、瓦面阴影偏冷灰；局部锐化集中于眉眼、发丝、衣褶，背景适度柔化；微添空气感、发丝高光与轻暗角，整体呈精修级古偶 CG 影像质感。' },
-  { label: '负面提示词', body: '【负面提示词】 低多边形、模型穿模、贴图拉伸模糊、卡通二次元画风、塑料材质感、渲染锯齿、过度磨皮塑料脸、脸部死白无血色、高饱和艳色、脏黄肤色、荧光蓝夜景、正午顶光硬影、广角畸变、现代元素穿帮、死黑死白过曝、强 HDR 感、五官过度锐化、廉价假古风布景、浓妆艳抹、韩式滤镜、强青橙调色、过硬轮廓光、色彩杂乱失控，真人感，真实感' }
+/* v7.8.1：内置「风格包」组降为**中性示例**（显式标注「示例（请替换）」）——
+   结构与 v7.8 一致（组名/置顶/整块件/单一真源机制），但**不含任何真实用户私有写作资产逐字文本**。 */
+var CMPL_EXAMPLE_PARTS = [
+  '【示例·光照段】 这是中性占位示例（请替换为你自己的光影描述）。',
+  '【示例·色调段】 中性占位文本；不含任何真实用户的写作资产。',
+  '【示例·构图段】 请把你的镜头构图偏好填在这里。',
+  '【示例·质感段】 示例占位；导入写作资产后本组即可整体替换。',
+  '【示例·规避段】 示例占位：可放你不希望在画面里出现的元素。'
 ];
-var CMPL_TAIL = '硬性要求：无BMG，无字幕，禁止自行新增或删减台词。';
-/* 全套 = 单段按序拼（单一真源：改一段，全套跟着变） */
+var CMPL_EXAMPLE_TAIL = '硬性要求：示例占位（请替换为你自己的硬性要求）。';
+/* 全套 = 单段按序拼（单一真源：改一段，全套跟着变；此处演示机制，内容为中性示例） */
 function cmplFullStyle(){
   var s = '风格：', i;
-  for(i = 0; i < CMPL_STYLE.length; i++) s += '\n' + CMPL_STYLE[i].body;
-  return s + '\n\n' + CMPL_TAIL;
+  for(i = 0; i < CMPL_EXAMPLE_PARTS.length; i++) s += '\n' + CMPL_EXAMPLE_PARTS[i];
+  return s + '\n\n' + CMPL_EXAMPLE_TAIL;
 }
 
 var CMPL_GROUPS = [
-  { label: '风格包', note: '项目级定型件', items: [
-    { label: '风格包 · 全套', block: true, body: cmplFullStyle() },
-    { label: '光影逻辑', body: CMPL_STYLE[0].body },
-    { label: 'CG 风格', body: CMPL_STYLE[1].body },
-    { label: '镜头构图', body: CMPL_STYLE[2].body },
-    { label: '渲染质感', body: CMPL_STYLE[3].body },
-    { label: '负面提示词', body: CMPL_STYLE[4].body },
-    { label: '硬性要求', body: CMPL_TAIL }
+  { label: '风格包', note: '示例（请替换）', items: [
+    { label: '风格包 · 全套', block: true, note: '示例（请替换）', body: cmplFullStyle() },
+    { label: '示例·光照段', body: CMPL_EXAMPLE_PARTS[0] },
+    { label: '示例·色调段', body: CMPL_EXAMPLE_PARTS[1] },
+    { label: '示例·构图段', body: CMPL_EXAMPLE_PARTS[2] },
+    { label: '示例·质感段', body: CMPL_EXAMPLE_PARTS[3] },
+    { label: '示例·规避段', body: CMPL_EXAMPLE_PARTS[4] },
+    { label: '硬性要求', note: '示例（请替换）', body: CMPL_EXAMPLE_TAIL }
   ] },
   { label: '起手式', note: '你语料里的三种锚定写法', items: [
     { label: '事件发生在…室内', body: '事件发生在@室内。' },
@@ -122,15 +124,16 @@ function cmplQueryAt(ta){
   return null;
 }
 /* ---- 生效表（v7.8：内置表 / 用户表；配置界面见 53-library.js）----
-   数据：state.cmpl = { v: 内置表版本, items: null | [{key, group, label, note, body, block}] }
-        items === null → 用内置表；一旦在配置界面里动过，就物化成用户表（可为空数组 = 用户清空） */
+   数据：state.cmpl = { v, items: null | [{key, group, label, note, body, block, src}] }
+        items === null → 用内置表；在配置界面动过即物化成用户表（空数组 = 用户清空）
+   v7.8.1：条目 src ∈ {seed 内置示例, asset 导入资产, user 自建/改写}（缺失 → user，**永不自动删**） */
 function cmplSeedItems(){
   var out = [], gi, ii, g, it;
   for(gi = 0; gi < CMPL_GROUPS.length; gi++){
     g = CMPL_GROUPS[gi];
     for(ii = 0; ii < g.items.length; ii++){
       it = g.items[ii];
-      out.push({ key: 'b:' + gi + ':' + ii, group: g.label, label: it.label, note: it.note || '', body: it.body, block: !!it.block });
+      out.push({ key: 'b:' + gi + ':' + ii, group: g.label, label: it.label, note: it.note || '', body: it.body, block: !!it.block, src: 'seed' });
     }
   }
   return out;
@@ -152,6 +155,85 @@ function cmplSetItems(arr){
   state.cmpl.items = arr || null;
   state.cmpl.v = CMPL_SEED_V;
   cmplInvalidate();
+}
+
+/* ---- v7.8.1 写作资产 导出 / 导入（本机文件、FileReader、**零网络**） ----
+   格式：{ "kind":"phj-writing-asset", "v":1, "app":..., "groups":[ {label,items:[{label,note,body,block}]} ] }
+   导入语义：按组并入——资产里出现的组**以资产内容为准**（整组替换），未出现的组**原样保留**；条目打标 src:'asset'。 */
+function cmplAssetGroups(){
+  var all = cmplActive(), order = cmplGroupOrder(), out = [], gi, ii, g, list;
+  for(gi = 0; gi < order.length; gi++){
+    g = order[gi]; list = [];
+    for(ii = 0; ii < all.length; ii++){
+      if((all[ii].group || '未分组') !== g) continue;
+      list.push({ label: all[ii].label || '', note: all[ii].note || '', body: all[ii].body, block: !!all[ii].block });
+    }
+    if(list.length) out.push({ label: g, items: list });
+  }
+  return out;
+}
+function cmplExportAssetData(){
+  return { kind: 'phj-writing-asset', v: 1, app: 'storyboard-prompt-panel',
+           exportedAt: new Date().toISOString(), groups: cmplAssetGroups() };
+}
+/* 导出：返回 JSON 字符串（便于复用/单测），并**尽力**触发一次本机下载（失败不抛、不影响返回值） */
+function cmplExportAsset(){
+  var json = JSON.stringify(cmplExportAssetData(), null, 2);
+  try{
+    var blob = new Blob([json], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = '写作资产_片段库.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 1000);
+  }catch(e){}
+  return json;
+}
+/* 把资产对象并入生效表（纯逻辑，便于单测；返回 {ok, added, total} 或 {ok:false,error}） */
+function cmplApplyAsset(obj){
+  if(!obj || obj.kind !== 'phj-writing-asset' || !Array.isArray(obj.groups)) return { ok: false, error: '格式不正确：不是写作资产文件' };
+  var base = (state.cmpl && Array.isArray(state.cmpl.items)) ? state.cmpl.items.slice() : cmplSeedItems();
+  var assetGroups = [], seenG = {}, gi, ii, g, x, out = [], added = 0;
+  for(gi = 0; gi < obj.groups.length; gi++){
+    g = obj.groups[gi];
+    if(g && typeof g.label === 'string' && !seenG[g.label]){ seenG[g.label] = 1; assetGroups.push(g.label); }
+  }
+  /* 1) 资产组在前（以资产内容为准） */
+  for(gi = 0; gi < obj.groups.length; gi++){
+    g = obj.groups[gi];
+    if(!g || typeof g.label !== 'string' || !Array.isArray(g.items)) continue;
+    var label = g.label || '未分组';
+    for(ii = 0; ii < g.items.length; ii++){
+      x = g.items[ii];
+      if(!x || typeof x.body !== 'string') continue;
+      out.push({ key: cmplNewKey(), group: label, label: (typeof x.label === 'string' ? x.label : ''),
+                 note: (typeof x.note === 'string' ? x.note : ''), body: x.body, block: !!x.block, src: 'asset' });
+      added++;
+    }
+  }
+  if(!added) return { ok: false, error: '资产文件里没有可用条目' };
+  /* 2) 原有条目里**不属于资产组**的照旧保留（不覆盖其它组） */
+  var drop = {}; for(gi = 0; gi < assetGroups.length; gi++) drop[assetGroups[gi]] = 1;
+  for(ii = 0; ii < base.length; ii++){
+    if(drop[base[ii].group || '未分组']) continue;
+    out.push(base[ii]);
+  }
+  cmplSetItems(out); saveNow();
+  return { ok: true, added: added, total: out.length };
+}
+/* 导入：读本机文件 → 解析 → cmplApplyAsset；回调 cb({ok,added,total} | {ok:false,error}) */
+function cmplImportAsset(file, cb){
+  cb = cb || function(){};
+  if(!file){ cb({ ok: false, error: '未选择文件' }); return; }
+  var reader = new FileReader();
+  reader.onload = function(){
+    var obj = null;
+    try{ obj = JSON.parse(String(reader.result)); }catch(e){ cb({ ok: false, error: '不是有效的 JSON 文件' }); return; }
+    var r; try{ r = cmplApplyAsset(obj); }catch(e2){ r = { ok: false, error: String((e2 && e2.message) || e2) }; }
+    cb(r);
+  };
+  reader.onerror = function(){ cb({ ok: false, error: '读取文件失败' }); };
+  reader.readAsText(file);
 }
 
 /* 组顺序：配置窗口里的拖拽顺序（state.cmpl.gorder）优先，其余按生效表出现顺序追加 */

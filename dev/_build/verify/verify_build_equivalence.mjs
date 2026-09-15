@@ -1,9 +1,9 @@
 /* 等价性 / 构建可复现校验：构建产物 vs 交付快照
-   用法（默认 = v7.8「构建可复现」语义）：
+   用法（默认 = 当前交付快照 v7.8.1「构建可复现」语义）：
          node dev/_build/verify/verify_build_equivalence.mjs
          node dev/_build/verify/verify_build_equivalence.mjs <产物> <基线>
    默认判定：断言「node dev/build.mjs 的产出」（= 根目录 PHJ.html）与「当前交付快照
-         dev/_build/snapshots/PHJ_v7.8_20260913.html」**逐字节一致（含 banner，不做 stripBanner）**。
+         dev/_build/snapshots/PHJ_v7.8.1_20260915.html」**逐字节一致（含 banner，不做 stripBanner）**。
          即：源码能如实、逐字节地构建出已交付的产物 → 构建可复现 + src 与交付物一致。
 
    —— 为什么把 v7.7 的语义换掉（改义理由，务必保留本段）——
@@ -12,13 +12,14 @@
       v7.8 是**真实功能增量**（结构层 / 候选气泡 / 槽位 / 片段库），字节必然改变——此时「逐字节
       等价于旧基线的无 banner 内容」既不成立、也不再是想要的保证。此刻有价值的闸门是
       「**源码能如实构建出已交付的产物**」，即构建可复现 + src 与交付物一致。故本脚本默认改为
-      对**当前交付快照**做**含 banner 的逐字节相等**断言。
-      历史基线 PHJ_v7.7_baseline.html 仍在，**可作 argv 指定基线**复跑历史比对（见下）。
+      对**当前交付快照**做**含 banner 的逐字节相等**断言。**全程有效**（P0–P4 与发布都适用），
+      原「P2 起退役」表述作废（见 README §闸门 · Q6）。
+      历史基线 PHJ_v7.7_baseline.html / PHJ_v7.8_20260913.html 仍在，**可作 argv 指定基线**复跑（见下）。
 
-   历史比对（保留能力，未删）：把 v7.7 无 banner 基线作为第 3 个参数传入，即走旧语义：
-         node dev/_build/verify/verify_build_equivalence.mjs PHJ.html dev/_build/snapshots/PHJ_v7.7_baseline.html
-       此时精确比对会失败（新产物有 banner、旧基线没有），脚本退一步做「剥离 banner 后逐字节相等」
-       的判定并作「历史重构语义」报告（退出码 2，区别于新语义的 0）。
+   历史比对（保留能力，未删）：把历史基线作为第 3 个参数传入，即走旧语义：
+         node dev/_build/verify/verify_build_equivalence.mjs PHJ.html dev/_build/snapshots/PHJ_v7.8_20260913.html
+       若产物与该历史快照含 banner 精确不等，脚本退一步做「剥离 banner 后逐字节相等」的判定
+       并作「历史重构语义」报告（退出码 2，区别于新语义的 0）。
 
    退出码：0 = PASS（默认：构建可复现，逐字节一致）
            2 = 仅「剥离 banner 后等价」——历史重构语义 / 非严格（默认语义下不算通过）
@@ -31,7 +32,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../../..');
 const NEW  = process.argv[2] || path.join(ROOT, 'PHJ.html');
-const OLD  = process.argv[3] || path.join(ROOT, 'dev', '_build/snapshots/PHJ_v7.8_20260913.html');
+const OLD  = process.argv[3] || path.join(ROOT, 'dev', '_build/snapshots/PHJ_v7.8.1_20260915.html');
 
 /* 仅在「历史比对」退一步时使用：剥离构建 banner（按第 2 行、多行模式） */
 const stripBanner = s => s.replace(/^<!--\s*构建生成[\s\S]*?-->\r?\n/m, '');

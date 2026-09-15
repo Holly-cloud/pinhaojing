@@ -1,12 +1,43 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-/* v7.8 验收 · H 组：编辑器结构层 + 结构感知候选气泡 + 槽位 + 复制全文
+/* v7.8 验收 · H 组：编辑器结构层 + 结构感知候选气泡 + 槽位 + 复制全文；I 组：补全配置窗口
+   —— v7.8.1 重锚：内置「风格包」降为**中性示例**，H 组断言改为**键于「导入后的用户表」**；
+      夹具（v7.8 风格包 5 段 + 硬性要求）**运行时从 dev/_build/snapshots/PHJ_v7.8_20260913.html 提取**
+      （快照在 git 历史内）→ 本脚本**不含任何私有字面量**（见文件末 X 组边界断言）。
    用法：headless Edge --remote-debugging-port=9222 起好后： node verify_v78.mjs [截图输出.png]
    ※ 调试端口：优先读 PHJ_BROWSER_PORT（run-gate.mjs 传入），缺省 9222。
    真机口径：文本输入走 Input.insertText / 按键走 Input.dispatchKeyEvent / 点击走 Input.dispatchMouseEvent；
    仅「中文输入法组合态门控」一项用页面内合成 CompositionEvent（无头环境无法真起 IME），该条已在断言名标注。 */
 import fs from 'node:fs';
+/* ── 夹具：**从 v7.8 快照文本运行时提取**（快照已存在于 git 历史）──
+   私有写作资产（风格包 5 段 + 硬性要求）是**用户数据**：固定逐字文本**一律不硬编码在本脚本**，
+   改为运行时从 dev/_build/snapshots/PHJ_v7.8_20260913.html 中提取 → 本文件对私有特征串 **0 命中**，
+   且不新增任何私有文本落盘副本（v7.8.1 资产分离的边界要求）。 */
+const SNAP = path.join(HERE, '..', 'snapshots', 'PHJ_v7.8_20260913.html');
+if (!fs.existsSync(SNAP)) { console.error('夹具快照缺失（应为 git 历史内文件）：' + SNAP); process.exit(3); }
+const SNAP_TXT = fs.readFileSync(SNAP, 'utf8');
+const STYLE_BLOCK = (SNAP_TXT.match(/var CMPL_STYLE = \[([\s\S]*?)\];/) || [])[1] || '';
+const FIX_LABELS = [...STYLE_BLOCK.matchAll(/label:\s*'([^']*)'/g)].map(m => m[1]);
+const FIX_PARTS = [...STYLE_BLOCK.matchAll(/body:\s*'([^']*)'/g)].map(m => m[1]);
+const FIX_TAIL = ((SNAP_TXT.match(/var CMPL_TAIL = '([^']*)';/) || [])[1]) || '';
+if (FIX_PARTS.length !== 5 || FIX_LABELS.length !== 5 || !FIX_TAIL) {
+  console.error('夹具提取失败：未能从 v7.8 快照提取风格包 5 段 + 硬性要求（长度 ' + FIX_PARTS.length + '/' + FIX_LABELS.length + '）');
+  process.exit(3);
+}
+const FIX_FULL = '风格：\n' + FIX_PARTS.join('\n') + '\n\n' + FIX_TAIL;
+/* 导入用资产（= 一份「风格包」资产；经真实导入路径写入用户表）——文本全部来自上面提取结果 */
+const FIX_ASSET_JSON = JSON.stringify({
+  kind: 'phj-writing-asset', v: 1, app: 'storyboard-prompt-panel',
+  groups: [{ label: '风格包', items: [
+    { label: '风格包 · 全套', note: '', body: FIX_FULL, block: true },
+    ...FIX_PARTS.map((b, i) => ({ label: FIX_LABELS[i], note: '', body: b, block: false })),
+    { label: '硬性要求', note: '', body: FIX_TAIL, block: false }
+  ] }]
+});
+/* 私有特征串（用于「内置/产物 0 残留」断言；值本身来自提取结果，不硬编码） */
+const PRIV_STRINGS = FIX_PARTS.concat([FIX_TAIL]);
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const PORT = process.env.PHJ_BROWSER_PORT || '9222';   /* 调试端口：run-gate.mjs 经此环境变量传入，缺省 9222 */
 const list = await (await fetch('http://127.0.0.1:' + PORT + '/json/list')).json();
@@ -56,7 +87,8 @@ async function digit(d) {   /* v7.8：数字键跳位（输入法式） */
 
 const TARGET = 'file:///' + encodeURI(path.resolve(HERE, '../../../PHJ.html').replace(/\\/g, '/'));
 await send('Page.enable'); await send('Runtime.enable');
-await send('Page.addScriptToEvaluateOnNewDocument', { source: 'try{ localStorage.clear(); }catch(e){}' });
+/* 记录「每次新文档清空 localStorage」脚本的 id：X3「导入→reload→仍在」需临时摘掉它（否则 reload 即被清空） */
+const clearScriptId = (await send('Page.addScriptToEvaluateOnNewDocument', { source: 'try{ localStorage.clear(); }catch(e){}' })).identifier;
 await send('Page.navigate', { url: TARGET });
 for (let i = 0; i < 40; i++) { if (await evalJS('document.readyState === "complete"')) break; await sleep(200); }
 await send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, mobile: false, deviceScaleFactor: 1 });
@@ -67,7 +99,8 @@ await sleep(500);
 const R = [];
 function t(name, pass, detail) { R.push({ name, pass: !!pass, detail: detail === undefined ? '' : String(detail) }); }
 
-/* 夹具：按语料真实结构拼的短提示词（起手式 → 画面开始 → 叙事 → 画面结束 → 风格包 → 硬性要求） */
+/* 夹具：按语料真实结构拼的短提示词（起手式 → 画面开始 → 叙事 → 画面结束 → 风格包 → 硬性要求）；
+   其中风格包 2 行 + 硬性要求行**取自快照提取结果**（FIX_PARTS / FIX_TAIL），本脚本不含私有字面量 */
 const FIX = [
   '事件发生在{{node:node_4ytg0d23am}}室内·周夫子坐在图片最右侧的椅子。',
   '',
@@ -76,11 +109,22 @@ const FIX = [
   '画面结束。',
   '',
   '风格：',
-  '【光影逻辑】 遵循「暖主体、冷环境、柔面光、轻轮廓」；侧前低位暖柔光铺脸。',
-  '【镜头构图】 电影级 CG 镜头，等效 50-85mm 中焦为主。',
+  FIX_PARTS[0],
+  FIX_PARTS[2],
   '',
-  '硬性要求：无BMG，无字幕，禁止自行新增或删减台词。'
+  FIX_TAIL
 ].join('\n');
+
+/* ── H0 夹具前置：走**真实导入路径**（FileReader + cmplImportAsset）载入 v7.8 风格包资产
+   —— 之后 H 组断言全部键于「导入后的用户表」，逐字等于 v7.8，原意（风格包能力仍在且可被引用）完整保住。 */
+const impFixture = await evalJS(`new Promise(function(res){
+  var f = new File([${JSON.stringify(FIX_ASSET_JSON)}], '写作资产_风格包_v1.json', { type: 'application/json' });
+  cmplImportAsset(f, function(r){ res(r); });
+})`);
+t('H0 夹具前置：经真实导入路径（FileReader）载入 v7.8 风格包资产 → 生效表就位（7 条）',
+  !!(impFixture && impFixture.ok && impFixture.added === 7),
+  impFixture ? `导入 ${JSON.stringify(impFixture)}` : 'null');
+
 
 /* ---------- H1 结构层：逐行节判定无歧义 ---------- */
 const h1 = await evalJS(`(() => {
@@ -93,7 +137,7 @@ const h1 = await evalJS(`(() => {
 })()`);
 t('H1 结构层逐行判定（起手式/画面开始/叙事正文/画面结束/风格包·属性/硬性要求 + 起手式区的镜头N 不误判为分镜）',
   h1.l0 === '起手式' && h1.l2 === '画面开始' && h1.l3 === '叙事正文' && h1.l4 === '画面结束'
-  && h1.l6 === '风格包' && h1.l7 === '风格包 · 光影逻辑' && h1.l8 === '风格包 · 镜头构图' && h1.l10 === '硬性要求'
+  && h1.l6 === '风格包' && h1.l7 === ('风格包 · ' + FIX_LABELS[0]) && h1.l8 === ('风格包 · ' + FIX_LABELS[2]) && h1.l10 === '硬性要求'
   && h1.shot === '分镜 镜头2' && h1.anchorShot === '起手式',
   `实测 ${JSON.stringify(h1.labels)}`);
 
@@ -108,7 +152,7 @@ const h2 = await evalJS(`(() => {
   ta.setSelectionRange(lineStart(10) + 2, lineStart(10) + 2); hlRefresh(); out.tail = document.getElementById('stStruct').textContent;
   return out;
 })()`);
-t('H2 状态栏「节」随光标显示当前结构', h2.style === '风格包 · 光影逻辑' && h2.body === '叙事正文' && h2.tail === '硬性要求',
+t('H2 状态栏「节」随光标显示当前结构', h2.style === ('风格包 · ' + FIX_LABELS[0]) && h2.body === '叙事正文' && h2.tail === '硬性要求',
   `风格行=${h2.style} 叙事行=${h2.body} 硬性行=${h2.tail}`);
 
 /* ---------- H3 `#` 触发气泡 + 结构置顶（叙事区 → 镜头句组在前） ---------- */
@@ -129,14 +173,14 @@ t('H3 输入 `#` 弹候选气泡：第一层是**组视图**（一行一组、�
 t('H4 结构感知置顶：光标在「硬性要求」节（风格区）触发时，风格包组排第一',
   (h3.labels[0] || '') === '风格包', `实际首组＝${h3.labels[0]}｜完整组序=${JSON.stringify(h3.labels)}`);
 
-/* ---------- H5 过滤：`#光影` → 名称命中优先于正文命中（542 字整套只靠正文命中，必须排在后面） ---------- */
+/* ---------- H5 过滤：`#光影` → 名称命中优先于正文命中（整套只靠正文命中，必须排在后面） ---------- */
 await evalJS(`(() => { var ta = document.getElementById('blkInput'); ta.value = ${JSON.stringify(FIX)}; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); cmplReset(); return 1; })()`);
 await type('#');
 await type('光影');
 const h5 = await evalJS(`(() => { var pop = document.getElementById('cmplPop');
   return { rows: Array.prototype.map.call(pop.querySelectorAll('.cmpl-item .cmpl-label'), function(e){ return e.textContent; }) }; })()`);
-t('H5 触发符后接查询词即过滤，且名称命中排前（`#光影` → 「光影逻辑」第一；只有正文含该词的「风格包·全套」退到后面）',
-  h5.rows[0] === '光影逻辑' && h5.rows.indexOf('风格包 · 全套') > 0, `候选=${JSON.stringify(h5.rows)}`);
+t('H5 触发符后接查询词即过滤，且名称命中排前（`#光影` → 风格首段第一；只有正文含该词的「风格包·全套」退到后面）',
+  h5.rows[0] === FIX_LABELS[0] && h5.rows.indexOf('风格包 · 全套') > 0, `候选=${JSON.stringify(h5.rows)}`);
 
 /* ---------- H6 键盘上屏（↑↓ 切换回第一项 + Enter 提交），触发符被吃掉 ---------- */
 const h6first = await evalJS(`(() => { var it = cmplItems[0]; return { label: it.label, len: it.body.length, tail: it.body.slice(-24) }; })()`);
@@ -173,7 +217,7 @@ await mousedown('#cmplPop .cmpl-item');                 /* 第二下：点组内
 const h7 = await evalJS(`(() => { var ta = document.getElementById('blkInput'), pop = document.getElementById('cmplPop');
   return { tail: ta.value.slice(-46), popHidden: pop.classList.contains('hide'), focused: document.activeElement === ta, triggerLeft: ta.value.slice(-30).indexOf('#') >= 0 }; })()`);
 t('H7 鼠标点选（两级）：第一下点组 = 进组，第二下点条目 = 上屏（焦点仍在输入框、触发符被吃掉）',
-  h7mid.group === h7a && h7.popHidden && h7.focused && !h7.triggerLeft && h7.tail.indexOf('禁止自行新增或删减台词') >= 0,
+  h7mid.group === h7a && h7.popHidden && h7.focused && !h7.triggerLeft && h7.tail.indexOf(FIX_TAIL) >= 0,
   `点组「${h7a}」→ 进组后首条「${h7mid.first}」→ 尾部=「${h7.tail}」 焦点=${h7.focused}`);
 
 /* ---------- H8 Esc 顺序：第一次关候选、第二次才关编辑器 ---------- */
@@ -278,15 +322,15 @@ t('H18 无候选/无槽位时按 Tab：焦点不逃出编辑器、也不往文�
   h18.before && h18b.focused && h18b.len === h18.len && !h18b.hasTab,
   `焦点 ${h18.before} → ${h18b.focused}；长度 ${h18.len} → ${h18b.len}`);
 
-/* ---------- H11 风格包·全套：逐字等于定型件，且自动补足前置空行 ---------- */
+/* ---------- H11 风格包·全套：逐字等于夹具全套（5 段 + 硬性要求），且自动补足前置空行 ---------- */
 await evalJS(`(() => { openBlockEditor('画面结束。', null); return 1; })()`);
 await sleep(150);
 await type('#全套');
 await key('Enter');
-const h11 = await evalJS(`(() => { var v = document.getElementById('blkInput').value;
-  return { head: v.slice(0, 16), exact: v === ('画面结束。\\n\\n' + cmplFullStyle()), len: v.length, styleLen: cmplFullStyle().length, tail: v.slice(-30) }; })()`);
-t('H11 「风格包·全套」逐字等于你的定型件（542 字 5 段 + 硬性要求），且自动补前置空行',
-  h11.exact, `产物 ${h11.len} 字符（含前段）；定型件 ${h11.styleLen} 字符；开头=「${h11.head}」尾部=「${h11.tail}」`);
+const h11 = await evalJS(`(() => { var v = document.getElementById('blkInput').value; var FULL = ${JSON.stringify(FIX_FULL)};
+  return { head: v.slice(0, 16), exact: v === ('画面结束。\\n\\n' + FULL), len: v.length, styleLen: FULL.length, tail: v.slice(-30) }; })()`);
+t('H11 「风格包·全套」逐字等于夹具全套（5 段 + 硬性要求，真源＝导入资产），且自动补前置空行',
+  h11.exact, `产物 ${h11.len} 字符（含前段）；全套 ${h11.styleLen} 字符；开头=「${h11.head}」尾部=「${h11.tail}」`);
 
 /* ---------- H12 复制全文：剪贴板内容 = textarea.value 原样（不带渲染层 span） ---------- */
 const h12 = await evalJS(`(async () => {
@@ -387,7 +431,7 @@ const i3form = await evalJS(`(() => ({
 }))()`);
 await evalJS(`(() => {
   var li = document.getElementById('cmplCfgLabelIn'), bi = document.getElementById('cmplCfgBodyIn');
-  li.value = '光影逻辑（我的改版）'; bi.value = '【光影逻辑】 这是我改过的版本，专门用来验收配置窗口。';
+  li.value = '风格段（我的改版）'; bi.value = '【风格段】 这是我改过的版本，专门用来验收配置窗口。';
   return 1;
 })()`);
 await click('#cmplCfgSave');
@@ -404,7 +448,7 @@ const i3after = await evalJS(`(() => {
 })()`);
 t('I3 改内置片段：点「编辑」表单预填原值 → 保存后生效表/localStorage 同步更新，候选气泡里立刻是改后的内容',
   i3form.editing === 1 && i3form.label === i3before.label && i1.cards === i0.seedLen
-  && i3after.label === '光影逻辑（我的改版）' && i3after.body.length !== i3before.len && i3after.lsBody === i3after.body,
+  && i3after.label === '风格段（我的改版）' && i3after.body.length !== i3before.len && i3after.lsBody === i3after.body,
   `表单预填「${i3form.label}」(${i3form.len} 字符) → 保存后「${i3after.label}」(${i3after.body.length} 字符)；落盘一致=${i3after.lsBody === i3after.body}`);
 
 /* ---------- I4 新增自定义片段（带槽位）→ 候选命中并正确上屏 ---------- */
@@ -444,35 +488,65 @@ t('I5 删除片段：生效表立即减一，toast 带「撤销」，撤销后�
   i5mid.len === i5before - 1 && i5mid.hasUndo && i5after === i5before,
   `删除 ${i5before} → ${i5mid.len} → 撤销后 ${i5after}；toast=「${i5mid.toast}」`);
 
-/* ---------- I6 恢复内置默认 ---------- */
+/* ---------- I6 恢复内置默认（v7.8.1：先确认 → 丢 seed + 重注内置；保留 asset/user） ---------- */
 await click('#cmplCfgReset');
-const i6 = await evalJS(`({ items: state.cmpl.items, len: cmplActive().length, seed: cmplSeedItems().length, cards: document.querySelectorAll('#cmplCfgBody .cmpl-cfg-card').length })`);
-t('I6 「恢复内置默认」清空用户表（items=null）并回落内置片段库',
-  i6.items === null && i6.len === i6.seed && i6.cards === i6.seed,
-  `items=${JSON.stringify(i6.items)}；生效 ${i6.len} 条 = 内置 ${i6.seed} 条；窗口列出 ${i6.cards} 张`);
+const i6ask = await evalJS(`({ modalOpen: !document.getElementById('modalMask').classList.contains('hide'), title: (document.getElementById('modalTitle') || {}).textContent })`);
+await click('#modalOk');
+const i6 = await evalJS(`(() => {
+  var act = cmplActive(), seed = cmplSeedItems();
+  var seedAllPresent = seed.every(function(s){ return act.some(function(x){ return x.key === s.key; }); });
+  var keptLabels = act.filter(function(x){ return x.src !== 'seed'; }).map(function(x){ return x.label; });
+  return { seedAllPresent: seedAllPresent, keptLabels: keptLabels, len: act.length, seed: seed.length,
+           hasUser: keptLabels.indexOf('环绕半圈句') >= 0, hasEdited: keptLabels.indexOf('风格段（我的改版）') >= 0 };
+})()`);
+t('I6 「恢复内置默认」= **先确认** → 丢弃内置示例并重注新内置表，**保留 asset/user**（不静默删用户资产）',
+  i6ask.modalOpen && i6.seedAllPresent && i6.hasUser && i6.hasEdited && i6.len === i6.seed + i6.keptLabels.length,
+  `先确认=${i6ask.modalOpen}（标题=「${i6ask.title}」）；重注内置全在=${i6.seedAllPresent}；保留 ${i6.keptLabels.length} 条=${JSON.stringify(i6.keptLabels)}；生效 ${i6.len} 条（内置 ${i6.seed}）`);
 
-/* ---------- I7 存储往返 + 旧数据迁移（无 cmpl 的 v12 文件） ---------- */
+/* ---------- I7 存储往返 + 迁移（无 cmpl 的 v12 文件；v13 已物化表零丢失） ---------- */
 const i7 = await evalJS(`(() => {
   cmplCfgMaterialize();
   var arr = cmplActive().slice();
-  arr[0] = { key: arr[0].key, group: arr[0].group, label: '往返测试', note: '', body: '往返测试内容', block: false };
+  arr[0] = { key: arr[0].key, group: arr[0].group, label: '往返测试', note: '', body: '往返测试内容', block: false, src: 'user' };
   cmplSetItems(arr); saveNow();
   var back = migrate(JSON.parse(localStorage.getItem(LS_KEY)));
   var old = migrate({ app: 'storyboard-prompt-panel', version: 12, blocks: [] });
-  return { roundTrip: back.cmpl.items[0].label, version: back.version, oldHidden: old.cmpl.items, oldV: old.version, oldBlocks: old.blocks.length };
+  /* v13 ⇒ v14 零丢失：带已物化 cmpl.items 的 v13 数据 → 逐字保留 + version=14 + 补默认 src */
+  var m13 = migrate({ app: 'storyboard-prompt-panel', version: 13, blocks: [], cmpl: { v: 1, items: [
+    { key: 'k1', group: '风格包', label: 'L1', note: '', body: '用户资产甲', block: false },
+    { key: 'k2', group: '我的', label: 'L2', note: 'n', body: '用户资产乙', block: true }
+  ] } });
+  return { roundTrip: back.cmpl.items[0].label, version: back.version, oldHidden: old.cmpl.items, oldV: old.version, oldBlocks: old.blocks.length,
+           m13v: m13.version, m13len: m13.cmpl.items.length, m13b0: m13.cmpl.items[0].body, m13b1: m13.cmpl.items[1].body, m13s0: m13.cmpl.items[0].src };
 })()`);
-t('I7 存储往返（state → localStorage → migrate 后仍在）+ 旧版数据（无 cmpl）迁移后回落内置、版本升到 13',
-  i7.roundTrip === '往返测试' && i7.version === 13 && i7.oldHidden === null && i7.oldV === 13 && i7.oldBlocks === 0,
+t('I7 存储往返（state → localStorage → migrate 后仍在）+ 旧数据（无 cmpl / v12）迁移后回落内置、version=14',
+  i7.roundTrip === '往返测试' && i7.version === 14 && i7.oldHidden === null && i7.oldV === 14 && i7.oldBlocks === 0,
   `往返=${i7.roundTrip}｜version=${i7.version}｜旧数据 cmpl.items=${JSON.stringify(i7.oldHidden)}（null=用内置）`);
+t('I7b v13 ⇒ v14 迁移**零丢失**：已物化的 cmpl.items 逐字保留（仅补默认 src），version 落 14',
+  i7.m13v === 14 && i7.m13len === 2 && i7.m13b0 === '用户资产甲' && i7.m13b1 === '用户资产乙' && i7.m13s0 === 'user',
+  `v13→${i7.m13v}；items ${i7.m13len} 条：body0=「${i7.m13b0}」body1=「${i7.m13b1}」src0=${i7.m13s0}`);
 
 /* ---------- I8 Esc 关窗 + 回到干净状态 ---------- */
 await evalJS(`(() => { cmplCfgReset(); closeCmplCfg(); openCmplCfg(); return 1; })()`);
 await key('Escape');
-const i8 = await evalJS(`({ open: !document.getElementById('cmplCfgMask').classList.contains('hide'), items: state.cmpl.items, seed: cmplSeedItems().length })`);
+const i8 = await evalJS(`(() => {
+  var act = cmplActive(), seed = cmplSeedItems();
+  return { open: !document.getElementById('cmplCfgMask').classList.contains('hide'), isArr: Array.isArray(state.cmpl.items),
+           len: act.length, seed: seed.length, seedAllPresent: seed.every(function(s){ return act.some(function(x){ return x.key === s.key; }); }) };
+})()`);
 await evalJS(`(() => { cmplCfgReset(); return 1; })()`);
 t('I8 配置窗口内按 Esc 关窗（关窗后片段库保持已物化状态；末尾已复位）',
-  !i8.open && Array.isArray(i8.items) && i8.items.length === i8.seed,
-  `窗口开=${i8.open}；用户表 ${i8.items ? i8.items.length : 'null'} 条`);
+  !i8.open && i8.isArr && i8.seedAllPresent && i8.len >= i8.seed,
+  `窗口开=${i8.open}；用户表 ${i8.len} 条（内置 ${i8.seed}，内置全在=${i8.seedAllPresent}）`);
+
+/* ---------- I9 前重置 + 重新导入夹具：I9/I10/I11 键于「导入后的用户表」（风格包＝夹具全套） ----------
+   先落回未物化内置表（顺带清掉 I4~I8 留下的自建组/条目与 gorder），再导入 → 组序确定为
+   [风格包(资产) , 起手式 , 结构件 , 镜头句 , 景别 , 运镜 , 台词]，与 v7.8 原断言口径一致。 */
+await evalJS(`(() => { state.cmpl = { v: CMPL_SEED_V, items: null, gorder: null }; cmplInvalidate(); return 1; })()`);
+const impBeforeI9 = await evalJS(`new Promise(function(res){
+  var f = new File([${JSON.stringify(FIX_ASSET_JSON)}], '写作资产_风格包_v1.json', { type: 'application/json' });
+  cmplImportAsset(f, function(r){ res(r); });
+})`);
 
 /* ---------- I9 拖拽排序：条目（拖到第 3 条之前 → 插到它前面） ---------- */
 const i9 = await evalJS(`(() => {
@@ -492,8 +566,8 @@ const i9 = await evalJS(`(() => {
            toast: document.getElementById('toast').innerText.replace(/\s+/g,' ').trim() };
 })()`);
 t('I9 条目拖拽排序：把第 1 条拖到第 3 条之前 → 生效表顺序改变、落盘、dragover 有高亮反馈',
-  i9.overCls && i9.order[0] === '光影逻辑' && i9.order[1] === '风格包 · 全套' && i9.persisted,
-  `dragover 高亮=${i9.overCls}；新序前三条=${JSON.stringify(i9.order)}；已落盘=${i9.persisted}；toast=「${i9.toast}」`);
+  i9.overCls && i9.order[0] === FIX_LABELS[0] && i9.order[1] === '风格包 · 全套' && i9.persisted,
+  `（前置导入=${!!(impBeforeI9 && impBeforeI9.ok)}）dragover 高亮=${i9.overCls}；新序前三条=${JSON.stringify(i9.order)}；已落盘=${i9.persisted}；toast=「${i9.toast}」`);
 
 /* ---------- I10 拖拽排序：分组（把第 1 组拖到第 3 组之前） ---------- */
 const i10 = await evalJS(`(() => {
@@ -615,6 +689,68 @@ t('I14 拖到小窗第 2 行：该条目落到组内第 2 位（高亮 + 落盘 
   && JSON.stringify(i14.lsLabels) === JSON.stringify(i14.after) && i14.popHidden && i14.groupOrderKept,
   `「${i13.sameGroup[i13.activeIdxInRows]}」拖到第 2 行 → 组「${i14.group}」内序列=${JSON.stringify(i14.after)}；落盘一致=${JSON.stringify(i14.lsLabels) === JSON.stringify(i14.after)}`);
 
+/* ========== X 组（v7.8.1 新增边界断言 · 护新红线「私有资产不入库」） ========== */
+/* ---------- X1 内置库不含私有写作资产 + 风格包组显式标注「示例（请替换）」 ---------- */
+const x1 = await evalJS(`(() => {
+  var PRIV = ${JSON.stringify(PRIV_STRINGS)};
+  var seed = cmplSeedItems(), bad = [];
+  for(var i = 0; i < seed.length; i++){
+    for(var j = 0; j < PRIV.length; j++){ if(String(seed[i].body).indexOf(PRIV[j]) >= 0) bad.push(seed[i].group + ' / ' + seed[i].label); }
+  }
+  return { bad: bad, note0: (CMPL_GROUPS[0] && CMPL_GROUPS[0].note) || '', label0: (CMPL_GROUPS[0] && CMPL_GROUPS[0].label) || '' };
+})()`);
+t('X1 内置库**不含私有写作资产**（对夹具私有文本 0 命中），且「风格包」组显式标注「示例（请替换）」',
+  x1.bad.length === 0 && x1.label0 === '风格包' && x1.note0.indexOf('示例（请替换）') >= 0,
+  `内置违规 ${x1.bad.length} 处${x1.bad.length ? '：' + x1.bad.join('、') : ''}；组名=「${x1.label0}」组注=「${x1.note0}」`);
+
+/* ---------- X2 产物与源码不含私有写作资产（node 侧：PHJ.html + dev/src/** 全量检索） ---------- */
+const XROOT = path.resolve(HERE, '../../..');
+const walkFiles = (dir, out) => { for (const f of fs.readdirSync(dir)) { const p = path.join(dir, f); if (fs.statSync(p).isDirectory()) walkFiles(p, out); else out.push(p); } return out; };
+const x2files = [path.join(XROOT, 'PHJ.html'), ...walkFiles(path.join(XROOT, 'dev', 'src'), [])];
+const x2hits = [];
+for (const f of x2files) {
+  const s = fs.readFileSync(f, 'utf8');
+  for (let i = 0; i < PRIV_STRINGS.length; i++) if (s.includes(PRIV_STRINGS[i])) x2hits.push(path.relative(XROOT, f).replace(/\\/g, '/') + '（第 ' + (i + 1) + ' 条私有权）');
+}
+t('X2 产物 PHJ.html 与 dev/src/** **不含**私有写作资产（对夹具私有文本 0 命中）',
+  x2hits.length === 0, `检查 ${x2files.length} 个文件；命中 ${x2hits.length} 处${x2hits.length ? '：' + x2hits.join('、') : ''}`);
+
+/* ---------- X3 导出 → 再导入 往返一致 ---------- */
+const x3 = await evalJS(`(async () => {
+  var imp = function(json, name){ return new Promise(function(res){ cmplImportAsset(new File([json], name, { type: 'application/json' }), function(r){ res(r); }); }); };
+  var snap = function(){ return cmplActive().map(function(x){ return (x.group || '') + '|' + (x.label || '') + '|' + x.body + '|' + (!!x.block); }); };
+  var reset = function(){ state.cmpl = { v: CMPL_SEED_V, items: null, gorder: null }; cmplInvalidate(); };
+  reset();                                       /* 干净、确定性的起点（不受 I 组拖拽残留影响） */
+  await imp(${JSON.stringify(FIX_ASSET_JSON)}, 'a.json');
+  var before = snap();
+  var out = cmplExportAsset();                    /* 返回 JSON 字符串（并尽力触发本机下载） */
+  reset();
+  var r2 = await imp(out, 'b.json');
+  var after = snap();
+  return { ok: !!(r2 && r2.ok), n: before.length, same: JSON.stringify(before) === JSON.stringify(after) };
+})()`);
+t('X3 写作资产 **导出 → 再导入 往返一致**（确定性起点：导入夹具 → 导出 → 回落内置 → 再导入 → 生效表逐条相同）',
+  x3.ok && x3.n > 0 && x3.same, `条目 ${x3.n} 条；往返一致=${x3.same}`);
+
+/* ---------- X4 真实导入路径可用：导入 → reload → 仍在（localStorage 持久） ---------- */
+await evalJS(`new Promise(function(res){
+  var f = new File([${JSON.stringify(FIX_ASSET_JSON)}], '写作资产_风格包_v1.json', { type: 'application/json' });
+  cmplImportAsset(f, function(r){ saveNow(); res(r); });
+})`);
+await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: clearScriptId });   /* 摘掉「新文档即清空 LS」以免 reload 丢失 */
+await send('Page.reload');
+for (let i = 0; i < 40; i++) { if (await evalJS('document.readyState === "complete"')) break; await sleep(200); }
+await sleep(500);
+const x4 = await evalJS(`(() => {
+  var all = cmplActive();
+  var style = all.filter(function(x){ return (x.group || '') === '风格包'; });
+  var full = null; all.forEach(function(x){ if(x.label === '风格包 · 全套') full = x; });
+  return { v: state.version, hasAsset: all.some(function(x){ return x.src === 'asset'; }), styleLen: style.length, fullOk: !!(full && full.body === ${JSON.stringify(FIX_FULL)}) };
+})()`);
+t('X4 真实导入路径可用：导入 → **reload 后仍在**（localStorage 持久；风格包全套逐字等于夹具）',
+  x4.v === 14 && x4.hasAsset && x4.styleLen === 7 && x4.fullOk,
+  `version=${x4.v}；含 asset=${x4.hasAsset}；风格包 ${x4.styleLen} 条；全套逐字=${x4.fullOk}`);
+
 /* ---------- 截图 ---------- */
 const SHOT = process.argv[2] || '';
 if (SHOT) {
@@ -642,8 +778,8 @@ if (SHOT) {
 }
 
 const pass = R.filter(r => r.pass).length;
-console.log('=== v7.8 验收（真机 headless Edge + CDP）：H 组 候选/槽位/复制 + I 组 补全配置 ===');
+console.log('=== v7.8.1 验收（真机 headless Edge + CDP）：H 组 候选/槽位/复制 + I 组 补全配置 + X 组 资产边界 ===');
 for (const r of R) console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.name}  ${r.detail}`);
-console.log(`\nH+I 组合计 ${pass}/${R.length}`);
+console.log(`\nH+I 组合计 ${pass}/${R.length}（含 X 组资产边界 4 条 + H0 夹具前置；标签沿用「H+I」以兼容 run-gate 汇总解析）`);
 ws.close();
 process.exit(pass === R.length ? 0 : 1);

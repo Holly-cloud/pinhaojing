@@ -214,6 +214,13 @@ function renderCmplCfg(){
   hint.innerHTML = '片段里可用 <b>${1} ${2}</b> 做槽位（上屏后 Tab 逐位跳）；素材绑定位照你的习惯手写 <b>@</b>。'
                  + '拖条目 <b>≡</b> 换位（拖到别的组 = 改归组），拖分组标题 <b>≡</b> 整组换位。';
   body.appendChild(hint);
+  /* v7.8.1（Q7-P1-2）：内置风格包仍是中性示例时，给一条**非阻断**提示（一行字，不弹窗、不拦路） */
+  if(!cmplHasAsset()){
+    var ex = document.createElement('div');
+    ex.className = 'cmpl-cfg-hint cmpl-cfg-hint-example';
+    ex.innerHTML = '当前「风格包」是内置 <b>中性示例（请替换）</b>；点右下 <b>导入写作资产</b> 即可载入你自己的风格包（本机 <b>.json</b>、不走网络）。';
+    body.appendChild(ex);
+  }
   if(cmplCfgAdding) body.appendChild(cmplCfgForm(null));
   /* 按「组顺序」逐组渲染（组顺序 = cmplGroupOrder：配置里拖出来的顺序，候选气泡共用同一套） */
   var order = cmplGroupOrder();
@@ -336,12 +343,13 @@ function cmplCfgSave(){
   var label = li.value.trim() || body.replace(/\s+/g, ' ').slice(0, 12);
   var arr = cmplActive().slice();
   if(cmplCfgAdding){
-    arr.push({ key: cmplNewKey(), group: gi.value.trim() || '未分组', label: label, note: ni.value.trim(), body: body, block: false });
+    arr.push({ key: cmplNewKey(), group: gi.value.trim() || '未分组', label: label, note: ni.value.trim(), body: body, block: false, src: 'user' });
     cmplCfgAdding = false;
   }else{
     for(var i = 0; i < arr.length; i++){
       if(arr[i].key === cmplCfgEditing){
-        arr[i] = { key: arr[i].key, group: gi.value.trim() || '未分组', label: label, note: ni.value.trim(), body: body, block: !!arr[i].block };
+        /* v7.8.1：改写后归为「我的」（asset 仍记 asset）——确保「恢复内置默认」不静默丢弃用户改动 */
+        arr[i] = { key: arr[i].key, group: gi.value.trim() || '未分组', label: label, note: ni.value.trim(), body: body, block: !!arr[i].block, src: (arr[i].src === 'asset' ? 'asset' : 'user') };
         break;
       }
     }
@@ -358,7 +366,31 @@ function cmplCfgDel(key){
   cmplSetItems(arr); saveNow(); renderCmplCfg();
   toast('已删除片段' + (gone ? '：' + (gone.label || '') : ''), { label: '撤销', fn: function(){ cmplSetItems(before); saveNow(); renderCmplCfg(); toast('已恢复片段'); } });
 }
+/* v7.8.1：是否已导入过写作资产（决定「仍是中性示例」提示是否出现） */
+function cmplHasAsset(){
+  var all = cmplActive(), i;
+  for(i = 0; i < all.length; i++) if(all[i].src === 'asset') return true;
+  return false;
+}
+/* v7.8.1「恢复内置默认」= 先确认（Q7-7）→ 丢 seed + 重注内置；**保留 asset/user**（绝不静默删用户资产） */
+function cmplCfgResetAsk(){
+  document.getElementById('modalTitle').textContent = '恢复内置默认？';
+  var body = document.getElementById('modalBody');
+  body.innerHTML = '';
+  var p = document.createElement('div');
+  p.className = 'modal-row';
+  p.style.lineHeight = '1.7';
+  p.textContent = '将丢弃你在内置示例上的改动，并重新注入内置片段库；你导入的写作资产与自建片段会保留。';
+  body.appendChild(p);
+  modalCb = function(){ cmplCfgReset(); };
+  var mask = document.getElementById('modalMask');
+  mask.style.zIndex = '12080';   /* 配置窗口同为 .modal-mask（z=11000），确认框需盖在其上 */
+  mask.classList.remove('hide');
+}
 function cmplCfgReset(){
-  cmplSetItems(null); saveNow(); renderCmplCfg();
-  toast('已恢复内置片段库（共 ' + cmplSeedItems().length + ' 条）');
+  var arr = cmplActive().slice(), kept = [], i;
+  for(i = 0; i < arr.length; i++){ var s = arr[i].src; if(s === 'asset' || s === 'user') kept.push(arr[i]); }
+  cmplSetItems(kept.concat(cmplSeedItems()));
+  saveNow(); renderCmplCfg();
+  toast('已恢复内置片段（保留你导入/自建的 ' + kept.length + ' 条）');
 }

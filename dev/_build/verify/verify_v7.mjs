@@ -34,13 +34,17 @@ async function evalJS(expr) {
 const setMotion = value => send('Emulation.setEmulatedMedia', { media: '', features: [{ name: 'prefers-reduced-motion', value }] });
 const TARGET = 'file:///' + encodeURI(path.resolve(HERE, '../../../PHJ.html').replace(/\\/g, '/'));
 const OUT = path.resolve(HERE, '../../../PHJ.html');   /* 真实产物路径：体积断言直接 stat 它（不再比对字面量） */
-/* 体积预算（B10a / C8a 共用，集中一处便于维护）：
-   = 229376 B（224KB）≈ v7.8 实测 214433 B(209.4KB) 之上留约 7% 余量。
-   沿革：v7.2 立 131072 B(128KB) → v7.7 实测 155315 B(151.6KB) → v7.8 实测 214433 B(209.4KB)，原 166400 预算已超。当前 229376 为临时预算，待 Holly 拍板产品体积上限（届时只改此一处）。
+/* 体积预算（B10a/B10b、C8a/C8b 共用，集中一处便于维护）：
+   · SIZE_BUDGET_B = 229376 B（224KB）= **工程临时护栏**（**临时、非产品政策**）≈ v7.8 实测之上留约 7% 余量；
+   · SIZE_LIMIT_B  = 262144 B（256KB）= **产品硬上限**（Holly 拍板，触发 = P0 阻断交付）。
+   两阈值**语义不同、口径不同 → 闸门分别报告**（见 B10 / C8 段的两行日志）。
+   沿革：v7.2 立 131072 B(128KB) → v7.7 实测 155315 B(151.6KB) → v7.8 实测 214433 B(209.4KB) →
+        v7.8.1 资产分离后实测见日志（净影响≈持平，不承担瘦身指标，瘦身归 P2）。
    说明：旧断言曾把「129444/1024 ≤ 128」写成恒真式、从不读产物（P1 空转，2026-09-14 修复）；
-        现行 B10a/C8a 直接 stat 真实产物，判定式 = `fs.statSync(OUT).size <= SIZE_BUDGET_B`，
-        本次只上调预算数值、**未放宽判定式本身**。 */
+        现行 B10a/C8a 直接 stat 真实产物，判定式 = `fs.statSync(OUT).size <= SIZE_BUDGET_B`；
+        v7.8.1 只**新增** B10b/C8b（≤ 产品上限）与分别报告日志，**未放宽任何既有判定式**。 */
 const SIZE_BUDGET_B = 229376;
+const SIZE_LIMIT_B = 262144;
 await send('Page.enable');
 await send('Runtime.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: 1200, height: 1600, mobile: false });
@@ -214,7 +218,9 @@ console.log('── B10. 单文件体积预算 ──');
 /* 读真实产物字节（旧版把 129444/1024 写成恒真式、从不读 PHJ.html → 空转） */
 const b10SizeB = fs.statSync(OUT).size;
 console.log('    体积实测：' + b10SizeB + ' B / 预算 ' + SIZE_BUDGET_B + ' B（' + OUT.replace(/\\/g, '/').replace(/^.*\//, '') + '，真实 stat）');
-ok('B10a. 单文件体积 ≤ 预算（实测产物字节）', b10SizeB <= SIZE_BUDGET_B, '实测 ' + b10SizeB + ' B / 预算 ' + SIZE_BUDGET_B + ' B');
+console.log('    两阈值**分别报告**：工程临时护栏 ' + SIZE_BUDGET_B + ' B（224KB · **临时、非产品政策**，触发=告警）｜产品硬上限 ' + SIZE_LIMIT_B + ' B（256KB · 产品政策，触发=P0 阻断交付）');
+ok('B10a. 单文件体积 ≤ 工程临时护栏（' + SIZE_BUDGET_B + ' B · 224KB）', b10SizeB <= SIZE_BUDGET_B, '实测 ' + b10SizeB + ' B / 护栏 ' + SIZE_BUDGET_B + ' B');
+ok('B10b. 单文件体积 ≤ 产品硬上限（' + SIZE_LIMIT_B + ' B · 256KB · Holly 拍板 P0 口径）', b10SizeB <= SIZE_LIMIT_B, '实测 ' + b10SizeB + ' B / 产品上限 ' + SIZE_LIMIT_B + ' B');
 
 console.log('══════ C. 微交互层（v7.1 · P1 五项 + P2 tick） ══════');
 /* C 组前置：重置到干净布局（3 块互不重叠——避免上层块/peek 光点抢鼠标命中，导致 hover/拖拽作用不到目标块） */
@@ -374,7 +380,9 @@ console.log('── C8. 体积 ──');
 /* 读真实产物字节（旧版把 129444/1024 写成恒真式、从不读 PHJ.html → 空转） */
 const c8SizeB = fs.statSync(OUT).size;
 console.log('    体积实测：' + c8SizeB + ' B / 预算 ' + SIZE_BUDGET_B + ' B（真实 stat）');
-ok('C8a. 单文件体积 ≤ 预算（实测产物字节）', c8SizeB <= SIZE_BUDGET_B, '实测 ' + c8SizeB + ' B / 预算 ' + SIZE_BUDGET_B + ' B');
+console.log('    两阈值**分别报告**：工程临时护栏 ' + SIZE_BUDGET_B + ' B（224KB · **临时、非产品政策**，触发=告警）｜产品硬上限 ' + SIZE_LIMIT_B + ' B（256KB · 产品政策，触发=P0 阻断交付）');
+ok('C8a. 单文件体积 ≤ 工程临时护栏（' + SIZE_BUDGET_B + ' B · 224KB）', c8SizeB <= SIZE_BUDGET_B, '实测 ' + c8SizeB + ' B / 护栏 ' + SIZE_BUDGET_B + ' B');
+ok('C8b. 单文件体积 ≤ 产品硬上限（' + SIZE_LIMIT_B + ' B · 256KB · Holly 拍板 P0 口径）', c8SizeB <= SIZE_LIMIT_B, '实测 ' + c8SizeB + ' B / 产品上限 ' + SIZE_LIMIT_B + ' B');
 
 console.log('══════ D. v7.3 优化（resetZoom 保持位置 + 拼模式虚影） ══════');
 

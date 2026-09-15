@@ -17,7 +17,7 @@ function uid(){ return 'b_' + Date.now().toString(36) + Math.random().toString(3
 function defaultState(){
   return {
     app: 'storyboard-prompt-panel',
-    version: 13,
+    version: 14,
     zoom: 1,
     title: '未命名分镜',
     pan: { x: 0, y: 0 },
@@ -91,8 +91,10 @@ function migrate(d){
     }
     return { id: t.id || uid(), units: units };
   }) : [];
-  /* v7.8（version 13）：补全片段库 —— cmpl.items 缺省为 null（＝用内置表）；已物化的用户表逐条校验；
-     内置表版本升级（CMPL_SEED_V 变大）时把用户表里没有的新内置条目并进去（用户改过的不动） */
+  /* v7.8（version 13）：补全片段库 —— cmpl.items 缺省为 null（＝用内置表）；已物化用户表逐条校验；
+     内置表版本升级（CMPL_SEED_V 变大）时把用户表里没有的新内置条目并进去（用户改过的不动）
+     v7.8.1（version 14）：内置表边界变更（风格包降为中性示例），schema 未变 →
+       `cmpl.items` **逐字原样保留**（仅补默认 src='user'，**绝不静默清除用户已有风格包**）；不 merge 中性示例（CMPL_SEED_V 保持 1）。 */
   var cmplIn = (d.cmpl && typeof d.cmpl === 'object') ? d.cmpl : null;
   var cmpl = { v: (cmplIn && typeof cmplIn.v === 'number') ? cmplIn.v : CMPL_SEED_V, items: null, gorder: null };
   if(cmplIn && Array.isArray(cmplIn.items)){
@@ -100,13 +102,15 @@ function migrate(d){
     cmpl.items = cmplIn.items.filter(function(x){
       return x && typeof x.body === 'string';
     }).map(function(x){
+      var s = (x.src === 'seed' || x.src === 'asset' || x.src === 'user') ? x.src : 'user';   /* 缺失/非法 → user（永不自动删） */
       return {
         key: (typeof x.key === 'string' && x.key) ? x.key : ('u_' + Math.random().toString(36).slice(2, 9)),
         group: typeof x.group === 'string' ? x.group : '',
         label: typeof x.label === 'string' ? x.label : '',
         note: typeof x.note === 'string' ? x.note : '',
         body: x.body,
-        block: !!x.block
+        block: !!x.block,
+        src: s
       };
     });
     if(cmpl.v < CMPL_SEED_V){
@@ -116,7 +120,7 @@ function migrate(d){
       cmpl.v = CMPL_SEED_V;
     }
   }
-  return { app: 'storyboard-prompt-panel', version: 13, title: d.title || '未命名分镜', pan: pan, zoom: (typeof d.zoom === 'number' && d.zoom > 0 && d.zoom <= 4) ? d.zoom : 1, splice: { items: spliceItems, activeUnitId: activeUnitId }, collapsed: !!d.collapsed, templates: templates, cmpl: cmpl, blocks: blocks };
+  return { app: 'storyboard-prompt-panel', version: 14, title: d.title || '未命名分镜', pan: pan, zoom: (typeof d.zoom === 'number' && d.zoom > 0 && d.zoom <= 4) ? d.zoom : 1, splice: { items: spliceItems, activeUnitId: activeUnitId }, collapsed: !!d.collapsed, templates: templates, cmpl: cmpl, blocks: blocks };
 }
 
 function load(){
@@ -129,7 +133,7 @@ function load(){
         document.title = '拼好镜';
         render();
         renderTplList();
-        if(d.version < 13) saveNow();   /* v7.8：升到 13（补全片段库）时把新结构落盘 */
+        if(d.version < 14) saveNow();   /* v7.8.1：升到 14（内置表边界变更）时把规范化后的结构落盘 */
         return;
       }
     }

@@ -6,12 +6,12 @@
           → 无论成败回收浏览器与临时 profile → 汇总各闸门通过数 → 语义化退出码。
 
    闸门顺序（与 README「改完必过的闸门」一致）：
-     [1] 构建           dev/build.mjs                       期望 214433 B
-     [2] 等价性校验     verify/verify_build_equivalence.mjs 期望 PASS（构建可复现：含 banner 逐字节一致）
-     [3] 回归 verify_v7 verify/verify_v7.mjs                期望 85/85
+     [1] 构建           dev/build.mjs                       期望 222400 B（v7.8.1）
+     [2] 等价性校验     verify/verify_build_equivalence.mjs 期望 PASS（构建可复现：对 snapshots/PHJ_v7.8.1_20260915.html 含 banner 逐字节一致）
+     [3] 回归 verify_v7 verify/verify_v7.mjs                期望 87/87（v7.8.1 新增 B10b/C8b 产品上限）
      [4] F 组 verify_v76 verify/verify_v76.mjs              期望 18/18
      [5] G 组 verify_v77 verify/verify_v77.mjs              期望 16/16
-     [6] v7.8 verify_v78 verify/verify_v78.mjs              期望 H+I 35/35
+     [6] v7.8 verify_v78 verify/verify_v78.mjs              期望 H+I+X 41/41（v7.8.1 重锚 + 资产边界）
      [7] 开发态         diag/probe_dev_index.mjs             期望 18/18
 
    环境变量：

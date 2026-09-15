@@ -123,8 +123,15 @@
     <div class="tpl-body" id="cmplCfgBody"></div>
     <datalist id="cmplCfgGroupList"></datalist>
     <div class="tpl-foot cmpl-cfg-foot">
-      <button class="btn" id="cmplCfgReset" title="丢弃你的改动与新增，回到内置片段库">恢复内置默认</button>
-      <button class="btn primary" id="cmplCfgDone">完成</button>
+      <div class="cmpl-cfg-foot-l">
+        <button class="btn" id="cmplCfgReset" title="丢弃内置示例上的改动并重注内置片段；保留你导入的资产与自建片段（先确认）">恢复内置默认</button>
+      </div>
+      <div class="cmpl-cfg-foot-r">
+        <button class="btn" id="cmplCfgImport" title="从本机选择写作资产文件（.json）导入；不走网络">导入写作资产</button>
+        <button class="btn" id="cmplCfgExport" title="把当前片段库导出为写作资产文件（.json，本机保存）">导出写作资产</button>
+        <input type="file" id="cmplAssetInput" accept=".json,application/json" hidden>
+        <button class="btn primary" id="cmplCfgDone">完成</button>
+      </div>
     </div>
   </div>
   <!-- v7.8：拖动分组时，窗口左侧浮现的顺序小窗（拖到对应行即就位；放 mask 层避免窗口动画的 transform 影响 fixed 定位） -->

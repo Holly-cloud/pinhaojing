@@ -143,7 +143,24 @@ document.addEventListener('DOMContentLoaded', function(){
     var i = document.getElementById('cmplCfgLabelIn'); if(i) i.focus();
   });
   document.getElementById('cmplCfgDone').addEventListener('click', closeCmplCfg);
-  document.getElementById('cmplCfgReset').addEventListener('click', cmplCfgReset);
+  document.getElementById('cmplCfgReset').addEventListener('click', cmplCfgResetAsk);   /* v7.8.1：先确认再恢复（Q7-7） */
+  /* v7.8.1：写作资产 导入 / 导出（本机文件、零网络） */
+  document.getElementById('cmplCfgImport').addEventListener('click', function(){
+    var f = document.getElementById('cmplAssetInput'); if(f) f.click();
+  });
+  document.getElementById('cmplCfgExport').addEventListener('click', function(){
+    if(!cmplActive().length){ toast('片段库是空的，没有可导出的资产'); return; }
+    cmplExportAsset(); toast('已导出写作资产文件（本机保存）');
+  });
+  document.getElementById('cmplAssetInput').addEventListener('change', function(){
+    var inp = this, file = inp.files && inp.files[0];
+    if(!file) return;
+    cmplImportAsset(file, function(r){
+      inp.value = '';
+      if(r && r.ok){ toast('已导入写作资产（' + r.added + ' 条，共 ' + r.total + ' 条）'); renderCmplCfg(); }
+      else{ toast('导入失败：' + ((r && r.error) || '未知错误')); }
+    });
+  });
   document.getElementById('cmplCfgMask').addEventListener('click', function(e){ if(e.target.id === 'cmplCfgMask') closeCmplCfg(); });
   document.getElementById('cmplCfgBody').addEventListener('click', function(e){
     var t = e.target;
