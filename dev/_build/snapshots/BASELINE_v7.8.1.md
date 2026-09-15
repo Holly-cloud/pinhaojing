@@ -42,7 +42,7 @@ v7.8.1 起 `verify_build_equivalence.mjs` 的默认语义 = **构建可复现**�
 切片清单（`wc -l` 口径，2026-09-15 实测）：
 
 - CSS（9）：`00-base.css` 20 ｜ `10-canvas.css` 43 ｜ `20-menu.css` 9 ｜ `30-splice.css` 61 ｜ `40-window.css` 51 ｜ `50-editor.css` 27 ｜ `51-complete.css` 22 ｜ `52-library.css` 51 ｜ `90-effects.css` 105（逐片之和 = 389）
-- JS（19）：`00-header.js` 38 ｜ `10-state.js` 160 ｜ `15-clipboard.js` 45 ｜ `20-render.js` 30 ｜ `25-overlay.js` 164 ｜ `30-selection.js` 107 ｜ `35-splice.js` 237 ｜ `40-template.js` 322 ｜ `50-editor.js` 191 ｜ `51-struct.js` 83 ｜ `52-complete.js` 518 ｜ `53-library.js` 396 ｜ `55-menu.js` 142 ｜ `60-keyboard.js` 46 ｜ `62-block-size.js` 144 ｜ `64-zoom.js` 63 ｜ `66-pan.js` 56 ｜ `68-drag.js` 297 ｜ `90-boot.js` 332（逐片之和 = 3370）
+- JS（19）：`00-header.js` 38 ｜ `10-state.js` 160 ｜ `15-clipboard.js` 45 ｜ `20-render.js` 30 ｜ `25-overlay.js` 164 ｜ `30-selection.js` 107 ｜ `35-splice.js` 237 ｜ `40-template.js` 322 ｜ `50-editor.js` 191 ｜ `51-struct.js` 83 ｜ `52-complete.js` 518 ｜ `53-library.js` 396 ｜ `55-menu.js` 142 ｜ `60-keyboard.js` 46 ｜ `62-block-size.js` 144 ｜ `64-zoom.js` 63 ｜ `66-pan.js` 55 ｜ `68-drag.js` 297 ｜ `90-boot.js` 332（逐片之和 = 3370）
 
 ## 回归闸门（本轮实测 · `node dev/_build/run-gate.mjs` = 7/7 全绿，退出码 0）
 
@@ -58,8 +58,9 @@ v7.8.1 起 `verify_build_equivalence.mjs` 的默认语义 = **构建可复现**�
 
 ## 私有资产边界（红线自检）
 
-- `PHJ.html` 产物 与 `dev/src/**`：对私有特征串 `光影逻辑`／`暖主体、冷环境`／`无BMG，无字幕`／`负面提示词】`／`中低对比度，柔亮中间调` **0 命中**（`verify_v78.mjs` 的 X1/X2 断言 + 独立检索双重确认）。
-- `dev/_build/verify/verify_v78.mjs`：对上述特征串 **0 命中**（夹具文本运行时从 v7.8 快照提取，脚本内不硬编码私有文本）。
+- `PHJ.html` 产物 与 `dev/src/**`：对 v7.8 私有资产**全文**（`CMPL_STYLE` 5 段 `body` + `CMPL_TAIL`，**逐段完整串**，含其中的短特征串）**0 命中**（`verify_v78.mjs` 的 X1/X2 断言 + 独立检索双重确认）。
+  （此处刻意**不粘贴**任何私有片段，只指向符号名；可复核性 = 「已知检索的是哪几段完整串」。）
+- `dev/_build/verify/verify_v78.mjs`：对**同一组完整串** **0 命中**（夹具文本运行时从 v7.8 快照提取，脚本内不硬编码任何私有文本）。
 - 私有资产**文件**生成于**仓库之外**：`../写作资产_风格包_v1.json`（仓库目录的同级父目录）；`.gitignore` 追加 `dev/_build/artifacts/写作资产*` 作为保险丝。
 
 ## 自检

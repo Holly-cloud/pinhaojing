@@ -526,7 +526,10 @@ t('I7b v13 ⇒ v14 迁移**零丢失**：已物化的 cmpl.items 逐字保留（
   i7.m13v === 14 && i7.m13len === 2 && i7.m13b0 === '用户资产甲' && i7.m13b1 === '用户资产乙' && i7.m13s0 === 'user',
   `v13→${i7.m13v}；items ${i7.m13len} 条：body0=「${i7.m13b0}」body1=「${i7.m13b1}」src0=${i7.m13s0}`);
 
-/* ---------- I8 Esc 关窗 + 回到干净状态 ---------- */
+/* ---------- I8 Esc 关窗 + 回到干净状态 ----------
+   放宽理由（**全轮唯一放宽点**，非随手放宽）：I6 语义变更后，生效表内**必然**同时含 asset/user 条目，
+   故不能再精确断言「len === seed」。改为「isArr && 内置全在 && len ≥ seed」——保留真正的不变量
+   （表已物化、内置一条不少）；**精确计数不变量已由 I6 的 len === seed + keptLabels.length 覆盖**。 */
 await evalJS(`(() => { cmplCfgReset(); closeCmplCfg(); openCmplCfg(); return 1; })()`);
 await key('Escape');
 const i8 = await evalJS(`(() => {
@@ -690,7 +693,11 @@ t('I14 拖到小窗第 2 行：该条目落到组内第 2 位（高亮 + 落盘 
   `「${i13.sameGroup[i13.activeIdxInRows]}」拖到第 2 行 → 组「${i14.group}」内序列=${JSON.stringify(i14.after)}；落盘一致=${JSON.stringify(i14.lsLabels) === JSON.stringify(i14.after)}`);
 
 /* ========== X 组（v7.8.1 新增边界断言 · 护新红线「私有资产不入库」） ========== */
-/* ---------- X1 内置库不含私有写作资产 + 风格包组显式标注「示例（请替换）」 ---------- */
+/* ---------- X1 内置库不含私有写作资产 + 风格包组显式标注「示例（请替换）」 ----------
+   ★ 检测器语义（X1/X2 共用）：只判定「完整私有串**逐字**命中」。PRIV_STRINGS = 从 v7.8 快照提取的
+     完整 body/TAIL 串，与 PRD「原文」口径一致。**不覆盖局部/改写文本**——例如仅含 `暖主体` 之类短片段、
+     或把私有正文改写后回灌，本检测器**不会**报警；该边界**刻意不加断言**，由人工评审兜底
+     （短特征串偏泛，作为断言易产生脆性假红）。 */
 const x1 = await evalJS(`(() => {
   var PRIV = ${JSON.stringify(PRIV_STRINGS)};
   var seed = cmplSeedItems(), bad = [];
@@ -703,7 +710,8 @@ t('X1 内置库**不含私有写作资产**（对夹具私有文本 0 命中）�
   x1.bad.length === 0 && x1.label0 === '风格包' && x1.note0.indexOf('示例（请替换）') >= 0,
   `内置违规 ${x1.bad.length} 处${x1.bad.length ? '：' + x1.bad.join('、') : ''}；组名=「${x1.label0}」组注=「${x1.note0}」`);
 
-/* ---------- X2 产物与源码不含私有写作资产（node 侧：PHJ.html + dev/src/** 全量检索） ---------- */
+/* ---------- X2 产物与源码不含私有写作资产（node 侧：PHJ.html + dev/src/** 全量检索） ----------
+   ★ 语义同 X1：**完整串逐字**命中判定；**不覆盖**局部/改写文本（该边界由人工评审兜底，不加断言）。 */
 const XROOT = path.resolve(HERE, '../../..');
 const walkFiles = (dir, out) => { for (const f of fs.readdirSync(dir)) { const p = path.join(dir, f); if (fs.statSync(p).isDirectory()) walkFiles(p, out); else out.push(p); } return out; };
 const x2files = [path.join(XROOT, 'PHJ.html'), ...walkFiles(path.join(XROOT, 'dev', 'src'), [])];
