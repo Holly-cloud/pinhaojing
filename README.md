@@ -90,7 +90,7 @@
 | 日常改功能 | 改 `dev/src/`（`styles/` 9 片 / `js/` 19 片）→ `node dev/build.mjs` → 双击 `PHJ.html` |
 | 开发态直接看效果（**不用构建**） | 双击 `dev/src/index.html`（传统 `<script src>` + 外链 CSS，`file://` 实测可用；差异见下） |
 | 出交付版 | `node dev/build.mjs` → 产物 `PHJ.html` **222359 B**（v7.8.2 = 222359 B；v7.8.1 = 222400 B；v7.8 = 214433 B；v7.7 = 155315 B） |
-| **改完必过的闸门** | `node dev/_build/run-gate.mjs` → 期望：**构建 222359 B ｜ 等价性（构建可复现）✅ PASS ｜ 87/87 ｜ F 18/18 ｜ G 16/16 ｜ v7.8.2 H+I+X 39/39 ｜ 开发态 18/18**（一键自包含：自动起/收 headless 浏览器，无需人工干预） |
+| **改完必过的闸门** | `node dev/_build/run-gate.mjs` → 期望：**构建 222359 B ｜ 等价性（构建可复现）✅ PASS ｜ 87/87 ｜ F 18/18 ｜ G 16/16 ｜ v7.8.2 H+I+X 40/40 ｜ 开发态 18/18**（一键自包含：自动起/收 headless 浏览器，无需人工干预） |
 | 对比分支 | `git branch -a`：`master`（含 v7.8）｜`feat/editor-blocks`（v7.8 来源分支，**已并入 master**）。切换后**记得重跑构建**（`PHJ.html` 是产物，随源码变） |
 | 开发态自检（已含在 run-gate 内；单独跑需某浏览器已监听 `PHJ_BROWSER_PORT`，**非自包含**） | `node dev/_build/diag/probe_dev_index.mjs` → 期望 **18/18**（调试端口经 `PHJ_BROWSER_PORT`，缺省 9222） |
 | 回退 | `git checkout master`（含 v7.8）｜彻底回退到重构前单文件：`git reset --hard c52a561` |

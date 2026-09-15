@@ -115,6 +115,35 @@ const FIX = [
   FIX_TAIL
 ].join('\n');
 
+/* ---------- H19 内置风格包逐字（v7.8.2：冷启动未物化 → 内置 seed 即真实风格包） ----------
+   ★ 放在最前（H0 之前）的理由（会话状态）：本断言需「state.cmpl.items === null（冷启动/未物化）」
+     这一先决状态，而随后 H0 会导入夹具、I 组会继续物化/改表 —— 故必须在**任何物化之前**单独做一次。
+     做完后**重新导航一次**（clearLocalStorage 脚本仍在生效 → LS 再清空）→ 下一轮 H0 从 pristine
+     冷启动开始，本断言对后续 39 条**零污染**（且 H0 的导入在 base=seed 与 base=null 下结果相同）。
+   ★ 动作走真实路径：openCmplCfg()（「补」窗首次打开即把内置表物化出来，与 I1 同一路径）。
+   ★ 逐字口径：labels + bodies + 硬性要求 与 v7.8 原文夹具逐字相等（**不放宽**为「包含/长度>0」）。 */
+const h19pre = await evalJS('({ items: (state && state.cmpl) ? state.cmpl.items : "NO_STATE" })');
+const h19 = await evalJS(`(() => {
+  openCmplCfg();
+  var seed = cmplSeedItems().filter(function(x){ return (x.group || '') === '风格包'; });
+  var bodyText = (document.getElementById('cmplCfgBody') || {}).textContent || '';
+  closeCmplCfg();
+  return { labels: seed.map(function(x){ return x.label; }),
+           bodies: seed.map(function(x){ return x.body; }),
+           hasExample: bodyText.indexOf('示例（请替换）') >= 0 || bodyText.indexOf('【示例·') >= 0 };
+})()`);
+const H19_LABELS = ['风格包 · 全套'].concat(FIX_LABELS).concat(['硬性要求']);
+const H19_BODIES = [FIX_FULL].concat(FIX_PARTS).concat([FIX_TAIL]);
+t('H19 冷启动（未物化）→ 内置 seed「风格包」组 labels+bodies+硬性要求 与 v7.8 原文**逐字一致**（全套+5 段+硬性要求），且组内不含「示例（请替换）」标记',
+  h19pre.items === null && JSON.stringify(h19.labels) === JSON.stringify(H19_LABELS)
+  && JSON.stringify(h19.bodies) === JSON.stringify(H19_BODIES) && !h19.hasExample,
+  `items=${JSON.stringify(h19pre.items)}；组内=${JSON.stringify(h19.labels)}；逐字一致=${JSON.stringify(h19.bodies) === JSON.stringify(H19_BODIES)}；含示例标记=${h19.hasExample}`);
+
+/* H19 复位：重新导航（clearLocalStorage 仍生效）→ H0 从 pristine 冷启动开始 */
+await send('Page.reload');
+for (let i = 0; i < 40; i++) { if (await evalJS('document.readyState === "complete"')) break; await sleep(200); }
+await sleep(400);
+
 /* ── H0 夹具前置：走**真实导入路径**（FileReader + cmplImportAsset）载入 v7.8 风格包资产
    —— 之后 H 组断言全部键于「导入后的用户表」，逐字等于 v7.8，原意（风格包能力仍在且可被引用）完整保住。 */
 const impFixture = await evalJS(`new Promise(function(res){
@@ -761,6 +790,6 @@ if (SHOT) {
 const pass = R.filter(r => r.pass).length;
 console.log('=== v7.8 验收（真机 headless Edge + CDP）：H 组 候选/槽位/复制 + I 组 补全配置 + X 组 资产 导入/导出 ===');
 for (const r of R) console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.name}  ${r.detail}`);
-console.log(`\nH+I 组合计 ${pass}/${R.length}（含 X 组资产 导入/导出 2 条 + H0 夹具前置；标签沿用「H+I」以兼容 run-gate 汇总解析）`);
+console.log(`\nH+I 组合计 ${pass}/${R.length}（含 X 组资产 导入/导出 2 条 + H0 夹具前置 + H19 内置风格包逐字；标签沿用「H+I」以兼容 run-gate 汇总解析）`);
 ws.close();
 process.exit(pass === R.length ? 0 : 1);
