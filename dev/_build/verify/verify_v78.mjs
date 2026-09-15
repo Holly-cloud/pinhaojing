@@ -2,18 +2,20 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 /* v7.8 验收 · H 组：编辑器结构层 + 结构感知候选气泡 + 槽位 + 复制全文；I 组：补全配置窗口
-   —— v7.8.1 重锚：内置「风格包」降为**中性示例**，H 组断言改为**键于「导入后的用户表」**；
-      夹具（v7.8 风格包 5 段 + 硬性要求）**运行时从 dev/_build/snapshots/PHJ_v7.8_20260913.html 提取**
-      （快照在 git 历史内）→ 本脚本**不含任何私有字面量**（见文件末 X 组边界断言）。
+   —— v7.8.2 收敛：风格包**已放回内置**（v7.8.1「内置降为中性示例」的决定被 Holly 撤销）；
+      H 组断言仍**键于「导入后的用户表」**（导入/导出能力本身未变，v7.8.1 成果保留）；
+      夹具（v7.8 风格包 5 段 + 硬性要求）仍**运行时从 dev/_build/snapshots/PHJ_v7.8_20260913.html 提取**
+      （快照在 git 历史内）→ 夹具运行时提取机制保留，本脚本不硬编码夹具文本。
+   —— X 组边界断言收敛：X1/X2（「内置/产物不含私有正文」）随需求撤销 **已删除**（非放宽）；
+      保留 X3（导出 → 再导入 往返一致）/ X4（导入 → reload → 仍在）。
    用法：headless Edge --remote-debugging-port=9222 起好后： node verify_v78.mjs [截图输出.png]
    ※ 调试端口：优先读 PHJ_BROWSER_PORT（run-gate.mjs 传入），缺省 9222。
    真机口径：文本输入走 Input.insertText / 按键走 Input.dispatchKeyEvent / 点击走 Input.dispatchMouseEvent；
    仅「中文输入法组合态门控」一项用页面内合成 CompositionEvent（无头环境无法真起 IME），该条已在断言名标注。 */
 import fs from 'node:fs';
 /* ── 夹具：**从 v7.8 快照文本运行时提取**（快照已存在于 git 历史）──
-   私有写作资产（风格包 5 段 + 硬性要求）是**用户数据**：固定逐字文本**一律不硬编码在本脚本**，
-   改为运行时从 dev/_build/snapshots/PHJ_v7.8_20260913.html 中提取 → 本文件对私有特征串 **0 命中**，
-   且不新增任何私有文本落盘副本（v7.8.1 资产分离的边界要求）。 */
+   风格包（5 段 + 硬性要求）为便于断言复用，**运行时从 dev/_build/snapshots/PHJ_v7.8_20260913.html 提取**；
+   H 组重锚仍键于「导入后的用户表」，故夹具文本**不硬编码在本脚本**（夹具运行时提取机制保留）。 */
 const SNAP = path.join(HERE, '..', 'snapshots', 'PHJ_v7.8_20260913.html');
 if (!fs.existsSync(SNAP)) { console.error('夹具快照缺失（应为 git 历史内文件）：' + SNAP); process.exit(3); }
 const SNAP_TXT = fs.readFileSync(SNAP, 'utf8');
@@ -35,8 +37,6 @@ const FIX_ASSET_JSON = JSON.stringify({
     { label: '硬性要求', note: '', body: FIX_TAIL, block: false }
   ] }]
 });
-/* 私有特征串（用于「内置/产物 0 残留」断言；值本身来自提取结果，不硬编码） */
-const PRIV_STRINGS = FIX_PARTS.concat([FIX_TAIL]);
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const PORT = process.env.PHJ_BROWSER_PORT || '9222';   /* 调试端口：run-gate.mjs 经此环境变量传入，缺省 9222 */
@@ -692,36 +692,9 @@ t('I14 拖到小窗第 2 行：该条目落到组内第 2 位（高亮 + 落盘 
   && JSON.stringify(i14.lsLabels) === JSON.stringify(i14.after) && i14.popHidden && i14.groupOrderKept,
   `「${i13.sameGroup[i13.activeIdxInRows]}」拖到第 2 行 → 组「${i14.group}」内序列=${JSON.stringify(i14.after)}；落盘一致=${JSON.stringify(i14.lsLabels) === JSON.stringify(i14.after)}`);
 
-/* ========== X 组（v7.8.1 新增边界断言 · 护新红线「私有资产不入库」） ========== */
-/* ---------- X1 内置库不含私有写作资产 + 风格包组显式标注「示例（请替换）」 ----------
-   ★ 检测器语义（X1/X2 共用）：只判定「完整私有串**逐字**命中」。PRIV_STRINGS = 从 v7.8 快照提取的
-     完整 body/TAIL 串，与 PRD「原文」口径一致。**不覆盖局部/改写文本**——例如仅含 `暖主体` 之类短片段、
-     或把私有正文改写后回灌，本检测器**不会**报警；该边界**刻意不加断言**，由人工评审兜底
-     （短特征串偏泛，作为断言易产生脆性假红）。 */
-const x1 = await evalJS(`(() => {
-  var PRIV = ${JSON.stringify(PRIV_STRINGS)};
-  var seed = cmplSeedItems(), bad = [];
-  for(var i = 0; i < seed.length; i++){
-    for(var j = 0; j < PRIV.length; j++){ if(String(seed[i].body).indexOf(PRIV[j]) >= 0) bad.push(seed[i].group + ' / ' + seed[i].label); }
-  }
-  return { bad: bad, note0: (CMPL_GROUPS[0] && CMPL_GROUPS[0].note) || '', label0: (CMPL_GROUPS[0] && CMPL_GROUPS[0].label) || '' };
-})()`);
-t('X1 内置库**不含私有写作资产**（对夹具私有文本 0 命中），且「风格包」组显式标注「示例（请替换）」',
-  x1.bad.length === 0 && x1.label0 === '风格包' && x1.note0.indexOf('示例（请替换）') >= 0,
-  `内置违规 ${x1.bad.length} 处${x1.bad.length ? '：' + x1.bad.join('、') : ''}；组名=「${x1.label0}」组注=「${x1.note0}」`);
-
-/* ---------- X2 产物与源码不含私有写作资产（node 侧：PHJ.html + dev/src/** 全量检索） ----------
-   ★ 语义同 X1：**完整串逐字**命中判定；**不覆盖**局部/改写文本（该边界由人工评审兜底，不加断言）。 */
-const XROOT = path.resolve(HERE, '../../..');
-const walkFiles = (dir, out) => { for (const f of fs.readdirSync(dir)) { const p = path.join(dir, f); if (fs.statSync(p).isDirectory()) walkFiles(p, out); else out.push(p); } return out; };
-const x2files = [path.join(XROOT, 'PHJ.html'), ...walkFiles(path.join(XROOT, 'dev', 'src'), [])];
-const x2hits = [];
-for (const f of x2files) {
-  const s = fs.readFileSync(f, 'utf8');
-  for (let i = 0; i < PRIV_STRINGS.length; i++) if (s.includes(PRIV_STRINGS[i])) x2hits.push(path.relative(XROOT, f).replace(/\\/g, '/') + '（第 ' + (i + 1) + ' 条私有权）');
-}
-t('X2 产物 PHJ.html 与 dev/src/** **不含**私有写作资产（对夹具私有文本 0 命中）',
-  x2hits.length === 0, `检查 ${x2files.length} 个文件；命中 ${x2hits.length} 处${x2hits.length ? '：' + x2hits.join('、') : ''}`);
+/* ========== X 组（资产 导入/导出 边界断言） ==========
+   —— v7.8.2 收敛：v7.8.1 新增的 X1/X2「内置/产物不含私有正文」**随需求撤销已删除**
+      （Holly 认定风格包是语料的一部分、已放回内置 → 命题不再成立，属**删除**而非放宽）；保留 X3 / X4。 */
 
 /* ---------- X3 导出 → 再导入 往返一致 ---------- */
 const x3 = await evalJS(`(async () => {
@@ -786,8 +759,8 @@ if (SHOT) {
 }
 
 const pass = R.filter(r => r.pass).length;
-console.log('=== v7.8.1 验收（真机 headless Edge + CDP）：H 组 候选/槽位/复制 + I 组 补全配置 + X 组 资产边界 ===');
+console.log('=== v7.8 验收（真机 headless Edge + CDP）：H 组 候选/槽位/复制 + I 组 补全配置 + X 组 资产 导入/导出 ===');
 for (const r of R) console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.name}  ${r.detail}`);
-console.log(`\nH+I 组合计 ${pass}/${R.length}（含 X 组资产边界 4 条 + H0 夹具前置；标签沿用「H+I」以兼容 run-gate 汇总解析）`);
+console.log(`\nH+I 组合计 ${pass}/${R.length}（含 X 组资产 导入/导出 2 条 + H0 夹具前置；标签沿用「H+I」以兼容 run-gate 汇总解析）`);
 ws.close();
 process.exit(pass === R.length ? 0 : 1);

@@ -93,8 +93,10 @@ function migrate(d){
   }) : [];
   /* v7.8（version 13）：补全片段库 —— cmpl.items 缺省为 null（＝用内置表）；已物化用户表逐条校验；
      内置表版本升级（CMPL_SEED_V 变大）时把用户表里没有的新内置条目并进去（用户改过的不动）
-     v7.8.1（version 14）：内置表边界变更（风格包降为中性示例），schema 未变 →
-       `cmpl.items` **逐字原样保留**（仅补默认 src='user'，**绝不静默清除用户已有风格包**）；不 merge 中性示例（CMPL_SEED_V 保持 1）。 */
+     v7.8.1（version 14）：内置表边界变更，schema 未变 →
+       `cmpl.items` **逐字原样保留**（仅补默认 src='user'，**绝不静默清除用户已有风格包**）；不 merge 新内置（CMPL_SEED_V 保持 1）。
+     v7.8.2：撤回 v7.8.1「内置风格包降为中性示例」的处置（风格包即语料的一部分，已放回内置）；
+       schema 未变 → version 仍 14、迁移口径不变。 */
   var cmplIn = (d.cmpl && typeof d.cmpl === 'object') ? d.cmpl : null;
   var cmpl = { v: (cmplIn && typeof cmplIn.v === 'number') ? cmplIn.v : CMPL_SEED_V, items: null, gorder: null };
   if(cmplIn && Array.isArray(cmplIn.items)){

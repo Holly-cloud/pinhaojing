@@ -47,5 +47,3 @@
 /* v7.8.1：资产 导入/导出 入口（窗口 foot 左右分组；复用既有 .btn，零新增按钮样式） */
 .cmpl-cfg-foot-l,.cmpl-cfg-foot-r{display:flex;align-items:center;gap:8px}
 .cmpl-cfg-foot-r{margin-left:auto}
-.cmpl-cfg-hint-example{background:rgba(214,150,10,.09);border-color:rgba(214,150,10,.22)}
-.cmpl-cfg-hint-example b{color:#9a6a00}
