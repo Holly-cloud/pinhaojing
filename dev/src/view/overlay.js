@@ -164,3 +164,6 @@ function addLink(svg, ns, bid, sel, growIds){
 }
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.overlay = { activeId, addLink, bringToFront, peekBlock, refreshOverlays, updateLinks, updatePeekDots };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.overlay = { activeId, bringToFront, peekBlock, refreshOverlays, updateLinks, updatePeekDots };

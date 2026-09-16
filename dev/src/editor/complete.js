@@ -516,3 +516,6 @@ function cmplBind(){
 document.addEventListener('DOMContentLoaded', cmplBind);
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.complete = { CMPL_DIGIT_JUMP, CMPL_FONT, CMPL_GROUPS, CMPL_GROUP_HINT, CMPL_LH, CMPL_MAX_QUERY, CMPL_PAD_L, CMPL_PAD_T, CMPL_PER_GROUP, CMPL_SEED_V, CMPL_STYLE, CMPL_TAIL, CMPL_TRIGGER, _cmctx, _cmplCache, _cmplCacheSrc, blkCopyAll, cmplActive, cmplApplyAsset, cmplAssetGroups, cmplBind, cmplBuild, cmplBuildGroupItems, cmplBuildGroups, cmplClose, cmplCommit, cmplComposing, cmplEnterGroup, cmplExportAsset, cmplExportAssetData, cmplFullStyle, cmplGroup, cmplGroupOrder, cmplImportAsset, cmplInvalidate, cmplItems, cmplKeydown, cmplLeaveGroup, cmplMoveSel, cmplNewKey, cmplOnInput, cmplOpen, cmplPlace, cmplPop, cmplPrepare, cmplQueryAt, cmplRender, cmplReset, cmplScore, cmplSeedItems, cmplSel, cmplSetItems, cmplSlotIdx, cmplSlots, cmplTa, cmplWidth };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.complete = { CMPL_SEED_V, cmplActive, cmplExportAsset, cmplGroupOrder, cmplImportAsset, cmplNewKey, cmplReset, cmplSeedItems, cmplSetItems };

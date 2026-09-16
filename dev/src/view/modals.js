@@ -3,7 +3,6 @@
     （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
    ================================================================= */
 /* ---- 拼接栏模板（v6）：多预设单元（模板），每单元容纳多个 prompt 块；套用=替换当前拼接 ---- */
-var tplOpen = false;
 function renderTplList(){
   var list = document.getElementById('spTplList');
   list.innerHTML = '';
@@ -62,7 +61,6 @@ function renderTplList(){
   });
 }
 /* ---- 模板定制窗口（v6.7）：单模板工作模式——每次定制一个模板，窗口中创建的皆为同一模板的组成部分 ---- */
-var tplCur = 0;   /* 当前编辑的模板索引 */
 function openTplWin(){
   if(!state.templates.length) newTemplate();   /* v6.12：打开定制窗口立刻新建模板（用户拍板） */
   if(tplCur >= state.templates.length || tplCur < 0) tplCur = 0;
@@ -314,14 +312,15 @@ function deleteTemplate(id){
   var i = state.templates.findIndex(function(x){ return x.id === id; });
   if(i < 0) return;
   var t = state.templates[i];
+  var label = '模板 ' + (i + 1);   /* P3 修复：v6.13 起模板已无 name 字段，原 t.name 恒为 undefined */
   state.templates.splice(i, 1);
   renderTplList();
   saveNow();
-  toast('已删除模板：' + t.name, { label: '撤销', fn: function(){
+  toast('已删除模板：' + label, { label: '撤销', fn: function(){
     state.templates.splice(i, 0, t);
     renderTplList();
     saveNow();
-    toast('已恢复模板：' + t.name);
+    toast('已恢复模板：' + label);
   }});
 }
 
@@ -466,6 +465,8 @@ document.addEventListener('click', function(e){
   else if(act === 'del-block'){ bulkAction('del', actIds(bi)); }
   __ctxBlock = -1;
 });
-document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeCtxMenu(); });
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.modals = { __ctxBlock, __ctxX, __ctxY, addBlockHere, applyTemplate, closeCtxMenu, closeModal, closeTplWin, deleteTemplate, modalCb, newTemplate, newUnit, newUnitObj, openCtxMenu, openModal, openTplWin, previewTemplate, renderTplList, renderTplSelect, renderTplWin, toggleCollapsed, tplChipsRow, tplCur, tplOpen, tplUnitCard };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.modals = { addBlockHere, closeCtxMenu, closeModal, closeTplWin, modalCb, newTemplate, newUnit, openCtxMenu, openTplWin, renderTplList, renderTplWin, toggleCollapsed };

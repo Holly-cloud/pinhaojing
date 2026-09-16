@@ -222,7 +222,7 @@ function copySpliced(){
       if(b && b.text.trim()) parts.push(b.text.trim());
     }else{
       var seg = [];
-      if(it.prefixes.length) seg.push('\n' + it.prefixes.join('\n'));   /* v6.21 修正：前缀值段上方加入一个空行（加在前缀段前，而非整段开头——前缀不在开头时同样生效） */
+      if(it.prefixes.length) seg.push('\n' + it.prefixes.join('\n'));   /* v6.21 规则（**非 bug，勿改**）：前缀值段上方加一个空行；若前缀段就是复制内容的第一段，则该空行表现为「开头空行」——由 A2a/A2d 断言锁定 */
       var blks = it.blockIds.map(function(bid){ var bl = findBlockById(bid); return bl ? bl.text.trim() : ''; }).filter(Boolean);
       if(blks.length) seg.push(blks.join('\n'));
       if(it.suffixes.length) seg.push(it.suffixes.join('\n'));
@@ -237,3 +237,6 @@ function copySpliced(){
 }
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.splice = { activeUnit, copySpliced, countSpliced, isActiveUnit, popCard, popSpliceEntry, renderSplice, setActiveUnit, spItem, spUBlock, spUnit, spliceAdd, spliceClear, spliceRemove, spliceRemoveIds, spliceRemoveUnit, suckBlock };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.splice = { copySpliced, countSpliced, popCard, popSpliceEntry, renderSplice, spliceAdd, spliceClear, spliceRemoveIds, suckBlock };

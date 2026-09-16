@@ -78,9 +78,6 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('spTplCustom').addEventListener('click', openTplWin);
   /* v6.18：拼模式开关 */
   document.getElementById('spSplice').addEventListener('click', function(){ toggleSpliceMode(); });
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && spliceMode) toggleSpliceMode(false);
-  });
   document.getElementById('spTplFold').addEventListener('click', function(){
     tplOpen = !tplOpen;
     renderTplList();
@@ -98,12 +95,6 @@ document.addEventListener('DOMContentLoaded', function(){
   /* v6.18：模板预览窗口 */
   document.getElementById('tplPrevClose').addEventListener('click', function(){ document.getElementById('tplPrevMask').classList.add('hide'); });
   document.getElementById('tplPrevMask').addEventListener('click', function(e){ if(e.target.id === 'tplPrevMask') document.getElementById('tplPrevMask').classList.add('hide'); });
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && !document.getElementById('tplPrevMask').classList.contains('hide')) document.getElementById('tplPrevMask').classList.add('hide');
-  });
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && !document.getElementById('tplMask').classList.contains('hide') && document.getElementById('blkMask').classList.contains('hide')) closeTplWin();
-  });
   /* v6.12：提示词块编辑窗口事件 */
   document.getElementById('blkOk').addEventListener('click', function(){
     var cb = blkCb;
@@ -180,13 +171,7 @@ document.addEventListener('DOMContentLoaded', function(){
     if(e.key === 'Escape'){ e.stopPropagation(); cmplCfgEditing = null; cmplCfgAdding = false; renderCmplCfg(); return; }
     if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); cmplCfgSave(); }
   });
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && !document.getElementById('cmplCfgMask').classList.contains('hide')) closeCmplCfg();
-  });
   document.getElementById('blkMask').addEventListener('click', function(e){ if(e.target.id === 'blkMask') closeBlockEditor(); });
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && !document.getElementById('blkMask').classList.contains('hide')) closeBlockEditor();
-  });
   /* 命名模态框（v6/v6.4 多字段） */
   document.getElementById('modalOk').addEventListener('click', function(){
     var cb = modalCb;
@@ -284,3 +269,6 @@ document.addEventListener('visibilitychange', function(){ if(document.hidden) fl
 load();
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.boot = { exportJSON, exportName };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.boot = { exportJSON };

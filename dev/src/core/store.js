@@ -9,7 +9,17 @@ var panVel = null;    /* v6.1 画布平移惯性速度 */
 var panLooping = false;
 var panEndX = 0, panEndY = 0;   /* v6.1 惯性滑行终点（拖动最后目标，防过冲） */
 var selected = [];    /* v6.1 多选：选中块 id 列表（内存态，刷新不保留） */
-var MIN_BLOCK_W = 140;   /* 空块/短行的最小块宽；块宽随最长行自适应（v6） */
+var MIN_BLOCK_W = 140;
+
+/* ---- P3：会话态（**跨模块可见**的瞬时态收编于此；模块内部专用态仍留在各模块）---- */
+/* 来源标注：keys（方向键平滑移动）/ modals（模板列表开合与当前模板）/ pointer（空格平移、拼模式） */
+var spliceMode = false;
+var keyDir = { x: 0, y: 0 }, keyVel = 0, keyLoop = false, keyLastT = 0;
+var keyState = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+var tplOpen = false;
+var tplCur = 0;
+var spacePan = false;
+   /* 空块/短行的最小块宽；块宽随最长行自适应（v6） */
 
 function uid(){ return 'b_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 
@@ -38,3 +48,6 @@ function gridPos(i){
 }
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.store = { MIN_BLOCK_W, defaultState, drag, gridPos, panEndX, panEndY, panLooping, panVel, panning, selected, state, uid };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.store = { MIN_BLOCK_W, defaultState, drag, gridPos, keyDir, keyLastT, keyLoop, keyState, keyVel, panEndX, panEndY, panLooping, panVel, panning, selected, spacePan, spliceMode, state, tplCur, tplOpen, uid };

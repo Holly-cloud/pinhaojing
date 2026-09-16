@@ -53,3 +53,6 @@ document.addEventListener('paste', function(e){
 });
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.paste = { addImageBlock };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出）；本模块自包含，无对外面 */
+PHJ.paste = {};

@@ -817,17 +817,29 @@ const AUDIT = auditArtifactDiff();
 t('P1-C 审计：测试产物 == 产物 且逐行 diff 恰为插入的 1 行访问器（保证被测的就是同一份代码，只多这一行）',
   AUDIT.ok, `行数 ${AUDIT.da}→${AUDIT.db}；插入行长 ${AUDIT.insertedLineLen}；prefix=${AUDIT.prefixOk} suffix=${AUDIT.suffixOk} 是访问器行=${AUDIT.isAccessor}`);
 
-/* ---------- P2-A 加载期副作用序契约：keydown/keyup/blur 的**注册顺序**必须与 v7.9 一致 ----------
+/* ---------- P2-A 加载期副作用序契约：keydown/keyup/blur 的**注册顺序**必须与既定契约一致 ----------
    为什么顺序敏感：同一事件按注册序调用 → Escape/keydown 处理链、拖拽 vs 平移的 mousedown 优先级都靠它。
-   P2 的合并/拆分**刻意保持**该序（合并块放在"成员中最后一个"的位置、模块内顺序 = 原片顺序），
-   故本断言即「重排守门人」：谁把模块顺序调换（或让 resolveOrder 接管顺序），这里必红。 */
-const P2_KEY_SEQ_GOLDEN = ['document:keydown', 'document:keydown', 'document:keyup', 'window:blur', 'window:blur', 'document:keydown', 'document:keyup', 'window:blur', 'document:keydown', 'document:keydown', 'document:keydown', 'document:keydown', 'document:keydown'];
+   P2 的合并/拆分**刻意保持**该序（合并块放在"成员中最后一个"的位置、模块内顺序 = 原片顺序）。
+   ⚠️ P3（2026-09-16）**有意变更**：Escape 由 8 处 document 级处理器收编为 **1 处分发器**（interact/keys.js
+   的 closeTopLayer），故 keydown/keyup/blur 子序由 13 条 → **8 条**（计数改变是收敛的直接结果，非回归；
+   契约随之更新，并由 P3-A 独立守"唯一 Esc 处理点"）。 */
+const P2_KEY_SEQ_GOLDEN = ['document:keydown', 'document:keyup', 'window:blur', 'window:blur', 'document:keydown', 'document:keydown', 'document:keyup', 'window:blur'];
 const P2_SEG = fs.readFileSync(REAL_PRODUCT, 'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
 const P2_KEY_SEQ = [...P2_SEG.matchAll(/(document|window)\.addEventListener\(\s*'([a-zA-Z]+)'/g)]
   .map(m => m[1] + ':' + m[2]).filter(x => /keydown|keyup|blur/.test(x));
-t('P2-A 加载期副作用序：产物里 keydown/keyup/blur 的注册序 == v7.9 契约（重排守门人）',
+t('P2-A 加载期副作用序：产物里 keydown/keyup/blur 的注册序 == 契约（重排守门人；P3 收编 Esc 后为 8 条）',
   JSON.stringify(P2_KEY_SEQ) === JSON.stringify(P2_KEY_SEQ_GOLDEN),
   P2_KEY_SEQ.length + ' 条：' + P2_KEY_SEQ.join(' '));
+
+/* ---------- P3-A Escape 统一分发：document 级 keydown 处理器中，含 Escape 的恰为 1 处 ----------
+   收编前 8 处各自判断、互不阻断（一次 Esc 可能关掉多层）；收编后唯一处理点 = interact/keys.js 的 closeTopLayer。
+   本断言是"路回旧写法"的守门人：谁再加一个 document 级 Esc 处理器，这里必红。
+   （元素级 4 处保留：行内编辑框 / 配置窗表单体 / 命名模态框体 / 模板窗输入框——它们 stopPropagation，优先于分发器） */
+const P3_CHUNKS = P2_SEG.split("document.addEventListener('keydown'").slice(1);
+const P3_WITH_ESC = P3_CHUNKS.filter(c => c.slice(0, 500).includes("'Escape'")).length;
+t('P3-A Escape 统一分发：document 级 keydown 处理器共 3 处、其中含 Escape 的恰为 1 处（唯一分发点）',
+  P3_CHUNKS.length === 3 && P3_WITH_ESC === 1,
+  'doc-keydown=' + P3_CHUNKS.length + ' 含 Esc=' + P3_WITH_ESC);
 
 /* ---------- P2-B 显式导出面：PHJ 命名空间恰含 16 个模块键（真读页面内的 PHJ，非静态文本） ---------- */
 const P2_MODULES = ['blockEditor', 'boot', 'canvas', 'clipboard', 'complete', 'highlight', 'keys', 'library', 'modals', 'overlay', 'paste', 'persist', 'pointer', 'splice', 'store', 'struct'];

@@ -19,6 +19,21 @@
       降为中性示例」已由 v7.8.2 撤销；Holly 认定风格包即语料的一部分），52-complete 的 resp 已改写
       为事实陈述。当前现状以 dev/_build/snapshots/BASELINE_v7.10.md 为准。
    ── 变更记录 ──────────────────────────────────────────────────────────────
+   · v0.6-p3-2026-09-16（相对 v0.5-p2）：**P3 收口**——
+     (1) **Escape 统一分发**：原 8 处 document 级 Esc 处理器（各自 if、互不阻断 → 一次 Esc 可能关多层）
+         收编为 interact/keys.js 的 **closeTopLayer() 单点分发**（按"最上层优先"只关一层）；
+         元素级 4 处（行内编辑框 / 配置窗表单体 / 命名模态框体 / 模板窗输入框）保留（stopPropagation 优先）；
+     (2) **会话态收编**：跨模块可见的瞬时态（keyDir/keyVel/keyLoop/keyLastT/keyState、tplOpen/tplCur、
+         spacePan、spliceMode）统一移入 core/store.js；模块内部专用态仍留各模块；
+     (3) **PHJ 对外面收敛**：由"全部顶层符号"收敛为"**被他模块引用的顶层名**"（客观统计）：238 → 108，
+         收敛掉 130 个内部符号（interact/keys 与 interact/paste 变为自包含、对外面为空）；
+     (4) **修 1 个真 bug**：deleteTemplate 读已删字段 t.name（v6.13 起模板无名称）→ toast 恒显示 undefined，
+         改为与 UI 一致的「模板 N」；
+     (5) **判定 1 个"疑似 bug"非 bug**：copySpliced 的"开头空行"是 v6.21 有意规则（前缀段上方空行），
+         由 A2a/A2c/A2d/A2e 四条断言锁定 → 保留不动；
+     (6) **死代码扫描**：顶层声明 239 个，无"只声明未使用"者；
+     (7) 新基线 PHJ_v7.11_20260916.html；闸门 7/7（83/18/16/47/18，新增 P3-A Escape 单点断言）；
+     (8) PENDING 6 条全部判定并关闭（见下）。
    · v0.5-p2-2026-09-16（相对 v0.4-p2）：**P2 收口 = 模块划分落地 + 显式导出面**——
      (1) 合并：`view/canvas`（render+blocks）、`view/modals`（template+menu）、`interact/pointer`
          （selection+zoom+pan+drag）；拆分：`core/store` + `core/persist`（原 state）、`interact/paste`（原 boot）；
@@ -54,7 +69,7 @@
          editor/asset 的开放问题保留）。
    ============================================================================ */
 
-export const MANIFEST_VERSION = 'v0.5-p2';
+export const MANIFEST_VERSION = 'v0.6-p3';
 
 /* ════════════════════════════════════════════════════════════════════════════
    P1 · 切片序列（SLICES / CSS）—— **当前构建的唯一顺序源**
@@ -222,12 +237,13 @@ export function resolveOrder(mods = MODULES) {
 
 /* ── 需 Holly 评估后再定 / 待定项（P2 自述）─────────────────────────────────── */
 export const PENDING = [
-  '切的粒度：是否把 view/modals 再拆（模板窗 vs 右键菜单）——当前合以减少跨片 churn。',
-  'core/store 与 core/persist 是否合并（当前分开：迁移/存储契约与状态分离，便于单测）。',
-  'interact/pointer 收纳 4 片（selection/zoom/pan/drag）是否过粗——评估后或拆 pointer/gestures。',
-  'PHJ.define/require（ns.js）是否值得引入：若只用"定义时注册 + 启动时按 manifest 顺序执行"，可省 ns.js（更少代码）。',
-  'editor/complete 的资产导入/导出放置：**已在 v7.8.1 交付并保留至今**，落在 complete（就近）；P2 是否单立 editor/asset（开放）。',
-  '模块目录命名（core/view/editor/interact）与 src 现有 00/10/… 编号片的过渡映射是否一次到位。',
+  /* ── 以下 6 条于 2026-09-16 由主理人按推荐判定并关闭（原为"待 Holly 评估"；结论均倾向"不增复杂度"）── */
+  '【已判定·不拆】view/modals 再拆（模板窗 vs 右键菜单）：合并已足，拆只增文件数（两窗共用开合/遮罩与 tplCur 会话态）。',
+  '【已判定·保持分开】core/store 与 core/persist：状态模型与"存储/迁移契约"分离，利于单测与迁移安全。',
+  '【已判定·不拆】interact/pointer（selection+zoom+pan+drag 合）：指针路由集中一处反而更清晰，E5 的"统一指针路由"目标已达成。',
+  '【已判定·不引入】PHJ.define/require（ns.js）：同处一个 IIFE 作用域已足够，引入 ns 只增代码与间接层；模块对外面已由 PHJ.<module> 显式表达。',
+  '【已判定·不单立】editor/complete 的资产导入/导出：就近留在 complete（与内置表/生效表同源），单立 editor/asset 收益不足。',
+  '【已关闭】目录命名与旧编号片的过渡映射：P2 收口后 src/ 已全部分层（js/ 目录消失），过渡映射不再需要。',
 ];
 
 /* ── 默认导出 ── */

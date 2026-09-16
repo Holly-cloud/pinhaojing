@@ -216,7 +216,6 @@ function focusCaretEnd(el){
 
 /* ---- 交互：块拖拽 + 画布平移 ---- */
 /* v7.5：按住空格 + 左键拖动 = 平移画布（等价中键；文字编辑/独立窗口场景豁免，UI 区域不接管） */
-var spacePan = false;
 document.addEventListener('keydown', function(e){
   if(e.key !== ' ' && e.code !== 'Space') return;
   var ae = document.activeElement;
@@ -327,7 +326,7 @@ function onMouseDown(e){
   e.preventDefault();
 }
 /* v6.18：拼模式——拖动任意提示词块到拼接栏任意单元，松手即拼入 */
-var spliceMode = false, dropUnitEl = null;
+var dropUnitEl = null;   /* P3：spliceMode 已收编进 core/store.js（跨模块可见） */
 function toggleSpliceMode(on){
   spliceMode = (on !== undefined) ? on : !spliceMode;
   document.getElementById('spSplice').classList.toggle('active', spliceMode);
@@ -529,3 +528,6 @@ document.addEventListener('mousemove', onMouseMove);
 document.addEventListener('mouseup', onMouseUp);
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.pointer = { PAN_FRICTION, PAN_LERP, ZOOM_MAX, ZOOM_MIN, actIds, blurActive, bulkAction, clearDropTarget, clearSel, createGhost, destroyGhost, dragOffset, dropUnitEl, findBlockById, fixTextBlur, focusCaretEnd, ghostEl, ghostOffX, ghostOffY, ghostSrcId, isSel, moveGhost, onMouseDown, onMouseMove, onMouseUp, panStart, panStep, refreshSel, resetZoom, spacePan, spliceDropAt, spliceMode, syncSpliceText, toggleSel, toggleSpliceMode, updateDragTransform, updateDropTarget, updateZoomBtn, zoomAt };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.pointer = { actIds, blurActive, bulkAction, findBlockById, focusCaretEnd, ghostEl, ghostSrcId, isSel, refreshSel, resetZoom, syncSpliceText, toggleSpliceMode, updateDragTransform, updateZoomBtn, zoomAt };

@@ -575,7 +575,17 @@ var panVel = null;    /* v6.1 画布平移惯性速度 */
 var panLooping = false;
 var panEndX = 0, panEndY = 0;   /* v6.1 惯性滑行终点（拖动最后目标，防过冲） */
 var selected = [];    /* v6.1 多选：选中块 id 列表（内存态，刷新不保留） */
-var MIN_BLOCK_W = 140;   /* 空块/短行的最小块宽；块宽随最长行自适应（v6） */
+var MIN_BLOCK_W = 140;
+
+/* ---- P3：会话态（**跨模块可见**的瞬时态收编于此；模块内部专用态仍留在各模块）---- */
+/* 来源标注：keys（方向键平滑移动）/ modals（模板列表开合与当前模板）/ pointer（空格平移、拼模式） */
+var spliceMode = false;
+var keyDir = { x: 0, y: 0 }, keyVel = 0, keyLoop = false, keyLastT = 0;
+var keyState = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+var tplOpen = false;
+var tplCur = 0;
+var spacePan = false;
+   /* 空块/短行的最小块宽；块宽随最长行自适应（v6） */
 
 function uid(){ return 'b_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 
@@ -604,6 +614,9 @@ function gridPos(i){
 }
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.store = { MIN_BLOCK_W, defaultState, drag, gridPos, panEndX, panEndY, panLooping, panVel, panning, selected, state, uid };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.store = { MIN_BLOCK_W, defaultState, drag, gridPos, keyDir, keyLastT, keyLoop, keyState, keyVel, panEndX, panEndY, panLooping, panVel, panning, selected, spacePan, spliceMode, state, tplCur, tplOpen, uid };
 /* ==================== core/persist · 存储 / 迁移 / 落盘 ====================
     localStorage 键与 version 契约的唯一持有者：migrate(v1→v14) / load / 防抖保存 / sanitize。
     （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
@@ -736,6 +749,9 @@ function saveNow(){
 }
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.persist = { BACKUP_KEY, LS_KEY, flush, load, migrate, sanitizeState, saveNow, saveTimer, scheduleSave, toastTimer };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.persist = { BACKUP_KEY, flush, load, migrate, sanitizeState, saveNow, scheduleSave, toastTimer };
 /* ---- 复制（单块） ---- */
 function copyText(text){
   if(window.navigator.clipboard && window.navigator.clipboard.writeText){
@@ -782,6 +798,9 @@ function toast(msg, action){
 }
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.clipboard = { copyText, fallbackCopy, toast };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.clipboard = { copyText, toast };
 function refreshOverlays(){ updatePeekDots(); updateLinks(); }
 
 function updatePeekDots(){
@@ -949,6 +968,9 @@ function addLink(svg, ns, bid, sel, growIds){
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.overlay = { activeId, addLink, bringToFront, peekBlock, refreshOverlays, updateLinks, updatePeekDots };
 
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.overlay = { activeId, bringToFront, peekBlock, refreshOverlays, updateLinks, updatePeekDots };
+
 /* ==================== v7.6 coding 编辑器引擎（叠层高亮 + 行号栏 + 状态栏 + 错误标记） ====================
    设计：划分依据 = 文本中出现的符号本身（Unicode 标点/符号）；引擎零领域语义（不为任何符号预设"代表什么内容"）。
    规则：R0 错误符号表（，,）→ 红 + 波浪下划线 + 行号标红；优先级最高；不参与括号配对
@@ -1115,6 +1137,9 @@ function hlRefresh(){
 }
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.highlight = { HL_CLOSERS, HL_DLG, HL_DLG_OPEN, HL_ERR, HL_PAIRS, HL_SYM, HL_TOGGLE, _hlCode, _hlPre, hlClassify, hlDialogueMask, hlEsc, hlFamOf, hlFindMatch, hlRefresh, hlStatus, hlSyncBox, hlToHTML };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.highlight = { hlRefresh, hlSyncBox };
 var blkCb = null;
 function openBlockEditor(initial, cb){
   document.getElementById('blkInput').value = initial || '';
@@ -1142,6 +1167,9 @@ function closeBlockEditor(){
   cmplReset();     /* v7.8：关窗即清候选气泡与槽位状态 */
 }
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.blockEditor = { blkCb, closeBlockEditor, fitBlkWidth, openBlockEditor };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
 PHJ.blockEditor = { blkCb, closeBlockEditor, fitBlkWidth, openBlockEditor };
 
 /* ==================== v7.8 结构层（节解析） ====================
@@ -1228,6 +1256,9 @@ function structSummary(text){
 }
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.struct = { STRUCT_MARKS, structAt, structLineMark, structMap, structSummary };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.struct = { structAt };
 
 /* ==================== v7.8 候选引擎（结构感知补全 + 槽位 + 复制全文） ====================
    触发：输入 `#` 后弹候选气泡（`#` 在 53 条语料中出现 0 次 → 零冲突；且中文输入法下不占键位——
@@ -1747,6 +1778,9 @@ document.addEventListener('DOMContentLoaded', cmplBind);
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.complete = { CMPL_DIGIT_JUMP, CMPL_FONT, CMPL_GROUPS, CMPL_GROUP_HINT, CMPL_LH, CMPL_MAX_QUERY, CMPL_PAD_L, CMPL_PAD_T, CMPL_PER_GROUP, CMPL_SEED_V, CMPL_STYLE, CMPL_TAIL, CMPL_TRIGGER, _cmctx, _cmplCache, _cmplCacheSrc, blkCopyAll, cmplActive, cmplApplyAsset, cmplAssetGroups, cmplBind, cmplBuild, cmplBuildGroupItems, cmplBuildGroups, cmplClose, cmplCommit, cmplComposing, cmplEnterGroup, cmplExportAsset, cmplExportAssetData, cmplFullStyle, cmplGroup, cmplGroupOrder, cmplImportAsset, cmplInvalidate, cmplItems, cmplKeydown, cmplLeaveGroup, cmplMoveSel, cmplNewKey, cmplOnInput, cmplOpen, cmplPlace, cmplPop, cmplPrepare, cmplQueryAt, cmplRender, cmplReset, cmplScore, cmplSeedItems, cmplSel, cmplSetItems, cmplSlotIdx, cmplSlots, cmplTa, cmplWidth };
 
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.complete = { CMPL_SEED_V, cmplActive, cmplExportAsset, cmplGroupOrder, cmplImportAsset, cmplNewKey, cmplReset, cmplSeedItems, cmplSetItems };
+
 /* ==================== v7.8 补全配置界面（片段库：浏览 / 修改 / 新增） ====================
    入口：顶栏「补」。窗口形态沿用模板定制窗口（.tpl-win 体系）。
    数据：生效表见 52-complete.js（state.cmpl）。首次打开即把内置表**物化**成用户表——之后一切改动都在用户表上，
@@ -2131,6 +2165,9 @@ function cmplCfgReset(){
 }
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.library = { closeCmplCfg, cmplCfgAdding, cmplCfgDel, cmplCfgDnd, cmplCfgDrag, cmplCfgEditing, cmplCfgForm, cmplCfgGroups, cmplCfgMaterialize, cmplCfgMoveGroup, cmplCfgMoveGroupTo, cmplCfgMoveItem, cmplCfgMoveItemTo, cmplCfgQ, cmplCfgReset, cmplCfgResetAsk, cmplCfgRow, cmplCfgSave, cmplOrderHide, cmplOrderRows, cmplOrderShow, openCmplCfg, renderCmplCfg };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.library = { closeCmplCfg, cmplCfgAdding, cmplCfgDel, cmplCfgEditing, cmplCfgQ, cmplCfgReset, cmplCfgResetAsk, cmplCfgSave, openCmplCfg, renderCmplCfg };
 /* ==================== view/canvas · 块渲染归属地 ====================
     buildCard/fitBlock/autoSizeAll + render() 编排；由 20-render.js + 62-block-size.js 合并。
     （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
@@ -2312,6 +2349,9 @@ function applyPan(){
 }
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.canvas = { _mctx, applyPan, arrangeAll, autoResize, autoSizeAll, board, buildCard, canvas, fitBlock, opBtn, render, textWidth };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.canvas = { applyPan, arrangeAll, autoResize, board, canvas, fitBlock, render, textWidth };
 /* ---- 拼接侧边栏（v6.6：平铺条目 = 块条目 + 模板单元窗口条目） ---- */
 function renderSplice(growIds){   /* v7：growIds = 本次新增连线 id 列表 → 光线生长动画（其余刷新静态） */
   var panel = document.getElementById('splicePanel');
@@ -2536,7 +2576,7 @@ function copySpliced(){
       if(b && b.text.trim()) parts.push(b.text.trim());
     }else{
       var seg = [];
-      if(it.prefixes.length) seg.push('\n' + it.prefixes.join('\n'));   /* v6.21 修正：前缀值段上方加入一个空行（加在前缀段前，而非整段开头——前缀不在开头时同样生效） */
+      if(it.prefixes.length) seg.push('\n' + it.prefixes.join('\n'));   /* v6.21 规则（**非 bug，勿改**）：前缀值段上方加一个空行；若前缀段就是复制内容的第一段，则该空行表现为「开头空行」——由 A2a/A2d 断言锁定 */
       var blks = it.blockIds.map(function(bid){ var bl = findBlockById(bid); return bl ? bl.text.trim() : ''; }).filter(Boolean);
       if(blks.length) seg.push(blks.join('\n'));
       if(it.suffixes.length) seg.push(it.suffixes.join('\n'));
@@ -2551,12 +2591,14 @@ function copySpliced(){
 }
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.splice = { activeUnit, copySpliced, countSpliced, isActiveUnit, popCard, popSpliceEntry, renderSplice, setActiveUnit, spItem, spUBlock, spUnit, spliceAdd, spliceClear, spliceRemove, spliceRemoveIds, spliceRemoveUnit, suckBlock };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.splice = { copySpliced, countSpliced, popCard, popSpliceEntry, renderSplice, spliceAdd, spliceClear, spliceRemoveIds, suckBlock };
 /* ==================== view/modals · 通用模态框 / 模板窗 / 右键菜单 ====================
     统一开合与遮罩；由 40-template.js + 55-menu.js 合并。
     （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
    ================================================================= */
 /* ---- 拼接栏模板（v6）：多预设单元（模板），每单元容纳多个 prompt 块；套用=替换当前拼接 ---- */
-var tplOpen = false;
 function renderTplList(){
   var list = document.getElementById('spTplList');
   list.innerHTML = '';
@@ -2615,7 +2657,6 @@ function renderTplList(){
   });
 }
 /* ---- 模板定制窗口（v6.7）：单模板工作模式——每次定制一个模板，窗口中创建的皆为同一模板的组成部分 ---- */
-var tplCur = 0;   /* 当前编辑的模板索引 */
 function openTplWin(){
   if(!state.templates.length) newTemplate();   /* v6.12：打开定制窗口立刻新建模板（用户拍板） */
   if(tplCur >= state.templates.length || tplCur < 0) tplCur = 0;
@@ -2867,14 +2908,15 @@ function deleteTemplate(id){
   var i = state.templates.findIndex(function(x){ return x.id === id; });
   if(i < 0) return;
   var t = state.templates[i];
+  var label = '模板 ' + (i + 1);   /* P3 修复：v6.13 起模板已无 name 字段，原 t.name 恒为 undefined */
   state.templates.splice(i, 1);
   renderTplList();
   saveNow();
-  toast('已删除模板：' + t.name, { label: '撤销', fn: function(){
+  toast('已删除模板：' + label, { label: '撤销', fn: function(){
     state.templates.splice(i, 0, t);
     renderTplList();
     saveNow();
-    toast('已恢复模板：' + t.name);
+    toast('已恢复模板：' + label);
   }});
 }
 
@@ -3019,13 +3061,13 @@ document.addEventListener('click', function(e){
   else if(act === 'del-block'){ bulkAction('del', actIds(bi)); }
   __ctxBlock = -1;
 });
-document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeCtxMenu(); });
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.modals = { __ctxBlock, __ctxX, __ctxY, addBlockHere, applyTemplate, closeCtxMenu, closeModal, closeTplWin, deleteTemplate, modalCb, newTemplate, newUnit, newUnitObj, openCtxMenu, openModal, openTplWin, previewTemplate, renderTplList, renderTplSelect, renderTplWin, toggleCollapsed, tplChipsRow, tplCur, tplOpen, tplUnitCard };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.modals = { addBlockHere, closeCtxMenu, closeModal, closeTplWin, modalCb, newTemplate, newUnit, openCtxMenu, openTplWin, renderTplList, renderTplWin, toggleCollapsed };
 /* v6.17：方向键平滑移动画布（LOL 式：按住加速曲线、松手即停；镜头语义——按 → 视角右移，内容左移） */
 /* v6.18：keyState 记录每个键真实状态、keyDir 派生——修复快速连按时 keyup 误清同轴另一键导致「冲突不动」；位移 ÷zoom（高缩放视觉速度恒定） */
-var keyDir = { x: 0, y: 0 }, keyVel = 0, keyLoop = false, keyLastT = 0;
-var keyState = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 var KEY_MAX_VEL = 900, KEY_ACCEL = 4200;   /* px/s：0.9 秒内加速到 900px/s 约 0.21s */
 function updateKeyDir(){
   keyDir.x = (keyState.ArrowRight ? 1 : 0) - (keyState.ArrowLeft ? 1 : 0);
@@ -3067,8 +3109,37 @@ document.addEventListener('keyup', function(e){
 });
 window.addEventListener('blur', function(){ keyState.ArrowUp = keyState.ArrowDown = keyState.ArrowLeft = keyState.ArrowRight = false; updateKeyDir(); });
 window.addEventListener('blur', function(){ closeCtxMenu(); });
+
+/* ==================== P3：Escape 统一分发（显式层栈） ====================
+   收编前：**8 处** document 级 Esc 处理器各自 `if(e.key==='Escape' && …)` 且互不阻断
+           → 一次 Esc 可能同时关掉两层（例如配置窗与编辑器窗同开时会一起关）。
+   收编后：**唯一** document 级 Esc 处理点 = 本函数；按「最上层优先」只关**一**层。
+   层序（自顶向下，与视觉叠放一致）：右键菜单 → 补全配置窗 → 编辑器窗 → 模板预览 → 模板窗 → 拼模式。
+   元素级处理器**保留**（它们在元素上 `stopPropagation`，优先于本分发器，语义更细）：
+     · complete.js 的行内编辑框：Esc 先退组/关候选/退槽位；
+     · boot.js 配置窗表单体 / 命名模态框体：Esc 退回列表 / 关模态框；
+     · modals.js 模板窗输入框：Esc 退出编辑态。
+   —— 这三类都在"输入焦点"内，本分发器收不到（被 stopPropagation 截住）→ 无双重关闭。 */
+function closeTopLayer(){
+  var visible = function(id){ var el = document.getElementById(id); return !!(el && !el.classList.contains('hide')); };
+  var cm = document.getElementById('ctxMenu');
+  if(cm && cm.classList.contains('open')){ closeCtxMenu(); return 'ctxMenu'; }
+  if(visible('cmplCfgMask')){ closeCmplCfg(); return 'cmplCfg'; }
+  if(visible('blkMask')){ closeBlockEditor(); return 'blockEditor'; }
+  if(visible('tplPrevMask')){ document.getElementById('tplPrevMask').classList.add('hide'); return 'tplPrev'; }
+  if(visible('tplMask')){ closeTplWin(); return 'tplWin'; }
+  if(spliceMode){ toggleSpliceMode(false); return 'spliceMode'; }
+  return null;
+}
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  if(closeTopLayer()) e.preventDefault();
+});
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
-PHJ.keys = { KEY_ACCEL, KEY_MAX_VEL, keyDir, keyLastT, keyLoop, keyPanLoop, keyState, keyVel, updateKeyDir };
+PHJ.keys = { KEY_ACCEL, KEY_MAX_VEL, closeTopLayer, keyDir, keyLastT, keyLoop, keyPanLoop, keyState, keyVel, updateKeyDir };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出）；本模块自包含，无对外面 */
+PHJ.keys = {};
 /* ==================== interact/paste · Ctrl+V 粘贴为块 ====================
     文本 / 图片粘贴入画布；由 90-boot.js 的粘贴部分拆出（函数提升 → 位置无关）。
     （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
@@ -3124,6 +3195,9 @@ document.addEventListener('paste', function(e){
 });
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.paste = { addImageBlock };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出）；本模块自包含，无对外面 */
+PHJ.paste = {};
 /* ==================== interact/pointer · 指针手势路由 ====================
     多选 / 缩放 / 平移 / 拖拽；由 30-selection + 64-zoom + 66-pan + 68-drag 合并。
     （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
@@ -3342,7 +3416,6 @@ function focusCaretEnd(el){
 
 /* ---- 交互：块拖拽 + 画布平移 ---- */
 /* v7.5：按住空格 + 左键拖动 = 平移画布（等价中键；文字编辑/独立窗口场景豁免，UI 区域不接管） */
-var spacePan = false;
 document.addEventListener('keydown', function(e){
   if(e.key !== ' ' && e.code !== 'Space') return;
   var ae = document.activeElement;
@@ -3453,7 +3526,7 @@ function onMouseDown(e){
   e.preventDefault();
 }
 /* v6.18：拼模式——拖动任意提示词块到拼接栏任意单元，松手即拼入 */
-var spliceMode = false, dropUnitEl = null;
+var dropUnitEl = null;   /* P3：spliceMode 已收编进 core/store.js（跨模块可见） */
 function toggleSpliceMode(on){
   spliceMode = (on !== undefined) ? on : !spliceMode;
   document.getElementById('spSplice').classList.toggle('active', spliceMode);
@@ -3656,6 +3729,9 @@ document.addEventListener('mouseup', onMouseUp);
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.pointer = { PAN_FRICTION, PAN_LERP, ZOOM_MAX, ZOOM_MIN, actIds, blurActive, bulkAction, clearDropTarget, clearSel, createGhost, destroyGhost, dragOffset, dropUnitEl, findBlockById, fixTextBlur, focusCaretEnd, ghostEl, ghostOffX, ghostOffY, ghostSrcId, isSel, moveGhost, onMouseDown, onMouseMove, onMouseUp, panStart, panStep, refreshSel, resetZoom, spacePan, spliceDropAt, spliceMode, syncSpliceText, toggleSel, toggleSpliceMode, updateDragTransform, updateDropTarget, updateZoomBtn, zoomAt };
 
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.pointer = { actIds, blurActive, bulkAction, findBlockById, focusCaretEnd, ghostEl, ghostSrcId, isSel, refreshSel, resetZoom, syncSpliceText, toggleSpliceMode, updateDragTransform, updateZoomBtn, zoomAt };
+
 /* ---- 事件 ---- */
 document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('btnArrange').addEventListener('click', arrangeAll);
@@ -3735,9 +3811,6 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('spTplCustom').addEventListener('click', openTplWin);
   /* v6.18：拼模式开关 */
   document.getElementById('spSplice').addEventListener('click', function(){ toggleSpliceMode(); });
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && spliceMode) toggleSpliceMode(false);
-  });
   document.getElementById('spTplFold').addEventListener('click', function(){
     tplOpen = !tplOpen;
     renderTplList();
@@ -3755,12 +3828,6 @@ document.addEventListener('DOMContentLoaded', function(){
   /* v6.18：模板预览窗口 */
   document.getElementById('tplPrevClose').addEventListener('click', function(){ document.getElementById('tplPrevMask').classList.add('hide'); });
   document.getElementById('tplPrevMask').addEventListener('click', function(e){ if(e.target.id === 'tplPrevMask') document.getElementById('tplPrevMask').classList.add('hide'); });
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && !document.getElementById('tplPrevMask').classList.contains('hide')) document.getElementById('tplPrevMask').classList.add('hide');
-  });
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && !document.getElementById('tplMask').classList.contains('hide') && document.getElementById('blkMask').classList.contains('hide')) closeTplWin();
-  });
   /* v6.12：提示词块编辑窗口事件 */
   document.getElementById('blkOk').addEventListener('click', function(){
     var cb = blkCb;
@@ -3837,13 +3904,7 @@ document.addEventListener('DOMContentLoaded', function(){
     if(e.key === 'Escape'){ e.stopPropagation(); cmplCfgEditing = null; cmplCfgAdding = false; renderCmplCfg(); return; }
     if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); cmplCfgSave(); }
   });
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && !document.getElementById('cmplCfgMask').classList.contains('hide')) closeCmplCfg();
-  });
   document.getElementById('blkMask').addEventListener('click', function(e){ if(e.target.id === 'blkMask') closeBlockEditor(); });
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && !document.getElementById('blkMask').classList.contains('hide')) closeBlockEditor();
-  });
   /* 命名模态框（v6/v6.4 多字段） */
   document.getElementById('modalOk').addEventListener('click', function(){
     var cb = modalCb;
@@ -3941,6 +4002,9 @@ document.addEventListener('visibilitychange', function(){ if(document.hidden) fl
 load();
 /* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
 PHJ.boot = { exportJSON, exportName };
+
+/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+PHJ.boot = { exportJSON };
 })();
 </script>
 </body>
