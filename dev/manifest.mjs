@@ -19,7 +19,14 @@
       降为中性示例」已由 v7.8.2 撤销；Holly 认定风格包即语料的一部分），52-complete 的 resp 已改写
       为事实陈述。当前现状以 dev/_build/snapshots/BASELINE_v7.9.md 为准。
    ── 变更记录 ──────────────────────────────────────────────────────────────
-   · v0.3-p2-2026-09-16（相对 v0.2-p1）：**P2 阶段一 = 纯搬迁（产物字节恒等）**——
+   · v0.4-p2-2026-09-16（相对 v0.3-p2）：**P2 阶段二/三**——
+     (1) `50-editor.js` 按职责切为 `editor/highlight.js` + `editor/block-editor.js`（行边界切分 → 拼接恒等）；
+     (2) 余下 10 片改名归位（`core/state.js`、`view/render.js|template.js|menu.js|blocks.js`、
+         `interact/selection.js|zoom.js|pan.js|drag.js`、`shell/boot.js`）→ **编号片 `js/` 目录消失**；
+     (3) `SLICES` 20 条全部指向分层路径；`module` 取**文件级职责名**，架构师原稿里更粗的合并/拆分
+         （canvas / modals / pointer / store+persist / boot+paste）标为 `open` 待评估——它们需重排
+         （不相邻，或前半含共享声明），一旦执行**产物字节必变**，故另议；
+     (4) 全程产物字节恒等（222381 B / `a6d3a6f6…`），闸门 7/7 全绿。\n   · v0.3-p2-2026-09-16（相对 v0.2-p1）：**P2 阶段一 = 纯搬迁（产物字节恒等）**——
      (1) 8 个模块迁入分层目录：`shell/head.js`、`core/clipboard.js`、`view/overlay.js`、`view/splice.js`、
          `editor/struct.js`、`editor/complete.js`、`editor/library.js`、`interact/keys.js`（**内容逐字节未改**，
          只用 `git mv`，故产物字节不变 = 222381 B）；
@@ -40,7 +47,7 @@
          editor/asset 的开放问题保留）。
    ============================================================================ */
 
-export const MANIFEST_VERSION = 'v0.3-p2';
+export const MANIFEST_VERSION = 'v0.4-p2';
 
 /* ════════════════════════════════════════════════════════════════════════════
    P1 · 切片序列（SLICES / CSS）—— **当前构建的唯一顺序源**
@@ -53,31 +60,32 @@ export const MANIFEST_VERSION = 'v0.3-p2';
    · P2 完成后本数组退役（改由 `resolveOrder(MODULES)` 决定）。
    ════════════════════════════════════════════════════════════════════════════ */
 
-/* JS 源文件：顺序 = 现 index.html 的 <script src> 顺序（首位 head.js 首行即 'use strict';）
-   P2 进行中：`module` = 已迁入的 manifest 模块 id；`null` = 尚未重切（仍沿用编号片名）。
-   已迁 8 个（2026-09-16 阶段一，**纯搬迁、字节恒等**）：head / clipboard / overlay / splice /
-   struct / complete / library / keys。 */
+/* JS 源文件：顺序 = 现 index.html 的 <script src> 顺序（首条 shell/head.js 首行即 'use strict';）
+   P2 阶段一/二/三（2026-09-16）：全部 20 个源文件已按职责归入 shell/core/editor/view/interact，
+   **编号片目录 `js/` 已消失**。以下三条不变式在 P2 全程成立，故产物字节恒等（222381 B / a6d3a6f6…）：
+     ① 只搬家/改名 → 不动内容；② 只在行边界切分 → 拼接结果恒等；③ 顺序表逐条保持原相对次序。
+   `module` = 本阶段认定的模块名；`open` = 架构师原稿里更粗的合并/拆分**仍待评估**（见 PENDING）。 */
 export const SLICES = [
-  { id: 'head',      module: 'head',      layer: 'shell',    file: 'shell/head.js' },
-  { id: 'state',     module: null,        layer: 'core',     file: 'js/10-state.js',      /* 待拆 → core/store.js + core/persist.js */ },
-  { id: 'clipboard', module: 'clipboard', layer: 'core',     file: 'core/clipboard.js' },
-  { id: 'render',    module: null,        layer: 'view',     file: 'js/20-render.js',     /* 待并入 → view/canvas.js（与 blockSize 合） */ },
-  { id: 'overlay',   module: 'overlay',   layer: 'view',     file: 'view/overlay.js' },
-  { id: 'selection', module: null,        layer: 'interact', file: 'js/30-selection.js',  /* 待并入 → interact/pointer.js */ },
-  { id: 'splice',    module: 'splice',    layer: 'view',     file: 'view/splice.js' },
-  { id: 'template',  module: null,        layer: 'view',     file: 'js/40-template.js',   /* 待并入 → view/modals.js（与 menu 合） */ },
-  { id: 'highlight',   module: 'highlight',    layer: 'editor', file: 'editor/highlight.js' },   /* P2 切出：50-editor.js 上半（着色引擎 + 渲染/状态栏同步） */
-  { id: 'blockEditor', module: 'block-editor', layer: 'editor', file: 'editor/block-editor.js' }, /* P2 切出：50-editor.js 下半（编辑器窗口接线） */
-  { id: 'struct',    module: 'struct',    layer: 'editor',   file: 'editor/struct.js' },
-  { id: 'complete',  module: 'complete',  layer: 'editor',   file: 'editor/complete.js' },
-  { id: 'library',   module: 'library',   layer: 'editor',   file: 'editor/library.js' },
-  { id: 'menu',      module: null,        layer: 'view',     file: 'js/55-menu.js',       /* 待并入 → view/modals.js */ },
-  { id: 'keyboard',  module: 'keys',      layer: 'interact', file: 'interact/keys.js' },
-  { id: 'blockSize', module: null,        layer: 'view',     file: 'js/62-block-size.js', /* 待并入 → view/canvas.js */ },
-  { id: 'zoom',      module: null,        layer: 'interact', file: 'js/64-zoom.js',       /* 待并入 → interact/pointer.js */ },
-  { id: 'pan',       module: null,        layer: 'interact', file: 'js/66-pan.js',        /* 待并入 → interact/pointer.js */ },
-  { id: 'drag',      module: null,        layer: 'interact', file: 'js/68-drag.js',       /* 待并入 → interact/pointer.js */ },
-  { id: 'boot',      module: null,        layer: 'shell',    file: 'js/90-boot.js',       /* 待拆 → shell/boot.js + interact/paste.js */ },
+  { id: 'head',        module: 'head',         layer: 'shell',    file: 'shell/head.js' },
+  { id: 'state',       module: 'state',        layer: 'core',     file: 'core/state.js',        open: '架构师原稿拆 store+persist：需重排（LS 键/vars 在文件头）→ 会改字节，另议' },
+  { id: 'clipboard',   module: 'clipboard',    layer: 'core',     file: 'core/clipboard.js' },
+  { id: 'render',      module: 'render',       layer: 'view',     file: 'view/render.js',       open: '架构师原稿并入 canvas（与 blocks 合）：两片不相邻，合并会重排 → 会改字节，另议' },
+  { id: 'overlay',     module: 'overlay',      layer: 'view',     file: 'view/overlay.js' },
+  { id: 'selection',   module: 'selection',    layer: 'interact', file: 'interact/selection.js', open: '架构师原稿并入 pointer（4 片合）：不相邻，另议' },
+  { id: 'splice',      module: 'splice',       layer: 'view',     file: 'view/splice.js' },
+  { id: 'template',    module: 'template',     layer: 'view',     file: 'view/template.js',     open: '架构师原稿并入 modals（与 menu 合）：不相邻，另议' },
+  { id: 'highlight',   module: 'highlight',    layer: 'editor',   file: 'editor/highlight.js' },
+  { id: 'blockEditor', module: 'block-editor', layer: 'editor',   file: 'editor/block-editor.js' },
+  { id: 'struct',      module: 'struct',       layer: 'editor',   file: 'editor/struct.js' },
+  { id: 'complete',    module: 'complete',     layer: 'editor',   file: 'editor/complete.js' },
+  { id: 'library',     module: 'library',      layer: 'editor',   file: 'editor/library.js' },
+  { id: 'menu',        module: 'menu',         layer: 'view',     file: 'view/menu.js',         open: '架构师原稿并入 modals，另议' },
+  { id: 'keys',        module: 'keys',         layer: 'interact', file: 'interact/keys.js' },
+  { id: 'blocks',      module: 'blocks',       layer: 'view',     file: 'view/blocks.js',       open: '架构师原稿并入 canvas，另议（本片实测藏着 buildCard 等「命名称谎」符号，已随改名归位）' },
+  { id: 'zoom',        module: 'zoom',         layer: 'interact', file: 'interact/zoom.js',     open: '架构师原稿并入 pointer，另议' },
+  { id: 'pan',         module: 'pan',          layer: 'interact', file: 'interact/pan.js',      open: '架构师原稿并入 pointer，另议' },
+  { id: 'drag',        module: 'drag',         layer: 'interact', file: 'interact/drag.js',     open: '架构师原稿并入 pointer，另议' },
+  { id: 'boot',        module: 'boot',         layer: 'shell',    file: 'shell/boot.js',        open: '架构师原稿拆出 interact/paste：会改字节，另议' },
 ];
 
 /* CSS 切片：顺序 = 现 index.html 的 <link rel=stylesheet> 顺序（构建据此校验） */
