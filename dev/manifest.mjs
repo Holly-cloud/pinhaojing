@@ -1,23 +1,30 @@
 /* ============================================================================
-   拼好镜 · 模块清单（manifest）· 草案 v0（Q4 交付物）
+   拼好镜 · 模块清单（manifest）
    ----------------------------------------------------------------------------
-   状态：**草案（draft）** —— 供 Holly 评估切分粒度后再定；本轮不接入构建。
+   状态：**P1 已接入构建**（v0.2-p1）。
+     · P1 起本文件即**唯一顺序源**：build.mjs 读 `SLICES` / `CSS` 决定内联顺序，
+       **不再从 dev/src/index.html 扫 `<script src>` 收集**；
+     · dev/src/index.html 不再手写 19 个散列 `<script>`，改引**同一份代码生成**的
+       开发态 bundle `dev/src/dev-bundle.js` → 开发态与产物跑在**同一作用域、同一顺序、同一字节**的 JS 上。
+     · `MODULES` / `LAYERS` / `V78_EDGES` / `resolveOrder()` **保留**——那是 **P2 的模块化目标**
+       （按 deps 拓扑求解、物理重切成 core/view/editor/interact）；**P1 用 `SLICES` 保序**，
+       P2 完成后 `SLICES` 退役。
    放置：dev/manifest.mjs（**dev 根，故意不进 dev/src/**，否则会被 build.mjs 当切片内联）。
-
-   作用（P1/P2 起生效）：成为**唯一顺序源**——
-     · build.mjs 读它 → 按解析出的顺序内联模块 → 拼成单文件 PHJ.html；
-     · dev/src/index.html 的 <script src> 由它**生成/校验**（不再手写 19 个散列引用 →
-       根治 E6′「dev≠prod」与「顺序漂移」）。
-   本文件即"依赖即契约"：每条 deps 都是**显式**的，替代现在靠片号 00→90 的**隐式时序**。
 
    红线（不变）：产物单文件、经典脚本（无 type=module/import）、零运行时依赖、构建期零依赖。
    —— 本清单**只描述源码结构**，不改变交付物形态。
 
-   ★ = v7.8 新增片（51-struct/52-complete/53-library）；本稿把它们纳入 P2（Q8）。
+   ★ = v7.8 新增片（51-struct/52-complete/53-library）。
    ✅ 2026-09-15 更新：本清单描述**已按 v7.8.2 现状校准**——风格包位于**内置**（Q7「资产分离 /
       降为中性示例」已由 v7.8.2 撤销；Holly 认定风格包即语料的一部分），52-complete 的 resp 已改写
-      为事实陈述。当前现状以 dev/_build/snapshots/BASELINE_v7.8.2.md 为准。
+      为事实陈述。当前现状以 dev/_build/snapshots/BASELINE_v7.9.md 为准。
    ── 变更记录 ──────────────────────────────────────────────────────────────
+   · v0.2-p1-2026-09-16（相对 v0.1-draft-2026-09-15）：**接入 P1 止血**——
+     (1) 新增 `SLICES`（19 条 JS，顺序 = 现有 index.html 的 `<script src>` 顺序）与
+         `CSS`（9 条，顺序 = 现有 index.html 的 `<link rel=stylesheet>` 顺序）；
+     (2) 本文件即成为构建的**唯一顺序源**（build.mjs 不再扫 index.html）；
+     (3) `MODULES`/`LAYERS`/`V78_EDGES`/`resolveOrder()` 保留为 **P2 目标**，P1 用 `SLICES` 保序；
+     (4) `PENDING` 保留（P2 的粒度开放问题）。
    · v0.1-draft-2026-09-15（相对 v0-draft-2026-09-14）：按 v7.8.2 现状校准——
      (1) 52-complete 的 resp 去「内置中性示例表（无私有资产）」，改为「内置风格包（＝v7.8 原文
          逐字，5 段 + 硬性要求）+ 生效表回落 + 资产导入/导出」；
@@ -26,13 +33,61 @@
          editor/asset 的开放问题保留）。
    ============================================================================ */
 
-export const MANIFEST_VERSION = 'v0.1-draft-2026-09-15';
+export const MANIFEST_VERSION = 'v0.2-p1';
+
+/* ════════════════════════════════════════════════════════════════════════════
+   P1 · 切片序列（SLICES / CSS）—— **当前构建的唯一顺序源**
+   ----------------------------------------------------------------------------
+   · file 为相对 `dev/src/` 的现片路径（P2 重切前沿用 00/10/… 编号片）。
+   · 顺序 = 现有 dev/src/index.html 中 `<script src>` / `<link rel=stylesheet>` 的出现顺序
+     （2026-09-16 从 index.html 实测抓取，逐条核对）。
+   · build.mjs 依 `SLICES` 逐片拼接内联；`dev/src/index.html` 的 CSS 链顺序**必须**与
+     下方 `CSS` 列表一致，否则构建**报错**（杜绝顺序漂移）。
+   · P2 完成后本数组退役（改由 `resolveOrder(MODULES)` 决定）。
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* JS 切片：顺序 = 现 index.html 的 <script src> 顺序（00-header 首行即 'use strict';） */
+export const SLICES = [
+  { id: 'header',    file: 'js/00-header.js' },
+  { id: 'state',     file: 'js/10-state.js' },
+  { id: 'clipboard', file: 'js/15-clipboard.js' },
+  { id: 'render',    file: 'js/20-render.js' },
+  { id: 'overlay',   file: 'js/25-overlay.js' },
+  { id: 'selection', file: 'js/30-selection.js' },
+  { id: 'splice',    file: 'js/35-splice.js' },
+  { id: 'template',  file: 'js/40-template.js' },
+  { id: 'editor',    file: 'js/50-editor.js' },
+  { id: 'struct',    file: 'js/51-struct.js' },
+  { id: 'complete',  file: 'js/52-complete.js' },
+  { id: 'library',   file: 'js/53-library.js' },
+  { id: 'menu',      file: 'js/55-menu.js' },
+  { id: 'keyboard',  file: 'js/60-keyboard.js' },
+  { id: 'blockSize', file: 'js/62-block-size.js' },
+  { id: 'zoom',      file: 'js/64-zoom.js' },
+  { id: 'pan',       file: 'js/66-pan.js' },
+  { id: 'drag',      file: 'js/68-drag.js' },
+  { id: 'boot',      file: 'js/90-boot.js' },
+];
+
+/* CSS 切片：顺序 = 现 index.html 的 <link rel=stylesheet> 顺序（构建据此校验） */
+export const CSS = [
+  { id: 'base',     file: 'styles/00-base.css' },
+  { id: 'canvas',   file: 'styles/10-canvas.css' },
+  { id: 'menu',     file: 'styles/20-menu.css' },
+  { id: 'splice',   file: 'styles/30-splice.css' },
+  { id: 'window',   file: 'styles/40-window.css' },
+  { id: 'editor',   file: 'styles/50-editor.css' },
+  { id: 'complete', file: 'styles/51-complete.css' },
+  { id: 'library',  file: 'styles/52-library.css' },
+  { id: 'effects',  file: 'styles/90-effects.css' },
+];
 
 /* 分层：core（无 DOM 状态/持久）→ editor（纯引擎 + 窗口）→ view（DOM 生成）
-        → interact（输入路由）→ shell（外壳/启动）。箭头 = 允许的依赖方向。 */
+        → interact（输入路由）→ shell（外壳/启动）。箭头 = 允许的依赖方向。
+   （P2 目标；P1 不据此排序。） */
 export const LAYERS = ['shell', 'core', 'editor', 'view', 'interact'];
 
-/* ── 模块清单 ────────────────────────────────────────────────────────────────
+/* ── 模块清单（P2 目标）────────────────────────────────────────────────────────
    id      : 稳定标识（= PHJ 命名空间二级名）
    path    : 目标文件（P2 重切后的物理位置）
    from    : v7.8 现片来源（19 片 JS 的搬迁映射——便于对照与回退）
@@ -102,7 +157,7 @@ export const MODULES = [
     exports: ['PHJ.paste'], deps: ['ns', 'store', 'canvas'], resp: 'Ctrl+V 文本/图片粘贴为块' },
 ];
 
-/* ── ★v7.8 的 5 条隐式时序边 → 显式依赖 ──────────────────────────────────────
+/* ── ★v7.8 的 5 条隐式时序边 → 显式依赖（P2 目标）──────────────────────────────
    现状（src/index.html 片号顺序）只是"恰好：50 在 51/52 之前定义、调用发生在运行期"。
    重切后**不再依赖片号**，改由下表 deps 表达： */
 export const V78_EDGES = [
@@ -113,7 +168,8 @@ export const V78_EDGES = [
   { edge: '90 → 52/53', was: 'boot 调 cmplCfg* / cmplBind/...',    now: "boot.deps ∋ 'complete','library'" },
 ];
 
-/* ── 拓扑求解：返回模块 id 的加载顺序（同层按清单出现序，跨层按 deps） ── */
+/* ── 拓扑求解：返回模块 id 的加载顺序（同层按清单出现序，跨层按 deps） ──
+   （P2 目标；P1 构建**不**调用本函数，P1 用 SLICES 保序。） */
 export function resolveOrder(mods = MODULES) {
   const byId = new Map(mods.map(m => [m.id, m]));
   const out = [], seen = new Set(), inStack = new Set();
@@ -133,13 +189,16 @@ export function resolveOrder(mods = MODULES) {
   return out;
 }
 
-/* ── 与 dev/src/index.html 的关系 ─────────────────────────────────────────────
-   P1 起：index.html **不再手写** <script src>；由本清单生成：
-     · 构建产物 PHJ.html：build.mjs 按 resolveOrder() 内联进**单个 <script>**；
-     · 开发态 dev bundle：索引同一顺序，保证 **dev≡prod**（同一份代码、同一严格作用域）。
-   校验：若 index.html 的引用序 ≠ resolveOrder() → 构建/闸门**报错**（杜绝顺序漂移）。 */
+/* ── 与 dev/src/index.html 的关系（P1 已生效）─────────────────────────────────
+   P1 起：index.html **不再手写** <script src>；由本清单**主导**：
+     · 构建产物 PHJ.html：build.mjs 按 `SLICES` 顺序内联进**单个 <script>**，并用 IIFE 包裹；
+     · 开发态 dev bundle：build.mjs 把**同一份逐字相同**的 IIFE 写入 dev/src/dev-bundle.js，
+       index.html 只引这一个 → 保证 **dev≡prod**（同一份代码、同一严格作用域、同一字节）。
+   校验：
+     · build.mjs：index.html 的 CSS 链顺序 **必须** == 本清单 `CSS` 列表顺序（不一致即构建报错）；
+     · 闸门：产物内联 JS 段 == dev/src/dev-bundle.js **逐字一致**（见 verify_v78.mjs）。 */
 
-/* ── 需 Holly 评估后再定 / 待定项（DRAFT 自述） ─────────────────────────────── */
+/* ── 需 Holly 评估后再定 / 待定项（P2 自述）─────────────────────────────────── */
 export const PENDING = [
   '切的粒度：是否把 view/modals 再拆（模板窗 vs 右键菜单）——当前合以减少跨片 churn。',
   'core/store 与 core/persist 是否合并（当前分开：迁移/存储契约与状态分离，便于单测）。',
@@ -150,4 +209,4 @@ export const PENDING = [
 ];
 
 /* ── 默认导出 ── */
-export default { MANIFEST_VERSION, LAYERS, MODULES, V78_EDGES, PENDING, resolveOrder };
+export default { MANIFEST_VERSION, SLICES, CSS, LAYERS, MODULES, V78_EDGES, PENDING, resolveOrder };

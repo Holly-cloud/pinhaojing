@@ -520,6 +520,7 @@ body.space-pan .canvas.panning,body.space-pan .canvas.panning .block,body.space-
 </div>
 
 <script>
+;(function(){
 'use strict';
 /* ============ 拼好镜 · 单文件版 · v5.4 ============
    无限画布 + 把手置顶 + 原生 textarea + 无复制全部 + 无序号徽章
@@ -3877,6 +3878,7 @@ window.addEventListener('beforeunload', flush);
 document.addEventListener('visibilitychange', function(){ if(document.hidden) flush(); });
 
 load();
+})();
 </script>
 </body>
 </html>

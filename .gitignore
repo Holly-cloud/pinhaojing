@@ -6,3 +6,7 @@ dev/_build/artifacts/写作资产*
 # 常见临时/探针留痕（本轮用完即清；保险起见一并忽略）
 *.tmp
 *.log
+
+# P1：开发态 bundle 由构建生成（= 产物内联 JS 段逐字），不入库。
+# 生成命令：node dev/build.mjs（build.mjs 自动写出）。
+dev/src/dev-bundle.js
