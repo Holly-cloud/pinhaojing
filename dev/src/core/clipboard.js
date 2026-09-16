@@ -42,4 +42,5 @@ function toast(msg, action){
     toastTimer = setTimeout(function(){ el.classList.remove('toast-out'); el.classList.add('hide'); }, 160);
   }, 2600);
 }
-
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.clipboard = { copyText, fallbackCopy, toast };

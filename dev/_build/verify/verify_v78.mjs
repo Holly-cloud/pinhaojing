@@ -817,6 +817,24 @@ const AUDIT = auditArtifactDiff();
 t('P1-C 审计：测试产物 == 产物 且逐行 diff 恰为插入的 1 行访问器（保证被测的就是同一份代码，只多这一行）',
   AUDIT.ok, `行数 ${AUDIT.da}→${AUDIT.db}；插入行长 ${AUDIT.insertedLineLen}；prefix=${AUDIT.prefixOk} suffix=${AUDIT.suffixOk} 是访问器行=${AUDIT.isAccessor}`);
 
+/* ---------- P2-A 加载期副作用序契约：keydown/keyup/blur 的**注册顺序**必须与 v7.9 一致 ----------
+   为什么顺序敏感：同一事件按注册序调用 → Escape/keydown 处理链、拖拽 vs 平移的 mousedown 优先级都靠它。
+   P2 的合并/拆分**刻意保持**该序（合并块放在"成员中最后一个"的位置、模块内顺序 = 原片顺序），
+   故本断言即「重排守门人」：谁把模块顺序调换（或让 resolveOrder 接管顺序），这里必红。 */
+const P2_KEY_SEQ_GOLDEN = ['document:keydown', 'document:keydown', 'document:keyup', 'window:blur', 'window:blur', 'document:keydown', 'document:keyup', 'window:blur', 'document:keydown', 'document:keydown', 'document:keydown', 'document:keydown', 'document:keydown'];
+const P2_SEG = fs.readFileSync(REAL_PRODUCT, 'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
+const P2_KEY_SEQ = [...P2_SEG.matchAll(/(document|window)\.addEventListener\(\s*'([a-zA-Z]+)'/g)]
+  .map(m => m[1] + ':' + m[2]).filter(x => /keydown|keyup|blur/.test(x));
+t('P2-A 加载期副作用序：产物里 keydown/keyup/blur 的注册序 == v7.9 契约（重排守门人）',
+  JSON.stringify(P2_KEY_SEQ) === JSON.stringify(P2_KEY_SEQ_GOLDEN),
+  P2_KEY_SEQ.length + ' 条：' + P2_KEY_SEQ.join(' '));
+
+/* ---------- P2-B 显式导出面：PHJ 命名空间恰含 16 个模块键（真读页面内的 PHJ，非静态文本） ---------- */
+const P2_MODULES = ['blockEditor', 'boot', 'canvas', 'clipboard', 'complete', 'highlight', 'keys', 'library', 'modals', 'overlay', 'paste', 'persist', 'pointer', 'splice', 'store', 'struct'];
+const P2_KEYS = JSON.parse(await evalJS('JSON.stringify(Object.keys(PHJ).sort())'));
+t('P2-B 显式导出面：PHJ 恰含 16 个模块键（PHJ.<module> = {…}，读页面实例）',
+  Array.isArray(P2_KEYS) && P2_KEYS.join(',') === P2_MODULES.join(','), 'keys=' + JSON.stringify(P2_KEYS));
+
 /* ---------- P1-D 产品纯度：pristine PHJ.html 加载后 window 自有键增量 ⊆ 白名单（预期空集） ---------- */
 const W0_ID = (await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.__W0 = Object.getOwnPropertyNames(window).slice();' })).identifier;
 await send('Page.navigate', { url: REAL_PRODUCT_URL });

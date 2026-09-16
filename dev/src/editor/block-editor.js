@@ -24,3 +24,5 @@ function closeBlockEditor(){
   blkCb = null;
   cmplReset();     /* v7.8：关窗即清候选气泡与槽位状态 */
 }
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.blockEditor = { blkCb, closeBlockEditor, fitBlkWidth, openBlockEditor };

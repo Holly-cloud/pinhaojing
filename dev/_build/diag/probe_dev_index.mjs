@@ -40,11 +40,13 @@ const walkSrc = (dir = SRC_DIR, out = []) => {
 const ALL_SRC   = walkSrc();
 const MISSING   = [...LISTED_JS, ...LISTED_CSS].filter(f => !existsSync(path.join(SRC_DIR, f)));
 const UNLISTED  = ALL_SRC.filter(f => f !== BUNDLE_REL && !LISTED_JS.includes(f) && !LISTED_CSS.includes(f));
-/* 片数「下限」基线（golden 下限，抓一致删除）——沿革：v7.7 = 16/7 → v7.8 = 19/9（P1/P2 未改片数）。
-   只作下限：以后加片无需改这里（加片不会触发下限）；减片（哪怕文件与 manifest 条目一起删）会红。
-   之所以同时保留「下限 + 清单齐全」与「无清单外文件」两步，是为了既不假红（加片）、又不丢保护（减片）：
-   仅用清单条数做实况断言会产生自指——删一片并同步删条目则期望值同降、断言反而通过（QA 反例 A）。 */
-const BASE_JS_MIN = 19, BASE_CSS_MIN = 9;
+/* 模块数「下限」基线（golden 下限，抓一致删除）——沿革：v7.7 = 16/7 → v7.8 = 19/9（编号片）
+   → **P2 收口（2026-09-16）= 17/9**（合并 canvas=render+blocks、modals=template+menu、
+   pointer=selection+zoom+pan+drag；拆分 store+persist、boot+paste → 20 个文件变 17 个模块）。
+   只作**下限**：以后拆模块（数量上升）不触发；**删模块**（哪怕文件与 manifest 条目一起删）会红，
+   因为本常量是**独立写死的**、不由目录或 manifest 推导（避免"删一片则期望同降"的自指）。
+   ⚠️ 有意减少模块数时**必须显式改这一行**并在提交信息里说明。 */
+const BASE_JS_MIN = 17, BASE_CSS_MIN = 9;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const PORT = process.env.PHJ_BROWSER_PORT || '9222';   /* 调试端口：run-gate.mjs 经此环境变量传入，缺省 9222 */
 const list = await (await fetch('http://127.0.0.1:' + PORT + '/json/list')).json();

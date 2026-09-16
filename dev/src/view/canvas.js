@@ -1,3 +1,38 @@
+/* ==================== view/canvas · 块渲染归属地 ====================
+    buildCard/fitBlock/autoSizeAll + render() 编排；由 20-render.js + 62-block-size.js 合并。
+    （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
+   ================================================================= */
+/* ---- 渲染 ---- */
+var canvas, board;
+
+function render(){
+  canvas = document.getElementById('canvas');
+  board = document.getElementById('board');
+  board.innerHTML = '';
+  var empty = canvas.querySelector('.empty');
+  if(empty) empty.remove();
+  if(!state.blocks.length){
+    var e = document.createElement('div');
+    e.className = 'empty';
+    e.innerHTML = '双击画布空白处新增块<br><span>无限画布：拖块圆点摆放位置 ｜ 拖空白平移视角 ｜ 滚轮上下滑动 ｜ 方向键移动画布</span>';
+    canvas.appendChild(e);
+  }else{
+    state.blocks.forEach(function(b){
+      var card = buildCard(b);
+      if(b.id === activeId) card.classList.add('active');   /* v6.17：操作置顶在重建后恢复 */
+      board.appendChild(card);
+    });
+    autoSizeAll();
+  }
+  applyPan();
+  updateZoomBtn();
+  renderSplice();
+  refreshSel();
+  refreshOverlays();   /* v6.16：光点 + 光线 */
+}
+/* v6.1：多选高亮刷新（DOM 按 dataset.id 同步 .selected） */
+/* ---- v6.16：拖手光点（被遮挡块） + 拼接光线（画布块 ↔ 拼接栏） ---- */
+
 /* v6：边缘滚动已移除（滚轮上下滑动取代） */
 function buildCard(b){
   var card = document.createElement('div');
@@ -142,3 +177,5 @@ function applyPan(){
   updateLinks();
   updatePeekDots();   /* v6.16：视角变化时光线/光点跟随 */
 }
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.canvas = { _mctx, applyPan, arrangeAll, autoResize, autoSizeAll, board, buildCard, canvas, fitBlock, opBtn, render, textWidth };

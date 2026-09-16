@@ -1,43 +1,12 @@
-
+/* ==================== core/persist · 存储 / 迁移 / 落盘 ====================
+    localStorage 键与 version 契约的唯一持有者：migrate(v1→v14) / load / 防抖保存 / sanitize。
+    （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
+   ================================================================= */
 var LS_KEY = 'storyboard-prompt-panel:v1';
 var BACKUP_KEY = LS_KEY + ':backup';
-var state = null;
 var saveTimer = null;
 var toastTimer = null;
-var drag = null;      /* 块拖拽：{idx,startX,startY,origX,origY,lastX,lastY,el}；v6.1 支持 group 组拖 */
-var panning = null;   /* 画布平移：{startX,startY,panX,panY,x,y} */
-var panVel = null;    /* v6.1 画布平移惯性速度 */
-var panLooping = false;
-var panEndX = 0, panEndY = 0;   /* v6.1 惯性滑行终点（拖动最后目标，防过冲） */
-var selected = [];    /* v6.1 多选：选中块 id 列表（内存态，刷新不保留） */
-var MIN_BLOCK_W = 140;   /* 空块/短行的最小块宽；块宽随最长行自适应（v6） */
 
-function uid(){ return 'b_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
-
-function defaultState(){
-  return {
-    app: 'storyboard-prompt-panel',
-    version: 14,
-    zoom: 1,
-    title: '未命名分镜',
-    pan: { x: 0, y: 0 },
-    splice: { items: [], activeUnitId: null },
-    collapsed: false,
-    templates: [],
-    cmpl: { v: 1, items: null, gorder: null },   /* v7.8：补全片段库（items null = 用内置表；gorder = 分组顺序） */
-    blocks: [{
-      id: uid(),
-      text: '示例块：这是一段提示词——雨夜小巷，霓虹倒映在水洼里，镜头缓慢推近，侦探撑伞走来。\n\n第二段：角色停步回望，眼神警惕，雨水沿帽沿滑落。\n\n左键拖把手=移动位置；右键菜单或点「拼」可加入右侧拼接栏，按顺序拼成整条 prompt。',
-      x: 20,
-      y: 20
-    }]
-  };
-}
-/* v1 列表数据补网格坐标（仅迁移用） */
-function gridPos(i){
-  return { x: 20 + (i % 4) * 360, y: 20 + Math.floor(i / 4) * 150 };
-}
-/* 兼容 v1~v10：补 x/y、pan、zoom、splice、collapsed，标题字段丢弃；块 id 过滤失效引用；v10 模板结构 units 化；v11 模板无名称/无块配置 */
 function migrate(d){
   var blocks = d.blocks.filter(function(b){ return b && b.type !== 'image'; }).map(function(b, i){
     var pos = (typeof b.x === 'number' && typeof b.y === 'number') ? { x: b.x, y: b.y } : gridPos(i);
@@ -159,4 +128,5 @@ function saveNow(){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(sanitizeState())); }
   catch(e){ toast('保存失败：' + e.message); }
 }
-
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.persist = { BACKUP_KEY, LS_KEY, flush, load, migrate, sanitizeState, saveNow, saveTimer, scheduleSave, toastTimer };

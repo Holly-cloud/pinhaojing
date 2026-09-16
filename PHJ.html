@@ -522,6 +522,11 @@ body.space-pan .canvas.panning,body.space-pan .canvas.panning .block,body.space-
 <script>
 ;(function(){
 'use strict';
+
+/* P2：模块命名空间（IIFE 私有；跨模块调用仍走同一作用域，此处是**显式导出面**） */
+var PHJ = {};
+
+/* P2：构建产物的唯一全局出口——测试可达性由闸门生成的「测试产物」承担，产品本体不新增任何全局名 */
 /* ============ 拼好镜 · 单文件版 · v5.4 ============
    无限画布 + 把手置顶 + 原生 textarea + 无复制全部 + 无序号徽章
    v4：右侧拼接侧边栏（圆角气泡列表 + 复制拼接 + 拖入/按钮收集 + 侧边栏内拖拽排序）
@@ -559,12 +564,11 @@ body.space-pan .canvas.panning,body.space-pan .canvas.panning .block,body.space-
    v7.6.1：修复「打开独立编辑器默认全选文本」——`openBlockEditor()` 里的 `ta.select()`（v6.12 起行为）会把整段提示词选中，一打字即被整段替换；改为 `focusCaretEnd(ta)`（光标落文末、无选区，与画布内联编辑一致）+ 开窗后 `hlSyncBox()` 同步彩色层滚动
    v7.7：文本编辑器「台词区」豁免（2026-09-13 拍板 5 问）——被**一行内成对的中文双引号“ ”包住**的错误符号（，/,）一律无视：随所在层级族色正常显示、不计入状态栏错误数、不使行号标红；边界**仅中文双引号**（半角 " 不算）、**未闭合不算台词区**（照旧标红）、引号内再嵌成对符号（{}/() 等）**里层同样豁免**；错误计数改为与着色**同源**（复用分类结果，不再用正则单独数逗号）；数据模型零改动（version 12 保持）
    v7.8：编辑器「结构层 + 结构感知补全 + 复制全文」（2026-09-13，分支 feat/editor-blocks）——① **结构层**（51-struct.js）：按**符号**把文本切成「节」（起手式/画面开始/叙事正文/分镜/风格包·属性/硬性要求），领域语义只活在 STRUCT_MARKS 标记表里，**着色引擎的零领域语义口径不动**；状态栏新增「节」显示当前所在结构；② **候选气泡**（52-complete.js）：输入 `#` 触发（语料 0 次出现；初版 `\` 在中文输入法下会出顿号，已按 Holly 反馈换 `#`），键鼠双模（↑↓ / **Enter·Tab 一键补全** / **数字 1..9 直取该条** / 鼠标点选，mousedown+preventDefault 保焦点）、**按当前节置顶**、中文输入法组合态门控、Tab 不逃逸焦点；候选内容来自**规律而非照搬**——镜头句 = 141 句的语法槽位，词表 = 实际用词 + **标注未用过的**（推拉移跟环绕升降甩/远大全景/主观视角），唯一逐字引用的是「风格包」5 段+硬性要求（项目级定型件，44/53 条共用、占这类 prompt 63%）；③ **槽位** `${n}`：上屏后 Tab 逐位跳（轮盘的前置）；④ **复制全文**按钮 + Ctrl+Shift+C（取 textarea.value，不走渲染层）；⑤ **补全配置窗口**（顶栏「补」）：浏览/修改/新增片段，首次打开把内置表物化成用户表，数据落 `state.cmpl` 随导出 JSON 走；数据模型 version 12 → **13**（新字段 `cmpl`，缺失即回落内置表） */
-
-var LS_KEY = 'storyboard-prompt-panel:v1';
-var BACKUP_KEY = LS_KEY + ':backup';
+/* ==================== core/store · 唯一状态源 ====================
+    持久 state（含 state.cmpl）+ 会话 ui（selected/drag/pan/keyState…）+ 默认值与坐标工具。
+    （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
+   ================================================================= */
 var state = null;
-var saveTimer = null;
-var toastTimer = null;
 var drag = null;      /* 块拖拽：{idx,startX,startY,origX,origY,lastX,lastY,el}；v6.1 支持 group 组拖 */
 var panning = null;   /* 画布平移：{startX,startY,panX,panY,x,y} */
 var panVel = null;    /* v6.1 画布平移惯性速度 */
@@ -594,11 +598,21 @@ function defaultState(){
     }]
   };
 }
-/* v1 列表数据补网格坐标（仅迁移用） */
+
 function gridPos(i){
   return { x: 20 + (i % 4) * 360, y: 20 + Math.floor(i / 4) * 150 };
 }
-/* 兼容 v1~v10：补 x/y、pan、zoom、splice、collapsed，标题字段丢弃；块 id 过滤失效引用；v10 模板结构 units 化；v11 模板无名称/无块配置 */
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.store = { MIN_BLOCK_W, defaultState, drag, gridPos, panEndX, panEndY, panLooping, panVel, panning, selected, state, uid };
+/* ==================== core/persist · 存储 / 迁移 / 落盘 ====================
+    localStorage 键与 version 契约的唯一持有者：migrate(v1→v14) / load / 防抖保存 / sanitize。
+    （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
+   ================================================================= */
+var LS_KEY = 'storyboard-prompt-panel:v1';
+var BACKUP_KEY = LS_KEY + ':backup';
+var saveTimer = null;
+var toastTimer = null;
+
 function migrate(d){
   var blocks = d.blocks.filter(function(b){ return b && b.type !== 'image'; }).map(function(b, i){
     var pos = (typeof b.x === 'number' && typeof b.y === 'number') ? { x: b.x, y: b.y } : gridPos(i);
@@ -720,7 +734,8 @@ function saveNow(){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(sanitizeState())); }
   catch(e){ toast('保存失败：' + e.message); }
 }
-
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.persist = { BACKUP_KEY, LS_KEY, flush, load, migrate, sanitizeState, saveNow, saveTimer, scheduleSave, toastTimer };
 /* ---- 复制（单块） ---- */
 function copyText(text){
   if(window.navigator.clipboard && window.navigator.clipboard.writeText){
@@ -765,37 +780,8 @@ function toast(msg, action){
     toastTimer = setTimeout(function(){ el.classList.remove('toast-out'); el.classList.add('hide'); }, 160);
   }, 2600);
 }
-
-/* ---- 渲染 ---- */
-var canvas, board;
-
-function render(){
-  canvas = document.getElementById('canvas');
-  board = document.getElementById('board');
-  board.innerHTML = '';
-  var empty = canvas.querySelector('.empty');
-  if(empty) empty.remove();
-  if(!state.blocks.length){
-    var e = document.createElement('div');
-    e.className = 'empty';
-    e.innerHTML = '双击画布空白处新增块<br><span>无限画布：拖块圆点摆放位置 ｜ 拖空白平移视角 ｜ 滚轮上下滑动 ｜ 方向键移动画布</span>';
-    canvas.appendChild(e);
-  }else{
-    state.blocks.forEach(function(b){
-      var card = buildCard(b);
-      if(b.id === activeId) card.classList.add('active');   /* v6.17：操作置顶在重建后恢复 */
-      board.appendChild(card);
-    });
-    autoSizeAll();
-  }
-  applyPan();
-  updateZoomBtn();
-  renderSplice();
-  refreshSel();
-  refreshOverlays();   /* v6.16：光点 + 光线 */
-}
-/* v6.1：多选高亮刷新（DOM 按 dataset.id 同步 .selected） */
-/* ---- v6.16：拖手光点（被遮挡块） + 拼接光线（画布块 ↔ 拼接栏） ---- */
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.clipboard = { copyText, fallbackCopy, toast };
 function refreshOverlays(){ updatePeekDots(); updateLinks(); }
 
 function updatePeekDots(){
@@ -960,672 +946,8 @@ function addLink(svg, ns, bid, sel, growIds){
   /* v7.5：目标条目左缘「渐变朦胧光线接口」——有画布块光线接入时显示（class 幂等；条目重建后自动重加） */
   if(sc.classList) sc.classList.add('lnk-in');
 }
-
-function isSel(id){ return selected.indexOf(id) >= 0; }
-/* v6.3：Ctrl+左键点选多选（toggle：已选则取消） */
-function toggleSel(card){
-  if(!card) return;
-  var i = state.blocks.findIndex(function(b){ return b.id === card.dataset.id; });
-  if(i < 0) return;
-  var id = state.blocks[i].id;
-  var at = selected.indexOf(id);
-  if(at >= 0){ selected.splice(at, 1); }else{ selected.push(id); }
-  refreshSel();
-}
-function refreshSel(){
-  var cards = board.querySelectorAll('.block');
-  for(var i = 0; i < cards.length; i++){
-    cards[i].classList.toggle('selected', isSel(cards[i].dataset.id));
-  }
-}
-function clearSel(){ selected = []; refreshSel(); }
-/* v6.1：批量操作（多选「新单体」：原本对单块的操作对选中集全部可用） */
-function findBlockById(id){
-  for(var j = 0; j < state.blocks.length; j++){ if(state.blocks[j].id === id) return state.blocks[j]; }
-  return null;
-}
-function actIds(bi){
-  /* v6.3：右键块在选中集内 → 批量作用于整个选中集；否则单块 */
-  if(bi >= 0 && selected.length > 1 && isSel(state.blocks[bi].id)) return selected.slice();
-  if(bi >= 0) return [state.blocks[bi].id];
-  return [];
-}
-function bulkAction(act, ids){
-  if(!ids.length) return;
-  var lastNew = null;
-  if(act === 'splice'){
-    ids.forEach(function(id){ spliceAdd(id); });
-    toast(ids.length > 1 ? '已加入拼接（' + ids.length + ' 块）' : '已加入拼接');
-  }else if(act === 'copy'){
-    var parts = ids.map(function(id){ var b = findBlockById(id); return (b && b.text) ? b.text.trim() : ''; }).filter(Boolean);   /* v6.16：图片块无文本，跳过 */
-    if(!parts.length){ toast('所选块还没有内容'); return; }
-    copyText(parts.join('\n\n')).then(function(ok){
-      toast(ok ? (ids.length > 1 ? '已复制 ' + ids.length + ' 块（按序拼接）' : '已复制该块') : '复制失败，请手动全选复制');
-    });
-  }else if(act === 'clone'){
-    var added = 0;
-    for(var k = ids.length - 1; k >= 0; k--){   /* 从后往前插，索引不漂移 */
-      var idx = state.blocks.findIndex(function(b){ return b.id === ids[k]; });
-      if(idx < 0) continue;
-      if(state.blocks[idx].type === 'image') continue;   /* v6.16：图片块不可克隆（仅展示） */
-      var cp = JSON.parse(JSON.stringify(state.blocks[idx]));
-      cp.id = uid();
-      cp.x += 28; cp.y += 28;
-      state.blocks.splice(idx + 1, 0, cp);
-      lastNew = cp;
-      added++;
-    }
-    toast('已克隆 ' + added + ' 块');
-  }else if(act === 'strip-blank'){
-    var done = 0;
-    ids.forEach(function(id){
-      var b = findBlockById(id);
-      if(!b) return;
-      var lines = (b.text || '').split('\n');
-      var kept = lines.filter(function(l){ return l.trim() !== ''; });
-      var v = kept.join('\n');
-      if(v !== (b.text || '')){ b.text = v; done++; }
-    });
-    toast(done ? (done > 1 ? '已移除空行（' + done + ' 块）' : '已移除空行') : '所选块没有空行');
-  }else if(act === 'del'){
-      var snap = null;
-      if(ids.length > 1) snap = JSON.parse(JSON.stringify({ blocks: state.blocks, splice: state.splice }));   /* 批量删除快照，可撤销 */
-      /* v7：先播删除动画（110ms 收拢淡出），再真正移除——块「消失」有质感 */
-      ids.forEach(function(id){
-        var dc = board.querySelector('.block[data-id="' + id + '"]');
-        if(dc) dc.classList.add('del-anim');
-      });
-      setTimeout(function(){
-        spliceRemoveIds(ids);
-        state.blocks = state.blocks.filter(function(b){ return ids.indexOf(b.id) < 0; });   /* v6.15 修复：v6.6 重构丢失画布块删除（此前「删除」仅移出拼接引用，块留在画布） */
-        selected = [];
-        render();
-        if(snap){
-          toast('已删除 ' + ids.length + ' 块', { label: '撤销', fn: function(){
-            state.blocks = snap.blocks;
-            state.splice = snap.splice;
-            render();
-            saveNow();
-            toast('已恢复删除的块');
-          }});
-        }else{
-          toast('已删除');
-        }
-        saveNow();
-      }, 130);
-      return;   /* v7：删除走动画分支自行收尾（render/saveNow 在动画后执行） */
-    }
-  selected = [];
-  if(act === 'clone' || act === 'del' || act === 'strip-blank'){
-    render();
-    if(act === 'clone' && lastNew){
-      var nc = board.querySelector('.block[data-id="' + lastNew.id + '"]');
-      if(nc){ popCard(nc); var nt = nc.querySelector('.block-text'); if(nt) focusCaretEnd(nt); }   /* v7：克隆弹入 */
-    }
-  }else{
-    refreshSel();
-  }
-  saveNow();
-}
-/* ---- 拼接侧边栏（v6.6：平铺条目 = 块条目 + 模板单元窗口条目） ---- */
-function renderSplice(growIds){   /* v7：growIds = 本次新增连线 id 列表 → 光线生长动画（其余刷新静态） */
-  var panel = document.getElementById('splicePanel');
-  var body = document.getElementById('spBody');
-  panel.classList.toggle('collapsed', !!state.collapsed);
-  document.getElementById('spCount').textContent = countSpliced();
-  document.getElementById('spFold').textContent = state.collapsed ? '⏴' : '⏷';
-  body.innerHTML = '';
-  if(!state.splice.items.length){
-    var e = document.createElement('div');
-    e.className = 'sp-empty';
-    e.innerHTML = '套用模板后拼入块，<br>点块拖手上「拼」或右键菜单拼入';
-    body.appendChild(e);
-    updateLinks();   /* v6.16：空态也要清空光线（提前 return 分支） */
-    return;
-  }
-  state.splice.items.forEach(function(it){
-    body.appendChild(it.type === 'unit' ? spUnit(it) : spItem(it.id));
-  });
-  updateLinks(growIds);   /* v6.16：拼接栏变化 → 光线刷新；v7：growIds 播生长 */
-}
-function countSpliced(){
-  var n = 0;
-  state.splice.items.forEach(function(it){
-    if(it.type === 'block') n++;
-    else n += it.blockIds.length;
-  });
-  return n;
-}
-/* 平铺块条目 */
-function spItem(id){
-  var b = findBlockById(id);
-  var it = document.createElement('div');
-  it.className = 'sp-item';
-  it.dataset.id = id;   /* v6.16：供拼接光线定位 */
-  var tx = document.createElement('span');
-  tx.className = 'sp-text';
-  tx.textContent = b ? (b.text || '(空块)') : '(缺失块)';
-  var x = document.createElement('button');
-  x.className = 'sp-x';
-  x.title = '移出拼接';
-  x.textContent = '×';
-  x.addEventListener('click', function(e){
-    e.stopPropagation();
-    spliceRemove(id);
-  });
-  it.appendChild(tx);
-  it.appendChild(x);
-  return it;
-}
-/* 模板单元窗口条目（圆角窗口：头部 + 前缀行 + 内部块小窗 + 后缀行） */
-function spUnit(u){
-  var wrap = document.createElement('div');
-  wrap.className = 'sp-unit' + (isActiveUnit(u.id) ? ' active' : '');
-  wrap.dataset.id = u.id;   /* v6.18：供拼模式投放定位 */
-  var head = document.createElement('div');
-  head.className = 'sp-unit-head';
-  head.title = '点击设为拼入目标';
-  var name = document.createElement('span');
-  name.className = 'sp-unit-name';
-  /* v6.18：单元不显示模板名称——按拼接栏内序号显示「单元 N」 */
-  var uidx = state.splice.items.findIndex(function(x){ return x.type === 'unit' && x.id === u.id; });
-  name.textContent = '单元 ' + (uidx + 1);
-  var tag = document.createElement('span');
-  tag.className = 'sp-unit-tag';
-  tag.textContent = '拼入到此';
-  tag.style.display = isActiveUnit(u.id) ? '' : 'none';
-  var x = document.createElement('button');
-  x.className = 'sp-unit-x';
-  x.textContent = '×';
-  x.title = '移除该模板单元（画布块保留）';
-  x.addEventListener('click', function(e){
-    e.stopPropagation();
-    spliceRemoveUnit(u.id);
-  });
-  head.appendChild(name);
-  head.appendChild(tag);
-  head.appendChild(x);
-  head.addEventListener('click', function(){ setActiveUnit(u.id); });
-  wrap.appendChild(head);
-  if(u.prefixes.length){
-    var pl = document.createElement('div');
-    pl.className = 'sp-unit-line';
-    u.prefixes.forEach(function(p){
-      var s = document.createElement('span');
-      s.className = 'sp-unit-prefix';
-      s.textContent = p;
-      pl.appendChild(s);
-    });
-    wrap.appendChild(pl);
-  }
-  var body = document.createElement('div');
-  body.className = 'sp-unit-body';
-  if(!u.blockIds.length){
-    var em = document.createElement('div');
-    em.className = 'sp-unit-empty';
-    em.textContent = '（空）拼入的块将显示在这里';
-    body.appendChild(em);
-  }else{
-    u.blockIds.forEach(function(bid, i){ body.appendChild(spUBlock(bid, u, i)); });
-  }
-  wrap.appendChild(body);
-  if(u.suffixes.length){
-    var sl = document.createElement('div');
-    sl.className = 'sp-unit-line';
-    u.suffixes.forEach(function(s){
-      var el2 = document.createElement('span');
-      el2.className = 'sp-unit-suffix';
-      el2.textContent = s;
-      sl.appendChild(el2);
-    });
-    wrap.appendChild(sl);
-  }
-  return wrap;
-}
-/* 单元内 prompt 块小窗（圆角窗口） */
-function spUBlock(bid, u, i){
-  var b = findBlockById(bid);
-  var el = document.createElement('div');
-  el.className = 'sp-ublock';
-  el.dataset.id = bid;   /* v6.16：供拼接光线定位 */
-  var tx = document.createElement('span');
-  tx.className = 'sp-ub-text';
-  tx.textContent = b ? (b.text || '(空块)') : '(缺失块)';
-  var x = document.createElement('button');
-  x.className = 'sp-ub-x';
-  x.textContent = '×';
-  x.title = '移出该单元';
-  x.addEventListener('click', function(e){
-    e.stopPropagation();
-    u.blockIds.splice(i, 1);
-    renderSplice();
-    saveNow();
-  });
-  /* v6.12：点击引用块 = 弹出编辑窗口，同步修改画布块文本 */
-  el.addEventListener('click', function(){
-    if(!b) return;
-    openBlockEditor(b.text, function(v){
-      b.text = (v === undefined || v === null) ? '' : v;   /* v7.6：统一为不 trim（与画布内联编辑一致） */
-      bringToFront(b.id);   /* v6.17：拼接栏内编辑也算操作 → 画布块置顶 */
-      var ta = board.querySelector('.block[data-id="' + b.id + '"] .block-text');
-      if(ta){ ta.value = b.text; autoResize(ta); fitBlock(ta); }
-      renderSplice();
-      scheduleSave();
-    });
-  });
-  el.appendChild(tx);
-  el.appendChild(x);
-  return el;
-}
-/* ---- 拼接操作（v6.6） ---- */
-function activeUnit(){
-  if(state.splice.activeUnitId){
-    for(var i = 0; i < state.splice.items.length; i++){
-      var it = state.splice.items[i];
-      if(it.type === 'unit' && it.id === state.splice.activeUnitId) return it;
-    }
-  }
-  for(var j = state.splice.items.length - 1; j >= 0; j--){
-    if(state.splice.items[j].type === 'unit') return state.splice.items[j];
-  }
-  return null;
-}
-function isActiveUnit(id){ return state.splice.activeUnitId === id; }
-function setActiveUnit(id){ state.splice.activeUnitId = id; renderSplice(); saveNow(); }
-/* v7：动效 helper —— 块创建弹入 / 拼入吸入 / 拼接栏条目弹入 */
-function popCard(card){
-  if(!card) return;
-  card.classList.add('pop-in');
-  setTimeout(function(){ card.classList.remove('pop-in'); }, 220);
-}
-function suckBlock(id){
-  var c = board.querySelector('.block[data-id="' + id + '"]');
-  if(!c) return;
-  c.classList.add('suck');
-  setTimeout(function(){ c.classList.remove('suck'); }, 200);
-}
-function popSpliceEntry(bid){
-  var body = document.getElementById('spBody');
-  var el = body.querySelector('.sp-item[data-id="' + bid + '"], .sp-ublock[data-id="' + bid + '"]');
-  if(!el) return;
-  el.classList.add('sp-pop');
-  setTimeout(function(){ el.classList.remove('sp-pop'); }, 220);
-}
-function spliceAdd(id){
-  var b = findBlockById(id);
-  if(!b || b.type === 'image') return;   /* v6.16：图片块不可拼入（仅展示） */
-  var u = activeUnit();
-  if(u){ u.blockIds.push(id); }
-  else{ state.splice.items.push({ type: 'block', id: id }); }
-  renderSplice([id]);   /* v7：光线生长 */
-  suckBlock(id);        /* v7：画布块微缩「吸入」 */
-  popSpliceEntry(id);   /* v7：条目弹入落定 */
-  saveNow();
-}
-function spliceRemoveIds(ids){
-  state.splice.items = state.splice.items.filter(function(it){ return !(it.type === 'block' && ids.indexOf(it.id) >= 0); });
-  state.splice.items.forEach(function(it){ if(it.type === 'unit') it.blockIds = it.blockIds.filter(function(b){ return ids.indexOf(b) < 0; }); });
-}
-function spliceRemove(id){
-  spliceRemoveIds([id]);
-  renderSplice();
-  saveNow();
-}
-function spliceRemoveUnit(uid){
-  state.splice.items = state.splice.items.filter(function(it){ return !(it.type === 'unit' && it.id === uid); });
-  if(state.splice.activeUnitId === uid) state.splice.activeUnitId = null;
-  renderSplice();
-  saveNow();
-}
-function spliceClear(){
-  state.splice.items = [];
-  state.splice.activeUnitId = null;
-  renderSplice();
-  saveNow();
-}
-function copySpliced(){
-  var parts = [];
-  state.splice.items.forEach(function(it){
-    if(it.type === 'block'){
-      var b = findBlockById(it.id);
-      if(b && b.text.trim()) parts.push(b.text.trim());
-    }else{
-      var seg = [];
-      if(it.prefixes.length) seg.push('\n' + it.prefixes.join('\n'));   /* v6.21 修正：前缀值段上方加入一个空行（加在前缀段前，而非整段开头——前缀不在开头时同样生效） */
-      var blks = it.blockIds.map(function(bid){ var bl = findBlockById(bid); return bl ? bl.text.trim() : ''; }).filter(Boolean);
-      if(blks.length) seg.push(blks.join('\n'));
-      if(it.suffixes.length) seg.push(it.suffixes.join('\n'));
-      if(seg.length) parts.push(seg.join('\n'));
-    }
-  });
-  if(!parts.length){ toast('拼接列表是空的，先套用模板或把块加进来'); return; }
-  /* v6.21：空行规则——提示词块不参与空行加入（块间无空行）、前缀值段上方加一个空行（加在前缀段前，非整段开头）、后缀值不参与（值间无空行）；其余全部 \n 紧挨连接 */
-  copyText(parts.join('\n')).then(function(ok){
-    toast(ok ? '已复制拼接（' + countSpliced() + ' 块）' : '复制失败，请手动全选复制');
-  });
-}
-/* ---- 拼接栏模板（v6）：多预设单元（模板），每单元容纳多个 prompt 块；套用=替换当前拼接 ---- */
-var tplOpen = false;
-function renderTplList(){
-  var list = document.getElementById('spTplList');
-  list.innerHTML = '';
-  list.classList.toggle('open', tplOpen);
-  var fold = document.getElementById('spTplFold');
-  fold.textContent = '模板' + (state.templates.length ? ' (' + state.templates.length + ')' : '') + (tplOpen ? ' ▴' : ' ▾');
-  if(!state.templates.length){
-    var e = document.createElement('div');
-    e.className = 'sp-tpl-empty';
-    e.textContent = '暂无模板：点「模板定制」创建模板单元';
-    list.appendChild(e);
-    return;
-  }
-  state.templates.forEach(function(t, ti){
-    var it = document.createElement('div');
-    it.className = 'sp-tpl-item';
-    var nm = document.createElement('span');
-    nm.className = 'sp-tpl-name';
-    var tname = '模板 ' + (ti + 1);   /* v6.13：模板名称移除，序号区分 */
-    nm.textContent = tname;
-    var units = t.units || [];
-    var np = 0, ns = 0;
-    units.forEach(function(u){ np += u.prefixes.length; ns += u.suffixes.length; });
-    var extra = '单元×' + units.length + (np ? ' 前缀×' + np : '') + (ns ? ' 后缀×' + ns : '');
-    nm.title = tname + '（' + extra + '）';
-    var num = document.createElement('span');
-    num.className = 'sp-tpl-num';
-    num.textContent = (np ? '▶' : '') + (ns ? '◀' : '') + ' 单' + units.length;
-    if(np || ns){
-      var pf = document.createElement('span');
-      pf.className = 'sp-tpl-num';
-      pf.textContent = (np ? '▶' : '') + (ns ? '◀' : '');
-      pf.title = '前缀:' + (np ? units.map(function(u){ return u.prefixes.join(' / '); }).filter(Boolean).join(' ｜ ') : '无') + ' 后缀:' + (ns ? units.map(function(u){ return u.suffixes.join(' / '); }).filter(Boolean).join(' ｜ ') : '无');
-      it.appendChild(pf);
-    }
-    var ap = document.createElement('button');
-    ap.className = 'sp-tpl-act primary';   /* v6.18：套用 = 主题色主操作 */
-    ap.textContent = '套用';
-    ap.title = '套用模板：清空拼接后按序生成模板的全部单元';
-    ap.addEventListener('click', function(){ applyTemplate(t.id); });
-    var pv = document.createElement('button');   /* v6.18：模板预览（只读查看单元结构） */
-    pv.className = 'sp-tpl-act';
-    pv.textContent = '预览';
-    pv.title = '预览模板单元结构（前缀/块区/后缀）';
-    pv.addEventListener('click', function(){ previewTemplate(ti); });
-    var dl = document.createElement('button');
-    dl.className = 'sp-tpl-act danger';
-    dl.textContent = '删除';
-    dl.addEventListener('click', function(){ deleteTemplate(t.id); });
-    it.appendChild(nm);
-    it.appendChild(num);
-    it.appendChild(pv);
-    it.appendChild(ap);
-    it.appendChild(dl);
-    list.appendChild(it);
-  });
-}
-/* ---- 模板定制窗口（v6.7）：单模板工作模式——每次定制一个模板，窗口中创建的皆为同一模板的组成部分 ---- */
-var tplCur = 0;   /* 当前编辑的模板索引 */
-function openTplWin(){
-  if(!state.templates.length) newTemplate();   /* v6.12：打开定制窗口立刻新建模板（用户拍板） */
-  if(tplCur >= state.templates.length || tplCur < 0) tplCur = 0;
-  blurActive();   /* v6.19：抢走画布焦点（否则打字/方向键作用于背景画布） */
-  document.getElementById('tplMask').classList.remove('hide');
-  renderTplWin();
-  var win = document.querySelector('#tplMask .tpl-win');
-  if(win && win.focus) win.focus();
-}
-function closeTplWin(){
-  document.getElementById('tplMask').classList.add('hide');
-  renderTplList();
-  saveNow();
-}
-function renderTplSelect(){
-  var sel = document.getElementById('tplSelect');
-  sel.innerHTML = '';
-  if(!state.templates.length){ tplCur = -1; return; }
-  state.templates.forEach(function(t, i){
-    var o = document.createElement('option');
-    o.value = i;
-    o.textContent = '模板 ' + (i + 1);   /* v6.13：序号区分 */
-    sel.appendChild(o);
-  });
-  var oNew = document.createElement('option');   /* v6.12：新建模板入口收进下拉（按钮形态移除） */
-  oNew.value = '-1';
-  oNew.textContent = '＋ 新建模板…';
-  sel.appendChild(oNew);
-  sel.value = String(Math.max(0, tplCur));
-}
-/* v6.12：模板 = 容器，包含任意数量「模板单元」（单元 = 前缀 + 提示词块 + 后缀） */
-function newUnitObj(){
-  return { id: uid(), prefixes: [], blocks: [], suffixes: [] };
-}
-function newTemplate(){
-  var t = { id: uid(), units: [newUnitObj()] };
-  state.templates.push(t);
-  tplCur = state.templates.length - 1;
-  renderTplWin();
-  renderTplList();
-  saveNow();
-  return t;
-}
-function newUnit(){
-  var t = state.templates[tplCur];
-  if(!t){ newTemplate(); t = state.templates[tplCur]; }
-  t.units.push(newUnitObj());
-  renderTplWin();
-  renderTplList();
-  saveNow();
-}
-function renderTplWin(){
-  renderTplSelect();
-  var body = document.getElementById('tplBody');
-  body.innerHTML = '';
-  if(!state.templates.length){
-    var e = document.createElement('div');
-    e.className = 'tpl-empty';
-    e.textContent = '还没有模板：打开窗口已自动新建';
-    body.appendChild(e);
-    return;
-  }
-  var t = state.templates[tplCur];
-  if(!t || !Array.isArray(t.units)){ tplCur = 0; t = state.templates[0]; }
-  if(!t.units.length) t.units.push(newUnitObj());
-  /* v6.13：模板名称已移除（序号区分）；直接渲染全部单元卡片（从上到下排列） */
-  t.units.forEach(function(u, i){ body.appendChild(tplUnitCard(t, u, i)); });
-}
-/* v6.12：模板单元卡片 = 前缀值 + 提示词块（任意数量）+ 后缀值 */
-/* v6.18：单元卡片可拖拽排序（HTML5 DnD） */
-function tplUnitCard(t, u, idx){
-  var card = document.createElement('div');
-  card.className = 'tpl-card';
-  card.draggable = true;
-  card.addEventListener('dragstart', function(e){
-    e.dataTransfer.setData('text/plain', String(idx));
-    e.dataTransfer.effectAllowed = 'move';
-    card.classList.add('dragging');
-  });
-  card.addEventListener('dragend', function(){
-    card.classList.remove('dragging');
-    var cards = document.querySelectorAll('.tpl-card.drag-over');
-    for(var i = 0; i < cards.length; i++) cards[i].classList.remove('drag-over');
-  });
-  card.addEventListener('dragover', function(e){
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    card.classList.add('drag-over');
-  });
-  card.addEventListener('dragleave', function(){ card.classList.remove('drag-over'); });
-  card.addEventListener('drop', function(e){
-    e.preventDefault();
-    card.classList.remove('drag-over');
-    var from = parseInt(e.dataTransfer.getData('text/plain'), 10);
-    if(isNaN(from) || from === idx) return;
-    var units = t.units;
-    var moved = units.splice(from, 1)[0];
-    units.splice(idx, 0, moved);   /* v6.18 修正：插到目标卡片位置（移除后索引自然对齐） */
-    renderTplWin();
-    renderTplList();
-    scheduleSave();
-  });
-  var head = document.createElement('div');
-  head.className = 'tpl-card-head';
-  var no = document.createElement('div');
-  no.className = 'tpl-unit-no';
-  no.textContent = '单元 ' + (idx + 1);
-  head.appendChild(no);
-  var hint = document.createElement('span');
-  hint.className = 'tpl-drag-hint';
-  hint.textContent = '≡ 拖动排序';
-  head.appendChild(hint);
-  card.appendChild(head);
-  card.appendChild(tplChipsRow('前缀值（每个独立一行）', u.prefixes));
-  card.appendChild(tplChipsRow('后缀值（每个独立一行）', u.suffixes));   /* v6.13：提示词块不是模板定制的一部分（中间为拼入容器） */
-  var del = document.createElement('button');
-  del.className = 'tpl-block-op danger';
-  del.textContent = '删除本单元';
-  del.style.alignSelf = 'flex-start';
-  del.addEventListener('click', function(){
-    var ui = t.units.findIndex(function(x){ return x.id === u.id; });
-    if(ui >= 0){ t.units.splice(ui, 1); renderTplWin(); renderTplList(); scheduleSave(); }
-  });
-  card.appendChild(del);
-  return card;
-}
-function tplChipsRow(label, arr){
-  var wrap = document.createElement('div');
-  var lbl = document.createElement('div');
-  lbl.className = 'tpl-lbl';
-  lbl.textContent = label;
-  wrap.appendChild(lbl);
-  var chips = document.createElement('div');
-  chips.className = 'tpl-chips';
-  arr.forEach(function(v, vi){
-    var c = document.createElement('span');
-    c.className = 'tpl-chip';
-    c.textContent = v;
-    var x = document.createElement('button');
-    x.className = 'tpl-chip-x';
-    x.textContent = '×';
-    x.title = '删除该值';
-    x.addEventListener('click', function(){ arr.splice(vi, 1); renderTplWin(); renderTplList(); scheduleSave(); });
-    c.appendChild(x);
-    chips.appendChild(c);
-  });
-  wrap.appendChild(chips);
-  var add = document.createElement('button');
-  add.className = 'tpl-add';
-  add.textContent = '+ 添加' + (label.indexOf('前缀') === 0 ? '前缀' : '后缀');
-  add.addEventListener('click', function(){
-    var inp = document.createElement('input');
-    inp.className = 'tpl-add-input';
-    inp.placeholder = '输入值后回车';
-    add.style.display = 'none';
-    wrap.appendChild(inp);
-    inp.focus();
-    var commit = function(){
-      if(inp.dataset.done) return;
-      inp.dataset.done = '1';
-      var v = inp.value.trim();
-      if(v){ arr.push(v); renderTplWin(); renderTplList(); scheduleSave(); }
-      else{ renderTplWin(); }
-    };
-    inp.addEventListener('keydown', function(e){
-      if(e.key === 'Enter'){ commit(); }
-      else if(e.key === 'Escape'){ renderTplWin(); }
-    });
-    inp.addEventListener('blur', commit);
-  });
-  wrap.appendChild(add);
-  return wrap;
-}
-
-function applyTemplate(id){
-  var t = state.templates.find(function(x){ return x.id === id; });
-  if(!t) return;
-  /* v6.13：套用 = 替换清空 + 模板全部单元按序生成（单元 = 前缀+空块区+后缀，块由拼入填充）；拼入目标 = 第一个单元 */
-  if(!t.units || !t.units.length){ toast('该模板还没有单元：先到「模板定制」添加单元'); return; }
-  var ti = state.templates.findIndex(function(x){ return x.id === id; });
-  var tname = '模板 ' + (ti + 1);   /* v6.13：模板序号名 */
-  var items = t.units.map(function(u){
-    return { type: 'unit', id: uid(), name: tname, prefixes: u.prefixes.slice(), suffixes: u.suffixes.slice(), blockIds: [] };
-  });
-  state.splice.items = items;
-  state.splice.activeUnitId = items[0].id;
-  renderSplice();
-  renderTplList();
-  saveNow();
-  toast('已套用模板「' + tname + '」（' + items.length + ' 个单元），拼入的块进入第一个单元');
-}
-/* v6.18：模板预览（只读）——查看模板的单元结构（前缀/块区/后缀） */
-function previewTemplate(ti){
-  var t = state.templates[ti];
-  if(!t) return;
-  document.getElementById('tplPrevTitle').textContent = '模板 ' + (ti + 1) + ' 预览';
-  var body = document.getElementById('tplPrevBody');
-  body.innerHTML = '';
-  (t.units || []).forEach(function(u, i){
-    var card = document.createElement('div');
-    card.className = 'tpl-prev-card';
-    var no = document.createElement('div');
-    no.className = 'tpl-unit-no';
-    no.textContent = '单元 ' + (i + 1);
-    card.appendChild(no);
-    if(u.prefixes.length){
-      var pl = document.createElement('div');
-      pl.className = 'tpl-lbl';
-      pl.textContent = '前缀值';
-      card.appendChild(pl);
-      var pw = document.createElement('div');
-      pw.className = 'tpl-chips';
-      u.prefixes.forEach(function(p){
-        var s = document.createElement('span');
-        s.className = 'tpl-chip';
-        s.textContent = p;
-        pw.appendChild(s);
-      });
-      card.appendChild(pw);
-    }
-    var em = document.createElement('div');
-    em.className = 'tpl-prev-empty';
-    em.textContent = '□ 拼入块容器（套用后把提示词块拼到这里）';
-    card.appendChild(em);
-    if(u.suffixes.length){
-      var sl = document.createElement('div');
-      sl.className = 'tpl-lbl';
-      sl.textContent = '后缀值';
-      card.appendChild(sl);
-      var sw = document.createElement('div');
-      sw.className = 'tpl-chips';
-      u.suffixes.forEach(function(p){
-        var s = document.createElement('span');
-        s.className = 'tpl-chip';
-        s.textContent = p;
-        sw.appendChild(s);
-      });
-      card.appendChild(sw);
-    }
-    body.appendChild(card);
-  });
-  document.getElementById('tplPrevMask').classList.remove('hide');
-  blurActive();   /* v6.19：只读窗口也抢走画布焦点（防方向键平移画布） */
-  var win = document.querySelector('#tplPrevMask .tpl-win');
-  if(win && win.focus) win.focus();
-}
-
-function deleteTemplate(id){
-  var i = state.templates.findIndex(function(x){ return x.id === id; });
-  if(i < 0) return;
-  var t = state.templates[i];
-  state.templates.splice(i, 1);
-  renderTplList();
-  saveNow();
-  toast('已删除模板：' + t.name, { label: '撤销', fn: function(){
-    state.templates.splice(i, 0, t);
-    renderTplList();
-    saveNow();
-    toast('已恢复模板：' + t.name);
-  }});
-}
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.overlay = { activeId, addLink, bringToFront, peekBlock, refreshOverlays, updateLinks, updatePeekDots };
 
 /* ==================== v7.6 coding 编辑器引擎（叠层高亮 + 行号栏 + 状态栏 + 错误标记） ====================
    设计：划分依据 = 文本中出现的符号本身（Unicode 标点/符号）；引擎零领域语义（不为任何符号预设"代表什么内容"）。
@@ -1791,6 +1113,8 @@ function hlRefresh(){
   hlSyncBox();
   hlStatus(fam);
 }
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.highlight = { HL_CLOSERS, HL_DLG, HL_DLG_OPEN, HL_ERR, HL_PAIRS, HL_SYM, HL_TOGGLE, _hlCode, _hlPre, hlClassify, hlDialogueMask, hlEsc, hlFamOf, hlFindMatch, hlRefresh, hlStatus, hlSyncBox, hlToHTML };
 var blkCb = null;
 function openBlockEditor(initial, cb){
   document.getElementById('blkInput').value = initial || '';
@@ -1817,6 +1141,8 @@ function closeBlockEditor(){
   blkCb = null;
   cmplReset();     /* v7.8：关窗即清候选气泡与槽位状态 */
 }
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.blockEditor = { blkCb, closeBlockEditor, fitBlkWidth, openBlockEditor };
 
 /* ==================== v7.8 结构层（节解析） ====================
    用途：把编辑器文本按**符号**切成「节」，三处共用——① 状态栏结构提示；② 候选池按节置顶；③ 后续槽位/轮盘。
@@ -1900,6 +1226,8 @@ function structSummary(text){
   }
   return order;
 }
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.struct = { STRUCT_MARKS, structAt, structLineMark, structMap, structSummary };
 
 /* ==================== v7.8 候选引擎（结构感知补全 + 槽位 + 复制全文） ====================
    触发：输入 `#` 后弹候选气泡（`#` 在 53 条语料中出现 0 次 → 零冲突；且中文输入法下不占键位——
@@ -2416,6 +1744,8 @@ function cmplBind(){
   document.getElementById('blkCopy').addEventListener('click', blkCopyAll);
 }
 document.addEventListener('DOMContentLoaded', cmplBind);
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.complete = { CMPL_DIGIT_JUMP, CMPL_FONT, CMPL_GROUPS, CMPL_GROUP_HINT, CMPL_LH, CMPL_MAX_QUERY, CMPL_PAD_L, CMPL_PAD_T, CMPL_PER_GROUP, CMPL_SEED_V, CMPL_STYLE, CMPL_TAIL, CMPL_TRIGGER, _cmctx, _cmplCache, _cmplCacheSrc, blkCopyAll, cmplActive, cmplApplyAsset, cmplAssetGroups, cmplBind, cmplBuild, cmplBuildGroupItems, cmplBuildGroups, cmplClose, cmplCommit, cmplComposing, cmplEnterGroup, cmplExportAsset, cmplExportAssetData, cmplFullStyle, cmplGroup, cmplGroupOrder, cmplImportAsset, cmplInvalidate, cmplItems, cmplKeydown, cmplLeaveGroup, cmplMoveSel, cmplNewKey, cmplOnInput, cmplOpen, cmplPlace, cmplPop, cmplPrepare, cmplQueryAt, cmplRender, cmplReset, cmplScore, cmplSeedItems, cmplSel, cmplSetItems, cmplSlotIdx, cmplSlots, cmplTa, cmplWidth };
 
 /* ==================== v7.8 补全配置界面（片段库：浏览 / 修改 / 新增） ====================
    入口：顶栏「补」。窗口形态沿用模板定制窗口（.tpl-win 体系）。
@@ -2799,193 +2129,42 @@ function cmplCfgReset(){
   saveNow(); renderCmplCfg();
   toast('已恢复内置片段（保留你导入/自建的 ' + kept.length + ' 条）');
 }
-/* ---- 命名模态框（v6：替代原生 prompt，headless/嵌入环境不可靠；v6.4 多字段通用版） ---- */
-var modalCb = null;
-function openModal(title, fields, cb){
-  document.getElementById('modalTitle').textContent = title;
-  var body = document.getElementById('modalBody');
-  body.innerHTML = '';
-  fields.forEach(function(f){
-    var row = document.createElement('div');
-    row.className = 'modal-row';
-    var lab = document.createElement('div');
-    lab.className = 'modal-label';
-    lab.textContent = f.label;
-    var inp = document.createElement('input');
-    inp.className = 'modal-input';
-    inp.maxLength = f.maxLength || 60;
-    inp.value = f.value || '';
-    if(f.placeholder) inp.placeholder = f.placeholder;
-    row.appendChild(lab);
-    row.appendChild(inp);
-    body.appendChild(row);
-  });
-  modalCb = cb;
-  document.getElementById('modalMask').classList.remove('hide');
-  var first = body.querySelector('.modal-input');
-  if(first){ first.focus(); first.select(); }
-}
-function closeModal(){
-  document.getElementById('modalMask').classList.add('hide');
-  modalCb = null;
-}
-function toggleCollapsed(){
-  state.collapsed = !state.collapsed;
-  renderSplice();
-  saveNow();
-}
-/* copySpliced 见拼接操作区（v6.6 条目结构） */
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.library = { closeCmplCfg, cmplCfgAdding, cmplCfgDel, cmplCfgDnd, cmplCfgDrag, cmplCfgEditing, cmplCfgForm, cmplCfgGroups, cmplCfgMaterialize, cmplCfgMoveGroup, cmplCfgMoveGroupTo, cmplCfgMoveItem, cmplCfgMoveItemTo, cmplCfgQ, cmplCfgReset, cmplCfgResetAsk, cmplCfgRow, cmplCfgSave, cmplOrderHide, cmplOrderRows, cmplOrderShow, openCmplCfg, renderCmplCfg };
+/* ==================== view/canvas · 块渲染归属地 ====================
+    buildCard/fitBlock/autoSizeAll + render() 编排；由 20-render.js + 62-block-size.js 合并。
+    （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
+   ================================================================= */
+/* ---- 渲染 ---- */
+var canvas, board;
 
-/* ---- 画布右键菜单（v5.2） ---- */
-function addBlockHere(cx, cy){
-  var c = document.getElementById('canvas');
-  var cr = c.getBoundingClientRect();
-  var n = state.blocks.length;
-  var b = { id: uid(), text: '' };
-  b.x = (cx - cr.left - state.pan.x) / state.zoom - (MIN_BLOCK_W / 2) + ((n % 5) - 2) * 20;
-  b.y = (cy - cr.top - state.pan.y) / state.zoom - 60 + ((n % 5) - 2) * 16;
-  state.blocks.push(b);
-  render();
-  var cards = board.querySelectorAll('.block');
-  var last = cards[cards.length - 1];
-  var tx = last && last.querySelector('.block-text');
-  popCard(last);   /* v7：创建弹入 */
-  if(tx) focusCaretEnd(tx);
-  saveNow();
-}
-var __ctxBlock = -1;
-var __ctxX = 0, __ctxY = 0;   /* 右键触发位置（「在此处新增块」落点用） */
-function openCtxMenu(items, x, y){
-  var m = document.getElementById('ctxMenu');
-  m.innerHTML = '';
-  items.forEach(function(it){
-    if(it === 'sep'){
-      var s = document.createElement('div');
-      s.className = 'ctx-sep';
-      m.appendChild(s);
-      return;
-    }
-    var b = document.createElement('div');
-    b.className = 'ctx-item' + (it.danger ? ' danger' : '') + (it.disabled ? ' disabled' : '');
-    b.textContent = it.label;
-    b.dataset.act = it.act;
-    m.appendChild(b);
-  });
-  m.classList.add('open');
-  var r = m.getBoundingClientRect();
-  m.style.left = Math.max(6, Math.min(x, window.innerWidth - r.width - 6)) + 'px';
-  m.style.top = Math.max(6, Math.min(y, window.innerHeight - r.height - 6)) + 'px';
-}
-function closeCtxMenu(){
-  document.getElementById('ctxMenu').classList.remove('open');
-  __ctxBlock = -1;
-}
-document.addEventListener('contextmenu', function(e){
-  if(!e.target.closest('.canvas')) return;   /* 仅画布区域接管右键 */
-  var block = e.target.closest('.block');
-  if(block && e.target.closest('.block-text')) return;   /* textarea 内保留浏览器原生菜单 */
-  e.preventDefault();
-  __ctxX = e.clientX;
-  __ctxY = e.clientY;
-  if(block){   /* 块上（把手/卡片区域） */
-    var i = state.blocks.findIndex(function(b){ return b.id === block.dataset.id; });
-    if(i < 0) return;
-    __ctxBlock = i;
-    /* v6.3：右键菜单不修改选择集——右键块在选中集内 → 菜单批量作用于选中集；否则菜单单块 */
-    var multi = (selected.length > 1) && isSel(state.blocks[i].id);
-    if(state.blocks[i].type === 'image'){   /* v6.16：图片块仅提供删除 */
-      openCtxMenu([
-        { label: multi ? ('删除（' + selected.length + ' 块）') : '删除', act: 'del-block', danger: true }
-      ], e.clientX, e.clientY);
-    }else{
-    openCtxMenu([
-      { label: multi ? ('拼入拼接（' + selected.length + ' 块）') : '拼入拼接', act: 'splice-block' },
-      { label: multi ? ('复制（' + selected.length + ' 块）') : '复制', act: 'copy-block' },
-      { label: multi ? ('克隆组（' + selected.length + ' 块）') : '克隆', act: 'clone-block' },
-      { label: multi ? ('移除空行（' + selected.length + ' 块）') : '移除空行', act: 'strip-blank' },
-      'sep',
-      { label: multi ? ('删除（' + selected.length + ' 块）') : '删除', act: 'del-block', danger: true }
-    ], e.clientX, e.clientY);
-    }
-  }else if(!block){   /* 画布空白：清空多选 */
-    if(selected.length){ selected = []; refreshSel(); }
-    openCtxMenu([
-      { label: '在此处新增块', act: 'add-here' },
-      'sep',
-      { label: '复制拼接', act: 'copy-spliced', disabled: !countSpliced() },
-      { label: '清空拼接', act: 'clear-spliced', disabled: !countSpliced() },
-      'sep',
-      { label: '导出 JSON', act: 'export' },
-      { label: '导入 JSON', act: 'import' }
-    ], e.clientX, e.clientY);
+function render(){
+  canvas = document.getElementById('canvas');
+  board = document.getElementById('board');
+  board.innerHTML = '';
+  var empty = canvas.querySelector('.empty');
+  if(empty) empty.remove();
+  if(!state.blocks.length){
+    var e = document.createElement('div');
+    e.className = 'empty';
+    e.innerHTML = '双击画布空白处新增块<br><span>无限画布：拖块圆点摆放位置 ｜ 拖空白平移视角 ｜ 滚轮上下滑动 ｜ 方向键移动画布</span>';
+    canvas.appendChild(e);
+  }else{
+    state.blocks.forEach(function(b){
+      var card = buildCard(b);
+      if(b.id === activeId) card.classList.add('active');   /* v6.17：操作置顶在重建后恢复 */
+      board.appendChild(card);
+    });
+    autoSizeAll();
   }
-});
-document.addEventListener('click', function(e){
-  var m = document.getElementById('ctxMenu');
-  if(!m.classList.contains('open')) return;
-  var item = e.target.closest('.ctx-item');
-  if(!item){ closeCtxMenu(); return; }   /* 点菜单外关闭 */
-  var act = item.dataset.act;
-  var bi = __ctxBlock;   /* 先取块索引（closeCtxMenu 会重置） */
-  closeCtxMenu();
-  if(act === 'add-here'){ addBlockHere(__ctxX, __ctxY); }
-  else if(act === 'copy-spliced'){ copySpliced(); }
-  else if(act === 'clear-spliced'){ spliceClear(); toast('已清空拼接'); }
-  else if(act === 'export'){ exportJSON(); }
-  else if(act === 'import'){ document.getElementById('fileInput').click(); }
-  else if(act === 'splice-block'){ bulkAction('splice', actIds(bi)); }
-  else if(act === 'copy-block'){ bulkAction('copy', actIds(bi)); }
-  else if(act === 'clone-block'){ bulkAction('clone', actIds(bi)); }
-  else if(act === 'strip-blank'){ bulkAction('strip-blank', actIds(bi)); }
-  else if(act === 'del-block'){ bulkAction('del', actIds(bi)); }
-  __ctxBlock = -1;
-});
-document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeCtxMenu(); });
-/* v6.17：方向键平滑移动画布（LOL 式：按住加速曲线、松手即停；镜头语义——按 → 视角右移，内容左移） */
-/* v6.18：keyState 记录每个键真实状态、keyDir 派生——修复快速连按时 keyup 误清同轴另一键导致「冲突不动」；位移 ÷zoom（高缩放视觉速度恒定） */
-var keyDir = { x: 0, y: 0 }, keyVel = 0, keyLoop = false, keyLastT = 0;
-var keyState = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
-var KEY_MAX_VEL = 900, KEY_ACCEL = 4200;   /* px/s：0.9 秒内加速到 900px/s 约 0.21s */
-function updateKeyDir(){
-  keyDir.x = (keyState.ArrowRight ? 1 : 0) - (keyState.ArrowLeft ? 1 : 0);
-  keyDir.y = (keyState.ArrowDown ? 1 : 0) - (keyState.ArrowUp ? 1 : 0);
-}
-function keyPanLoop(t){
-  if(!keyLoop) return;
-  var dt = Math.min(0.05, (t - keyLastT) / 1000 || 0.016);
-  keyLastT = t;
-  if(!keyDir.x && !keyDir.y){ keyLoop = false; keyVel = 0; return; }   /* 全部松开立即停 */
-  keyVel = Math.min(KEY_MAX_VEL, keyVel + KEY_ACCEL * dt);
-  var v = keyVel * dt / state.zoom;   /* v6.18：÷zoom —— 高缩放时视觉速度恒定 */
-  state.pan.x -= keyDir.x * v;
-  state.pan.y -= keyDir.y * v;
   applyPan();
-  scheduleSave();
-  requestAnimationFrame(keyPanLoop);
+  updateZoomBtn();
+  renderSplice();
+  refreshSel();
+  refreshOverlays();   /* v6.16：光点 + 光线 */
 }
-document.addEventListener('keydown', function(e){
-  var ae = document.activeElement;
-  if(ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT' || ae.isContentEditable)) return;   /* 输入场景豁免 */
-  if(document.querySelector('.modal-mask:not(.hide)')) return;   /* v6.19：任何独立窗口打开时方向键不动画布（焦点兜底） */
-  var k = e.key;
-  if(k === 'ArrowUp' || k === 'ArrowDown' || k === 'ArrowLeft' || k === 'ArrowRight'){
-    e.preventDefault();
-    keyState[k] = true;
-    updateKeyDir();
-    if(!keyLoop){ keyLoop = true; keyLastT = performance.now(); requestAnimationFrame(keyPanLoop); }
-  }
-});
-document.addEventListener('keyup', function(e){
-  var k = e.key;
-  if(k === 'ArrowUp' || k === 'ArrowDown' || k === 'ArrowLeft' || k === 'ArrowRight'){
-    keyState[k] = false;   /* 只清该键——同轴另一键仍按着时方向保持 */
-    updateKeyDir();
-    /* v6.18：同轴反向抵消时循环已停（keyDir=0），恢复方向后要重启循环 */
-    if(!keyLoop && (keyDir.x || keyDir.y)){ keyLoop = true; keyLastT = performance.now(); requestAnimationFrame(keyPanLoop); }
-  }
-});
-window.addEventListener('blur', function(){ keyState.ArrowUp = keyState.ArrowDown = keyState.ArrowLeft = keyState.ArrowRight = false; updateKeyDir(); });
-window.addEventListener('blur', function(){ closeCtxMenu(); });
+/* v6.1：多选高亮刷新（DOM 按 dataset.id 同步 .selected） */
+/* ---- v6.16：拖手光点（被遮挡块） + 拼接光线（画布块 ↔ 拼接栏） ---- */
 
 /* v6：边缘滚动已移除（滚轮上下滑动取代） */
 function buildCard(b){
@@ -3131,6 +2310,932 @@ function applyPan(){
   updateLinks();
   updatePeekDots();   /* v6.16：视角变化时光线/光点跟随 */
 }
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.canvas = { _mctx, applyPan, arrangeAll, autoResize, autoSizeAll, board, buildCard, canvas, fitBlock, opBtn, render, textWidth };
+/* ---- 拼接侧边栏（v6.6：平铺条目 = 块条目 + 模板单元窗口条目） ---- */
+function renderSplice(growIds){   /* v7：growIds = 本次新增连线 id 列表 → 光线生长动画（其余刷新静态） */
+  var panel = document.getElementById('splicePanel');
+  var body = document.getElementById('spBody');
+  panel.classList.toggle('collapsed', !!state.collapsed);
+  document.getElementById('spCount').textContent = countSpliced();
+  document.getElementById('spFold').textContent = state.collapsed ? '⏴' : '⏷';
+  body.innerHTML = '';
+  if(!state.splice.items.length){
+    var e = document.createElement('div');
+    e.className = 'sp-empty';
+    e.innerHTML = '套用模板后拼入块，<br>点块拖手上「拼」或右键菜单拼入';
+    body.appendChild(e);
+    updateLinks();   /* v6.16：空态也要清空光线（提前 return 分支） */
+    return;
+  }
+  state.splice.items.forEach(function(it){
+    body.appendChild(it.type === 'unit' ? spUnit(it) : spItem(it.id));
+  });
+  updateLinks(growIds);   /* v6.16：拼接栏变化 → 光线刷新；v7：growIds 播生长 */
+}
+function countSpliced(){
+  var n = 0;
+  state.splice.items.forEach(function(it){
+    if(it.type === 'block') n++;
+    else n += it.blockIds.length;
+  });
+  return n;
+}
+/* 平铺块条目 */
+function spItem(id){
+  var b = findBlockById(id);
+  var it = document.createElement('div');
+  it.className = 'sp-item';
+  it.dataset.id = id;   /* v6.16：供拼接光线定位 */
+  var tx = document.createElement('span');
+  tx.className = 'sp-text';
+  tx.textContent = b ? (b.text || '(空块)') : '(缺失块)';
+  var x = document.createElement('button');
+  x.className = 'sp-x';
+  x.title = '移出拼接';
+  x.textContent = '×';
+  x.addEventListener('click', function(e){
+    e.stopPropagation();
+    spliceRemove(id);
+  });
+  it.appendChild(tx);
+  it.appendChild(x);
+  return it;
+}
+/* 模板单元窗口条目（圆角窗口：头部 + 前缀行 + 内部块小窗 + 后缀行） */
+function spUnit(u){
+  var wrap = document.createElement('div');
+  wrap.className = 'sp-unit' + (isActiveUnit(u.id) ? ' active' : '');
+  wrap.dataset.id = u.id;   /* v6.18：供拼模式投放定位 */
+  var head = document.createElement('div');
+  head.className = 'sp-unit-head';
+  head.title = '点击设为拼入目标';
+  var name = document.createElement('span');
+  name.className = 'sp-unit-name';
+  /* v6.18：单元不显示模板名称——按拼接栏内序号显示「单元 N」 */
+  var uidx = state.splice.items.findIndex(function(x){ return x.type === 'unit' && x.id === u.id; });
+  name.textContent = '单元 ' + (uidx + 1);
+  var tag = document.createElement('span');
+  tag.className = 'sp-unit-tag';
+  tag.textContent = '拼入到此';
+  tag.style.display = isActiveUnit(u.id) ? '' : 'none';
+  var x = document.createElement('button');
+  x.className = 'sp-unit-x';
+  x.textContent = '×';
+  x.title = '移除该模板单元（画布块保留）';
+  x.addEventListener('click', function(e){
+    e.stopPropagation();
+    spliceRemoveUnit(u.id);
+  });
+  head.appendChild(name);
+  head.appendChild(tag);
+  head.appendChild(x);
+  head.addEventListener('click', function(){ setActiveUnit(u.id); });
+  wrap.appendChild(head);
+  if(u.prefixes.length){
+    var pl = document.createElement('div');
+    pl.className = 'sp-unit-line';
+    u.prefixes.forEach(function(p){
+      var s = document.createElement('span');
+      s.className = 'sp-unit-prefix';
+      s.textContent = p;
+      pl.appendChild(s);
+    });
+    wrap.appendChild(pl);
+  }
+  var body = document.createElement('div');
+  body.className = 'sp-unit-body';
+  if(!u.blockIds.length){
+    var em = document.createElement('div');
+    em.className = 'sp-unit-empty';
+    em.textContent = '（空）拼入的块将显示在这里';
+    body.appendChild(em);
+  }else{
+    u.blockIds.forEach(function(bid, i){ body.appendChild(spUBlock(bid, u, i)); });
+  }
+  wrap.appendChild(body);
+  if(u.suffixes.length){
+    var sl = document.createElement('div');
+    sl.className = 'sp-unit-line';
+    u.suffixes.forEach(function(s){
+      var el2 = document.createElement('span');
+      el2.className = 'sp-unit-suffix';
+      el2.textContent = s;
+      sl.appendChild(el2);
+    });
+    wrap.appendChild(sl);
+  }
+  return wrap;
+}
+/* 单元内 prompt 块小窗（圆角窗口） */
+function spUBlock(bid, u, i){
+  var b = findBlockById(bid);
+  var el = document.createElement('div');
+  el.className = 'sp-ublock';
+  el.dataset.id = bid;   /* v6.16：供拼接光线定位 */
+  var tx = document.createElement('span');
+  tx.className = 'sp-ub-text';
+  tx.textContent = b ? (b.text || '(空块)') : '(缺失块)';
+  var x = document.createElement('button');
+  x.className = 'sp-ub-x';
+  x.textContent = '×';
+  x.title = '移出该单元';
+  x.addEventListener('click', function(e){
+    e.stopPropagation();
+    u.blockIds.splice(i, 1);
+    renderSplice();
+    saveNow();
+  });
+  /* v6.12：点击引用块 = 弹出编辑窗口，同步修改画布块文本 */
+  el.addEventListener('click', function(){
+    if(!b) return;
+    openBlockEditor(b.text, function(v){
+      b.text = (v === undefined || v === null) ? '' : v;   /* v7.6：统一为不 trim（与画布内联编辑一致） */
+      bringToFront(b.id);   /* v6.17：拼接栏内编辑也算操作 → 画布块置顶 */
+      var ta = board.querySelector('.block[data-id="' + b.id + '"] .block-text');
+      if(ta){ ta.value = b.text; autoResize(ta); fitBlock(ta); }
+      renderSplice();
+      scheduleSave();
+    });
+  });
+  el.appendChild(tx);
+  el.appendChild(x);
+  return el;
+}
+/* ---- 拼接操作（v6.6） ---- */
+function activeUnit(){
+  if(state.splice.activeUnitId){
+    for(var i = 0; i < state.splice.items.length; i++){
+      var it = state.splice.items[i];
+      if(it.type === 'unit' && it.id === state.splice.activeUnitId) return it;
+    }
+  }
+  for(var j = state.splice.items.length - 1; j >= 0; j--){
+    if(state.splice.items[j].type === 'unit') return state.splice.items[j];
+  }
+  return null;
+}
+function isActiveUnit(id){ return state.splice.activeUnitId === id; }
+function setActiveUnit(id){ state.splice.activeUnitId = id; renderSplice(); saveNow(); }
+/* v7：动效 helper —— 块创建弹入 / 拼入吸入 / 拼接栏条目弹入 */
+function popCard(card){
+  if(!card) return;
+  card.classList.add('pop-in');
+  setTimeout(function(){ card.classList.remove('pop-in'); }, 220);
+}
+function suckBlock(id){
+  var c = board.querySelector('.block[data-id="' + id + '"]');
+  if(!c) return;
+  c.classList.add('suck');
+  setTimeout(function(){ c.classList.remove('suck'); }, 200);
+}
+function popSpliceEntry(bid){
+  var body = document.getElementById('spBody');
+  var el = body.querySelector('.sp-item[data-id="' + bid + '"], .sp-ublock[data-id="' + bid + '"]');
+  if(!el) return;
+  el.classList.add('sp-pop');
+  setTimeout(function(){ el.classList.remove('sp-pop'); }, 220);
+}
+function spliceAdd(id){
+  var b = findBlockById(id);
+  if(!b || b.type === 'image') return;   /* v6.16：图片块不可拼入（仅展示） */
+  var u = activeUnit();
+  if(u){ u.blockIds.push(id); }
+  else{ state.splice.items.push({ type: 'block', id: id }); }
+  renderSplice([id]);   /* v7：光线生长 */
+  suckBlock(id);        /* v7：画布块微缩「吸入」 */
+  popSpliceEntry(id);   /* v7：条目弹入落定 */
+  saveNow();
+}
+function spliceRemoveIds(ids){
+  state.splice.items = state.splice.items.filter(function(it){ return !(it.type === 'block' && ids.indexOf(it.id) >= 0); });
+  state.splice.items.forEach(function(it){ if(it.type === 'unit') it.blockIds = it.blockIds.filter(function(b){ return ids.indexOf(b) < 0; }); });
+}
+function spliceRemove(id){
+  spliceRemoveIds([id]);
+  renderSplice();
+  saveNow();
+}
+function spliceRemoveUnit(uid){
+  state.splice.items = state.splice.items.filter(function(it){ return !(it.type === 'unit' && it.id === uid); });
+  if(state.splice.activeUnitId === uid) state.splice.activeUnitId = null;
+  renderSplice();
+  saveNow();
+}
+function spliceClear(){
+  state.splice.items = [];
+  state.splice.activeUnitId = null;
+  renderSplice();
+  saveNow();
+}
+function copySpliced(){
+  var parts = [];
+  state.splice.items.forEach(function(it){
+    if(it.type === 'block'){
+      var b = findBlockById(it.id);
+      if(b && b.text.trim()) parts.push(b.text.trim());
+    }else{
+      var seg = [];
+      if(it.prefixes.length) seg.push('\n' + it.prefixes.join('\n'));   /* v6.21 修正：前缀值段上方加入一个空行（加在前缀段前，而非整段开头——前缀不在开头时同样生效） */
+      var blks = it.blockIds.map(function(bid){ var bl = findBlockById(bid); return bl ? bl.text.trim() : ''; }).filter(Boolean);
+      if(blks.length) seg.push(blks.join('\n'));
+      if(it.suffixes.length) seg.push(it.suffixes.join('\n'));
+      if(seg.length) parts.push(seg.join('\n'));
+    }
+  });
+  if(!parts.length){ toast('拼接列表是空的，先套用模板或把块加进来'); return; }
+  /* v6.21：空行规则——提示词块不参与空行加入（块间无空行）、前缀值段上方加一个空行（加在前缀段前，非整段开头）、后缀值不参与（值间无空行）；其余全部 \n 紧挨连接 */
+  copyText(parts.join('\n')).then(function(ok){
+    toast(ok ? '已复制拼接（' + countSpliced() + ' 块）' : '复制失败，请手动全选复制');
+  });
+}
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.splice = { activeUnit, copySpliced, countSpliced, isActiveUnit, popCard, popSpliceEntry, renderSplice, setActiveUnit, spItem, spUBlock, spUnit, spliceAdd, spliceClear, spliceRemove, spliceRemoveIds, spliceRemoveUnit, suckBlock };
+/* ==================== view/modals · 通用模态框 / 模板窗 / 右键菜单 ====================
+    统一开合与遮罩；由 40-template.js + 55-menu.js 合并。
+    （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
+   ================================================================= */
+/* ---- 拼接栏模板（v6）：多预设单元（模板），每单元容纳多个 prompt 块；套用=替换当前拼接 ---- */
+var tplOpen = false;
+function renderTplList(){
+  var list = document.getElementById('spTplList');
+  list.innerHTML = '';
+  list.classList.toggle('open', tplOpen);
+  var fold = document.getElementById('spTplFold');
+  fold.textContent = '模板' + (state.templates.length ? ' (' + state.templates.length + ')' : '') + (tplOpen ? ' ▴' : ' ▾');
+  if(!state.templates.length){
+    var e = document.createElement('div');
+    e.className = 'sp-tpl-empty';
+    e.textContent = '暂无模板：点「模板定制」创建模板单元';
+    list.appendChild(e);
+    return;
+  }
+  state.templates.forEach(function(t, ti){
+    var it = document.createElement('div');
+    it.className = 'sp-tpl-item';
+    var nm = document.createElement('span');
+    nm.className = 'sp-tpl-name';
+    var tname = '模板 ' + (ti + 1);   /* v6.13：模板名称移除，序号区分 */
+    nm.textContent = tname;
+    var units = t.units || [];
+    var np = 0, ns = 0;
+    units.forEach(function(u){ np += u.prefixes.length; ns += u.suffixes.length; });
+    var extra = '单元×' + units.length + (np ? ' 前缀×' + np : '') + (ns ? ' 后缀×' + ns : '');
+    nm.title = tname + '（' + extra + '）';
+    var num = document.createElement('span');
+    num.className = 'sp-tpl-num';
+    num.textContent = (np ? '▶' : '') + (ns ? '◀' : '') + ' 单' + units.length;
+    if(np || ns){
+      var pf = document.createElement('span');
+      pf.className = 'sp-tpl-num';
+      pf.textContent = (np ? '▶' : '') + (ns ? '◀' : '');
+      pf.title = '前缀:' + (np ? units.map(function(u){ return u.prefixes.join(' / '); }).filter(Boolean).join(' ｜ ') : '无') + ' 后缀:' + (ns ? units.map(function(u){ return u.suffixes.join(' / '); }).filter(Boolean).join(' ｜ ') : '无');
+      it.appendChild(pf);
+    }
+    var ap = document.createElement('button');
+    ap.className = 'sp-tpl-act primary';   /* v6.18：套用 = 主题色主操作 */
+    ap.textContent = '套用';
+    ap.title = '套用模板：清空拼接后按序生成模板的全部单元';
+    ap.addEventListener('click', function(){ applyTemplate(t.id); });
+    var pv = document.createElement('button');   /* v6.18：模板预览（只读查看单元结构） */
+    pv.className = 'sp-tpl-act';
+    pv.textContent = '预览';
+    pv.title = '预览模板单元结构（前缀/块区/后缀）';
+    pv.addEventListener('click', function(){ previewTemplate(ti); });
+    var dl = document.createElement('button');
+    dl.className = 'sp-tpl-act danger';
+    dl.textContent = '删除';
+    dl.addEventListener('click', function(){ deleteTemplate(t.id); });
+    it.appendChild(nm);
+    it.appendChild(num);
+    it.appendChild(pv);
+    it.appendChild(ap);
+    it.appendChild(dl);
+    list.appendChild(it);
+  });
+}
+/* ---- 模板定制窗口（v6.7）：单模板工作模式——每次定制一个模板，窗口中创建的皆为同一模板的组成部分 ---- */
+var tplCur = 0;   /* 当前编辑的模板索引 */
+function openTplWin(){
+  if(!state.templates.length) newTemplate();   /* v6.12：打开定制窗口立刻新建模板（用户拍板） */
+  if(tplCur >= state.templates.length || tplCur < 0) tplCur = 0;
+  blurActive();   /* v6.19：抢走画布焦点（否则打字/方向键作用于背景画布） */
+  document.getElementById('tplMask').classList.remove('hide');
+  renderTplWin();
+  var win = document.querySelector('#tplMask .tpl-win');
+  if(win && win.focus) win.focus();
+}
+function closeTplWin(){
+  document.getElementById('tplMask').classList.add('hide');
+  renderTplList();
+  saveNow();
+}
+function renderTplSelect(){
+  var sel = document.getElementById('tplSelect');
+  sel.innerHTML = '';
+  if(!state.templates.length){ tplCur = -1; return; }
+  state.templates.forEach(function(t, i){
+    var o = document.createElement('option');
+    o.value = i;
+    o.textContent = '模板 ' + (i + 1);   /* v6.13：序号区分 */
+    sel.appendChild(o);
+  });
+  var oNew = document.createElement('option');   /* v6.12：新建模板入口收进下拉（按钮形态移除） */
+  oNew.value = '-1';
+  oNew.textContent = '＋ 新建模板…';
+  sel.appendChild(oNew);
+  sel.value = String(Math.max(0, tplCur));
+}
+/* v6.12：模板 = 容器，包含任意数量「模板单元」（单元 = 前缀 + 提示词块 + 后缀） */
+function newUnitObj(){
+  return { id: uid(), prefixes: [], blocks: [], suffixes: [] };
+}
+function newTemplate(){
+  var t = { id: uid(), units: [newUnitObj()] };
+  state.templates.push(t);
+  tplCur = state.templates.length - 1;
+  renderTplWin();
+  renderTplList();
+  saveNow();
+  return t;
+}
+function newUnit(){
+  var t = state.templates[tplCur];
+  if(!t){ newTemplate(); t = state.templates[tplCur]; }
+  t.units.push(newUnitObj());
+  renderTplWin();
+  renderTplList();
+  saveNow();
+}
+function renderTplWin(){
+  renderTplSelect();
+  var body = document.getElementById('tplBody');
+  body.innerHTML = '';
+  if(!state.templates.length){
+    var e = document.createElement('div');
+    e.className = 'tpl-empty';
+    e.textContent = '还没有模板：打开窗口已自动新建';
+    body.appendChild(e);
+    return;
+  }
+  var t = state.templates[tplCur];
+  if(!t || !Array.isArray(t.units)){ tplCur = 0; t = state.templates[0]; }
+  if(!t.units.length) t.units.push(newUnitObj());
+  /* v6.13：模板名称已移除（序号区分）；直接渲染全部单元卡片（从上到下排列） */
+  t.units.forEach(function(u, i){ body.appendChild(tplUnitCard(t, u, i)); });
+}
+/* v6.12：模板单元卡片 = 前缀值 + 提示词块（任意数量）+ 后缀值 */
+/* v6.18：单元卡片可拖拽排序（HTML5 DnD） */
+function tplUnitCard(t, u, idx){
+  var card = document.createElement('div');
+  card.className = 'tpl-card';
+  card.draggable = true;
+  card.addEventListener('dragstart', function(e){
+    e.dataTransfer.setData('text/plain', String(idx));
+    e.dataTransfer.effectAllowed = 'move';
+    card.classList.add('dragging');
+  });
+  card.addEventListener('dragend', function(){
+    card.classList.remove('dragging');
+    var cards = document.querySelectorAll('.tpl-card.drag-over');
+    for(var i = 0; i < cards.length; i++) cards[i].classList.remove('drag-over');
+  });
+  card.addEventListener('dragover', function(e){
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    card.classList.add('drag-over');
+  });
+  card.addEventListener('dragleave', function(){ card.classList.remove('drag-over'); });
+  card.addEventListener('drop', function(e){
+    e.preventDefault();
+    card.classList.remove('drag-over');
+    var from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    if(isNaN(from) || from === idx) return;
+    var units = t.units;
+    var moved = units.splice(from, 1)[0];
+    units.splice(idx, 0, moved);   /* v6.18 修正：插到目标卡片位置（移除后索引自然对齐） */
+    renderTplWin();
+    renderTplList();
+    scheduleSave();
+  });
+  var head = document.createElement('div');
+  head.className = 'tpl-card-head';
+  var no = document.createElement('div');
+  no.className = 'tpl-unit-no';
+  no.textContent = '单元 ' + (idx + 1);
+  head.appendChild(no);
+  var hint = document.createElement('span');
+  hint.className = 'tpl-drag-hint';
+  hint.textContent = '≡ 拖动排序';
+  head.appendChild(hint);
+  card.appendChild(head);
+  card.appendChild(tplChipsRow('前缀值（每个独立一行）', u.prefixes));
+  card.appendChild(tplChipsRow('后缀值（每个独立一行）', u.suffixes));   /* v6.13：提示词块不是模板定制的一部分（中间为拼入容器） */
+  var del = document.createElement('button');
+  del.className = 'tpl-block-op danger';
+  del.textContent = '删除本单元';
+  del.style.alignSelf = 'flex-start';
+  del.addEventListener('click', function(){
+    var ui = t.units.findIndex(function(x){ return x.id === u.id; });
+    if(ui >= 0){ t.units.splice(ui, 1); renderTplWin(); renderTplList(); scheduleSave(); }
+  });
+  card.appendChild(del);
+  return card;
+}
+function tplChipsRow(label, arr){
+  var wrap = document.createElement('div');
+  var lbl = document.createElement('div');
+  lbl.className = 'tpl-lbl';
+  lbl.textContent = label;
+  wrap.appendChild(lbl);
+  var chips = document.createElement('div');
+  chips.className = 'tpl-chips';
+  arr.forEach(function(v, vi){
+    var c = document.createElement('span');
+    c.className = 'tpl-chip';
+    c.textContent = v;
+    var x = document.createElement('button');
+    x.className = 'tpl-chip-x';
+    x.textContent = '×';
+    x.title = '删除该值';
+    x.addEventListener('click', function(){ arr.splice(vi, 1); renderTplWin(); renderTplList(); scheduleSave(); });
+    c.appendChild(x);
+    chips.appendChild(c);
+  });
+  wrap.appendChild(chips);
+  var add = document.createElement('button');
+  add.className = 'tpl-add';
+  add.textContent = '+ 添加' + (label.indexOf('前缀') === 0 ? '前缀' : '后缀');
+  add.addEventListener('click', function(){
+    var inp = document.createElement('input');
+    inp.className = 'tpl-add-input';
+    inp.placeholder = '输入值后回车';
+    add.style.display = 'none';
+    wrap.appendChild(inp);
+    inp.focus();
+    var commit = function(){
+      if(inp.dataset.done) return;
+      inp.dataset.done = '1';
+      var v = inp.value.trim();
+      if(v){ arr.push(v); renderTplWin(); renderTplList(); scheduleSave(); }
+      else{ renderTplWin(); }
+    };
+    inp.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){ commit(); }
+      else if(e.key === 'Escape'){ renderTplWin(); }
+    });
+    inp.addEventListener('blur', commit);
+  });
+  wrap.appendChild(add);
+  return wrap;
+}
+
+function applyTemplate(id){
+  var t = state.templates.find(function(x){ return x.id === id; });
+  if(!t) return;
+  /* v6.13：套用 = 替换清空 + 模板全部单元按序生成（单元 = 前缀+空块区+后缀，块由拼入填充）；拼入目标 = 第一个单元 */
+  if(!t.units || !t.units.length){ toast('该模板还没有单元：先到「模板定制」添加单元'); return; }
+  var ti = state.templates.findIndex(function(x){ return x.id === id; });
+  var tname = '模板 ' + (ti + 1);   /* v6.13：模板序号名 */
+  var items = t.units.map(function(u){
+    return { type: 'unit', id: uid(), name: tname, prefixes: u.prefixes.slice(), suffixes: u.suffixes.slice(), blockIds: [] };
+  });
+  state.splice.items = items;
+  state.splice.activeUnitId = items[0].id;
+  renderSplice();
+  renderTplList();
+  saveNow();
+  toast('已套用模板「' + tname + '」（' + items.length + ' 个单元），拼入的块进入第一个单元');
+}
+/* v6.18：模板预览（只读）——查看模板的单元结构（前缀/块区/后缀） */
+function previewTemplate(ti){
+  var t = state.templates[ti];
+  if(!t) return;
+  document.getElementById('tplPrevTitle').textContent = '模板 ' + (ti + 1) + ' 预览';
+  var body = document.getElementById('tplPrevBody');
+  body.innerHTML = '';
+  (t.units || []).forEach(function(u, i){
+    var card = document.createElement('div');
+    card.className = 'tpl-prev-card';
+    var no = document.createElement('div');
+    no.className = 'tpl-unit-no';
+    no.textContent = '单元 ' + (i + 1);
+    card.appendChild(no);
+    if(u.prefixes.length){
+      var pl = document.createElement('div');
+      pl.className = 'tpl-lbl';
+      pl.textContent = '前缀值';
+      card.appendChild(pl);
+      var pw = document.createElement('div');
+      pw.className = 'tpl-chips';
+      u.prefixes.forEach(function(p){
+        var s = document.createElement('span');
+        s.className = 'tpl-chip';
+        s.textContent = p;
+        pw.appendChild(s);
+      });
+      card.appendChild(pw);
+    }
+    var em = document.createElement('div');
+    em.className = 'tpl-prev-empty';
+    em.textContent = '□ 拼入块容器（套用后把提示词块拼到这里）';
+    card.appendChild(em);
+    if(u.suffixes.length){
+      var sl = document.createElement('div');
+      sl.className = 'tpl-lbl';
+      sl.textContent = '后缀值';
+      card.appendChild(sl);
+      var sw = document.createElement('div');
+      sw.className = 'tpl-chips';
+      u.suffixes.forEach(function(p){
+        var s = document.createElement('span');
+        s.className = 'tpl-chip';
+        s.textContent = p;
+        sw.appendChild(s);
+      });
+      card.appendChild(sw);
+    }
+    body.appendChild(card);
+  });
+  document.getElementById('tplPrevMask').classList.remove('hide');
+  blurActive();   /* v6.19：只读窗口也抢走画布焦点（防方向键平移画布） */
+  var win = document.querySelector('#tplPrevMask .tpl-win');
+  if(win && win.focus) win.focus();
+}
+
+function deleteTemplate(id){
+  var i = state.templates.findIndex(function(x){ return x.id === id; });
+  if(i < 0) return;
+  var t = state.templates[i];
+  state.templates.splice(i, 1);
+  renderTplList();
+  saveNow();
+  toast('已删除模板：' + t.name, { label: '撤销', fn: function(){
+    state.templates.splice(i, 0, t);
+    renderTplList();
+    saveNow();
+    toast('已恢复模板：' + t.name);
+  }});
+}
+
+/* ---- 命名模态框（v6：替代原生 prompt，headless/嵌入环境不可靠；v6.4 多字段通用版） ---- */
+var modalCb = null;
+function openModal(title, fields, cb){
+  document.getElementById('modalTitle').textContent = title;
+  var body = document.getElementById('modalBody');
+  body.innerHTML = '';
+  fields.forEach(function(f){
+    var row = document.createElement('div');
+    row.className = 'modal-row';
+    var lab = document.createElement('div');
+    lab.className = 'modal-label';
+    lab.textContent = f.label;
+    var inp = document.createElement('input');
+    inp.className = 'modal-input';
+    inp.maxLength = f.maxLength || 60;
+    inp.value = f.value || '';
+    if(f.placeholder) inp.placeholder = f.placeholder;
+    row.appendChild(lab);
+    row.appendChild(inp);
+    body.appendChild(row);
+  });
+  modalCb = cb;
+  document.getElementById('modalMask').classList.remove('hide');
+  var first = body.querySelector('.modal-input');
+  if(first){ first.focus(); first.select(); }
+}
+function closeModal(){
+  document.getElementById('modalMask').classList.add('hide');
+  modalCb = null;
+}
+function toggleCollapsed(){
+  state.collapsed = !state.collapsed;
+  renderSplice();
+  saveNow();
+}
+/* copySpliced 见拼接操作区（v6.6 条目结构） */
+
+/* ---- 画布右键菜单（v5.2） ---- */
+function addBlockHere(cx, cy){
+  var c = document.getElementById('canvas');
+  var cr = c.getBoundingClientRect();
+  var n = state.blocks.length;
+  var b = { id: uid(), text: '' };
+  b.x = (cx - cr.left - state.pan.x) / state.zoom - (MIN_BLOCK_W / 2) + ((n % 5) - 2) * 20;
+  b.y = (cy - cr.top - state.pan.y) / state.zoom - 60 + ((n % 5) - 2) * 16;
+  state.blocks.push(b);
+  render();
+  var cards = board.querySelectorAll('.block');
+  var last = cards[cards.length - 1];
+  var tx = last && last.querySelector('.block-text');
+  popCard(last);   /* v7：创建弹入 */
+  if(tx) focusCaretEnd(tx);
+  saveNow();
+}
+var __ctxBlock = -1;
+var __ctxX = 0, __ctxY = 0;   /* 右键触发位置（「在此处新增块」落点用） */
+function openCtxMenu(items, x, y){
+  var m = document.getElementById('ctxMenu');
+  m.innerHTML = '';
+  items.forEach(function(it){
+    if(it === 'sep'){
+      var s = document.createElement('div');
+      s.className = 'ctx-sep';
+      m.appendChild(s);
+      return;
+    }
+    var b = document.createElement('div');
+    b.className = 'ctx-item' + (it.danger ? ' danger' : '') + (it.disabled ? ' disabled' : '');
+    b.textContent = it.label;
+    b.dataset.act = it.act;
+    m.appendChild(b);
+  });
+  m.classList.add('open');
+  var r = m.getBoundingClientRect();
+  m.style.left = Math.max(6, Math.min(x, window.innerWidth - r.width - 6)) + 'px';
+  m.style.top = Math.max(6, Math.min(y, window.innerHeight - r.height - 6)) + 'px';
+}
+function closeCtxMenu(){
+  document.getElementById('ctxMenu').classList.remove('open');
+  __ctxBlock = -1;
+}
+document.addEventListener('contextmenu', function(e){
+  if(!e.target.closest('.canvas')) return;   /* 仅画布区域接管右键 */
+  var block = e.target.closest('.block');
+  if(block && e.target.closest('.block-text')) return;   /* textarea 内保留浏览器原生菜单 */
+  e.preventDefault();
+  __ctxX = e.clientX;
+  __ctxY = e.clientY;
+  if(block){   /* 块上（把手/卡片区域） */
+    var i = state.blocks.findIndex(function(b){ return b.id === block.dataset.id; });
+    if(i < 0) return;
+    __ctxBlock = i;
+    /* v6.3：右键菜单不修改选择集——右键块在选中集内 → 菜单批量作用于选中集；否则菜单单块 */
+    var multi = (selected.length > 1) && isSel(state.blocks[i].id);
+    if(state.blocks[i].type === 'image'){   /* v6.16：图片块仅提供删除 */
+      openCtxMenu([
+        { label: multi ? ('删除（' + selected.length + ' 块）') : '删除', act: 'del-block', danger: true }
+      ], e.clientX, e.clientY);
+    }else{
+    openCtxMenu([
+      { label: multi ? ('拼入拼接（' + selected.length + ' 块）') : '拼入拼接', act: 'splice-block' },
+      { label: multi ? ('复制（' + selected.length + ' 块）') : '复制', act: 'copy-block' },
+      { label: multi ? ('克隆组（' + selected.length + ' 块）') : '克隆', act: 'clone-block' },
+      { label: multi ? ('移除空行（' + selected.length + ' 块）') : '移除空行', act: 'strip-blank' },
+      'sep',
+      { label: multi ? ('删除（' + selected.length + ' 块）') : '删除', act: 'del-block', danger: true }
+    ], e.clientX, e.clientY);
+    }
+  }else if(!block){   /* 画布空白：清空多选 */
+    if(selected.length){ selected = []; refreshSel(); }
+    openCtxMenu([
+      { label: '在此处新增块', act: 'add-here' },
+      'sep',
+      { label: '复制拼接', act: 'copy-spliced', disabled: !countSpliced() },
+      { label: '清空拼接', act: 'clear-spliced', disabled: !countSpliced() },
+      'sep',
+      { label: '导出 JSON', act: 'export' },
+      { label: '导入 JSON', act: 'import' }
+    ], e.clientX, e.clientY);
+  }
+});
+document.addEventListener('click', function(e){
+  var m = document.getElementById('ctxMenu');
+  if(!m.classList.contains('open')) return;
+  var item = e.target.closest('.ctx-item');
+  if(!item){ closeCtxMenu(); return; }   /* 点菜单外关闭 */
+  var act = item.dataset.act;
+  var bi = __ctxBlock;   /* 先取块索引（closeCtxMenu 会重置） */
+  closeCtxMenu();
+  if(act === 'add-here'){ addBlockHere(__ctxX, __ctxY); }
+  else if(act === 'copy-spliced'){ copySpliced(); }
+  else if(act === 'clear-spliced'){ spliceClear(); toast('已清空拼接'); }
+  else if(act === 'export'){ exportJSON(); }
+  else if(act === 'import'){ document.getElementById('fileInput').click(); }
+  else if(act === 'splice-block'){ bulkAction('splice', actIds(bi)); }
+  else if(act === 'copy-block'){ bulkAction('copy', actIds(bi)); }
+  else if(act === 'clone-block'){ bulkAction('clone', actIds(bi)); }
+  else if(act === 'strip-blank'){ bulkAction('strip-blank', actIds(bi)); }
+  else if(act === 'del-block'){ bulkAction('del', actIds(bi)); }
+  __ctxBlock = -1;
+});
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeCtxMenu(); });
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.modals = { __ctxBlock, __ctxX, __ctxY, addBlockHere, applyTemplate, closeCtxMenu, closeModal, closeTplWin, deleteTemplate, modalCb, newTemplate, newUnit, newUnitObj, openCtxMenu, openModal, openTplWin, previewTemplate, renderTplList, renderTplSelect, renderTplWin, toggleCollapsed, tplChipsRow, tplCur, tplOpen, tplUnitCard };
+/* v6.17：方向键平滑移动画布（LOL 式：按住加速曲线、松手即停；镜头语义——按 → 视角右移，内容左移） */
+/* v6.18：keyState 记录每个键真实状态、keyDir 派生——修复快速连按时 keyup 误清同轴另一键导致「冲突不动」；位移 ÷zoom（高缩放视觉速度恒定） */
+var keyDir = { x: 0, y: 0 }, keyVel = 0, keyLoop = false, keyLastT = 0;
+var keyState = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+var KEY_MAX_VEL = 900, KEY_ACCEL = 4200;   /* px/s：0.9 秒内加速到 900px/s 约 0.21s */
+function updateKeyDir(){
+  keyDir.x = (keyState.ArrowRight ? 1 : 0) - (keyState.ArrowLeft ? 1 : 0);
+  keyDir.y = (keyState.ArrowDown ? 1 : 0) - (keyState.ArrowUp ? 1 : 0);
+}
+function keyPanLoop(t){
+  if(!keyLoop) return;
+  var dt = Math.min(0.05, (t - keyLastT) / 1000 || 0.016);
+  keyLastT = t;
+  if(!keyDir.x && !keyDir.y){ keyLoop = false; keyVel = 0; return; }   /* 全部松开立即停 */
+  keyVel = Math.min(KEY_MAX_VEL, keyVel + KEY_ACCEL * dt);
+  var v = keyVel * dt / state.zoom;   /* v6.18：÷zoom —— 高缩放时视觉速度恒定 */
+  state.pan.x -= keyDir.x * v;
+  state.pan.y -= keyDir.y * v;
+  applyPan();
+  scheduleSave();
+  requestAnimationFrame(keyPanLoop);
+}
+document.addEventListener('keydown', function(e){
+  var ae = document.activeElement;
+  if(ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT' || ae.isContentEditable)) return;   /* 输入场景豁免 */
+  if(document.querySelector('.modal-mask:not(.hide)')) return;   /* v6.19：任何独立窗口打开时方向键不动画布（焦点兜底） */
+  var k = e.key;
+  if(k === 'ArrowUp' || k === 'ArrowDown' || k === 'ArrowLeft' || k === 'ArrowRight'){
+    e.preventDefault();
+    keyState[k] = true;
+    updateKeyDir();
+    if(!keyLoop){ keyLoop = true; keyLastT = performance.now(); requestAnimationFrame(keyPanLoop); }
+  }
+});
+document.addEventListener('keyup', function(e){
+  var k = e.key;
+  if(k === 'ArrowUp' || k === 'ArrowDown' || k === 'ArrowLeft' || k === 'ArrowRight'){
+    keyState[k] = false;   /* 只清该键——同轴另一键仍按着时方向保持 */
+    updateKeyDir();
+    /* v6.18：同轴反向抵消时循环已停（keyDir=0），恢复方向后要重启循环 */
+    if(!keyLoop && (keyDir.x || keyDir.y)){ keyLoop = true; keyLastT = performance.now(); requestAnimationFrame(keyPanLoop); }
+  }
+});
+window.addEventListener('blur', function(){ keyState.ArrowUp = keyState.ArrowDown = keyState.ArrowLeft = keyState.ArrowRight = false; updateKeyDir(); });
+window.addEventListener('blur', function(){ closeCtxMenu(); });
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.keys = { KEY_ACCEL, KEY_MAX_VEL, keyDir, keyLastT, keyLoop, keyPanLoop, keyState, keyVel, updateKeyDir };
+/* ==================== interact/paste · Ctrl+V 粘贴为块 ====================
+    文本 / 图片粘贴入画布；由 90-boot.js 的粘贴部分拆出（函数提升 → 位置无关）。
+    （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
+   ================================================================= */
+function addImageBlock(dataUrl, w, h){
+  var n = state.blocks.length;
+  var b = { id: uid(), type: 'image', img: dataUrl, iw: w, ih: h };
+  b.x = (-state.pan.x + (canvas.clientWidth / 2)) / state.zoom - (w / 2) + ((n % 5) - 2) * 20;
+  b.y = (-state.pan.y + (canvas.clientHeight / 2)) / state.zoom - (h / 2) + ((n % 5) - 2) * 16;
+  state.blocks.push(b);
+  render();
+  popCard(board.querySelector('.block[data-id="' + b.id + '"]'));   /* v7：创建弹入 */
+  saveNow();   /* 图片不落盘，其余数据照常保存 */
+  toast('已粘贴为图片块（' + w + '×' + h + '）');
+}
+
+document.addEventListener('paste', function(e){
+  if(e.target && e.target.closest && (e.target.closest('.block-text') || e.target.closest('.modal-body') || e.target.closest('.sp-item'))) return;   /* 编辑/输入场景保留原生粘贴 */
+  var cd = e.clipboardData;
+  if(cd && cd.items){
+    var imgItem = null;
+    for(var i = 0; i < cd.items.length; i++){
+      var it = cd.items[i];
+      if(it.type && it.type.indexOf('image/') === 0){ imgItem = it; break; }
+    }
+    if(imgItem){
+      var f = imgItem.getAsFile();
+      if(f){
+        e.preventDefault();
+        var rd = new FileReader();
+        rd.onload = function(){
+          var img = new Image();
+          img.onload = function(){ addImageBlock(rd.result, img.naturalWidth, img.naturalHeight); };
+          img.src = rd.result;
+        };
+        rd.readAsDataURL(f);
+        return;
+      }
+    }
+  }
+  var txt = (cd && cd.getData('text/plain')) || '';
+  if(!txt || !txt.trim()) return;
+  e.preventDefault();
+  var n = state.blocks.length;
+  var b = { id: uid(), text: txt.trim() };
+  b.x = (-state.pan.x + (canvas.clientWidth / 2)) / state.zoom - (MIN_BLOCK_W / 2) + ((n % 5) - 2) * 20;
+  b.y = (-state.pan.y + (canvas.clientHeight / 2)) / state.zoom - 60 + ((n % 5) - 2) * 16;
+  state.blocks.push(b);
+  render();
+  popCard(board.querySelector('.block[data-id="' + b.id + '"]'));   /* v7：创建弹入 */
+  saveNow();
+  toast('已粘贴为块（' + b.text.length + ' 字符）');
+});
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.paste = { addImageBlock };
+/* ==================== interact/pointer · 指针手势路由 ====================
+    多选 / 缩放 / 平移 / 拖拽；由 30-selection + 64-zoom + 66-pan + 68-drag 合并。
+    （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
+   ================================================================= */
+
+function isSel(id){ return selected.indexOf(id) >= 0; }
+/* v6.3：Ctrl+左键点选多选（toggle：已选则取消） */
+function toggleSel(card){
+  if(!card) return;
+  var i = state.blocks.findIndex(function(b){ return b.id === card.dataset.id; });
+  if(i < 0) return;
+  var id = state.blocks[i].id;
+  var at = selected.indexOf(id);
+  if(at >= 0){ selected.splice(at, 1); }else{ selected.push(id); }
+  refreshSel();
+}
+function refreshSel(){
+  var cards = board.querySelectorAll('.block');
+  for(var i = 0; i < cards.length; i++){
+    cards[i].classList.toggle('selected', isSel(cards[i].dataset.id));
+  }
+}
+function clearSel(){ selected = []; refreshSel(); }
+/* v6.1：批量操作（多选「新单体」：原本对单块的操作对选中集全部可用） */
+function findBlockById(id){
+  for(var j = 0; j < state.blocks.length; j++){ if(state.blocks[j].id === id) return state.blocks[j]; }
+  return null;
+}
+function actIds(bi){
+  /* v6.3：右键块在选中集内 → 批量作用于整个选中集；否则单块 */
+  if(bi >= 0 && selected.length > 1 && isSel(state.blocks[bi].id)) return selected.slice();
+  if(bi >= 0) return [state.blocks[bi].id];
+  return [];
+}
+function bulkAction(act, ids){
+  if(!ids.length) return;
+  var lastNew = null;
+  if(act === 'splice'){
+    ids.forEach(function(id){ spliceAdd(id); });
+    toast(ids.length > 1 ? '已加入拼接（' + ids.length + ' 块）' : '已加入拼接');
+  }else if(act === 'copy'){
+    var parts = ids.map(function(id){ var b = findBlockById(id); return (b && b.text) ? b.text.trim() : ''; }).filter(Boolean);   /* v6.16：图片块无文本，跳过 */
+    if(!parts.length){ toast('所选块还没有内容'); return; }
+    copyText(parts.join('\n\n')).then(function(ok){
+      toast(ok ? (ids.length > 1 ? '已复制 ' + ids.length + ' 块（按序拼接）' : '已复制该块') : '复制失败，请手动全选复制');
+    });
+  }else if(act === 'clone'){
+    var added = 0;
+    for(var k = ids.length - 1; k >= 0; k--){   /* 从后往前插，索引不漂移 */
+      var idx = state.blocks.findIndex(function(b){ return b.id === ids[k]; });
+      if(idx < 0) continue;
+      if(state.blocks[idx].type === 'image') continue;   /* v6.16：图片块不可克隆（仅展示） */
+      var cp = JSON.parse(JSON.stringify(state.blocks[idx]));
+      cp.id = uid();
+      cp.x += 28; cp.y += 28;
+      state.blocks.splice(idx + 1, 0, cp);
+      lastNew = cp;
+      added++;
+    }
+    toast('已克隆 ' + added + ' 块');
+  }else if(act === 'strip-blank'){
+    var done = 0;
+    ids.forEach(function(id){
+      var b = findBlockById(id);
+      if(!b) return;
+      var lines = (b.text || '').split('\n');
+      var kept = lines.filter(function(l){ return l.trim() !== ''; });
+      var v = kept.join('\n');
+      if(v !== (b.text || '')){ b.text = v; done++; }
+    });
+    toast(done ? (done > 1 ? '已移除空行（' + done + ' 块）' : '已移除空行') : '所选块没有空行');
+  }else if(act === 'del'){
+      var snap = null;
+      if(ids.length > 1) snap = JSON.parse(JSON.stringify({ blocks: state.blocks, splice: state.splice }));   /* 批量删除快照，可撤销 */
+      /* v7：先播删除动画（110ms 收拢淡出），再真正移除——块「消失」有质感 */
+      ids.forEach(function(id){
+        var dc = board.querySelector('.block[data-id="' + id + '"]');
+        if(dc) dc.classList.add('del-anim');
+      });
+      setTimeout(function(){
+        spliceRemoveIds(ids);
+        state.blocks = state.blocks.filter(function(b){ return ids.indexOf(b.id) < 0; });   /* v6.15 修复：v6.6 重构丢失画布块删除（此前「删除」仅移出拼接引用，块留在画布） */
+        selected = [];
+        render();
+        if(snap){
+          toast('已删除 ' + ids.length + ' 块', { label: '撤销', fn: function(){
+            state.blocks = snap.blocks;
+            state.splice = snap.splice;
+            render();
+            saveNow();
+            toast('已恢复删除的块');
+          }});
+        }else{
+          toast('已删除');
+        }
+        saveNow();
+      }, 130);
+      return;   /* v7：删除走动画分支自行收尾（render/saveNow 在动画后执行） */
+    }
+  selected = [];
+  if(act === 'clone' || act === 'del' || act === 'strip-blank'){
+    render();
+    if(act === 'clone' && lastNew){
+      var nc = board.querySelector('.block[data-id="' + lastNew.id + '"]');
+      if(nc){ popCard(nc); var nt = nc.querySelector('.block-text'); if(nt) focusCaretEnd(nt); }   /* v7：克隆弹入 */
+    }
+  }else{
+    refreshSel();
+  }
+  saveNow();
+}
+
 /* v6.9：画布缩放——Ctrl+滚轮以光标为基准（光标下内容不动），范围 25%~400%，每格 ×1.1 */
 var ZOOM_MIN = 0.25, ZOOM_MAX = 4;
 function zoomAt(cx, cy, factor){
@@ -3194,6 +3299,7 @@ function blurActive(){
   var ae = document.activeElement;
   if(ae && typeof ae.blur === 'function' && ae !== document.body){ try{ ae.blur(); }catch(err){} }
 }
+
 /* v6.1：画布移动粘滞感——拖动中平滑阻尼跟随 + 松手轻惯性缓停 */
 var PAN_LERP = 0.32;     /* 阻尼系数：每帧向目标收敛比例（轻微滞后、有粘度） */
 var PAN_FRICTION = 0.92; /* 惯性摩擦：每帧速度衰减（轻滑缓停） */
@@ -3249,6 +3355,7 @@ document.addEventListener('keyup', function(e){
   if(e.key !== ' ' && e.code !== 'Space') return;
   if(spacePan){ spacePan = false; document.body.classList.remove('space-pan'); }
 });
+
 window.addEventListener('blur', function(){ if(spacePan){ spacePan = false; document.body.classList.remove('space-pan'); } });
 function onMouseDown(e){
   /* v6.17：鼠标中键按下 = 全局平移视角（不论鼠标在哪里） */
@@ -3546,6 +3653,8 @@ function onMouseUp(e){
 document.addEventListener('mousedown', onMouseDown);
 document.addEventListener('mousemove', onMouseMove);
 document.addEventListener('mouseup', onMouseUp);
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.pointer = { PAN_FRICTION, PAN_LERP, ZOOM_MAX, ZOOM_MIN, actIds, blurActive, bulkAction, clearDropTarget, clearSel, createGhost, destroyGhost, dragOffset, dropUnitEl, findBlockById, fixTextBlur, focusCaretEnd, ghostEl, ghostOffX, ghostOffY, ghostSrcId, isSel, moveGhost, onMouseDown, onMouseMove, onMouseUp, panStart, panStep, refreshSel, resetZoom, spacePan, spliceDropAt, spliceMode, syncSpliceText, toggleSel, toggleSpliceMode, updateDragTransform, updateDropTarget, updateZoomBtn, zoomAt };
 
 /* ---- 事件 ---- */
 document.addEventListener('DOMContentLoaded', function(){
@@ -3825,59 +3934,13 @@ function exportJSON(){
 
 /* v6.4：Ctrl+V 将剪贴板文本创建为 prompt 块（焦点不在输入区时生效，整段单块，视口中心错位摆放） */
 /* v6.16：剪贴板含图片 → 创建图片块（按原始分辨率，仅会话内，不落盘不导出） */
-function addImageBlock(dataUrl, w, h){
-  var n = state.blocks.length;
-  var b = { id: uid(), type: 'image', img: dataUrl, iw: w, ih: h };
-  b.x = (-state.pan.x + (canvas.clientWidth / 2)) / state.zoom - (w / 2) + ((n % 5) - 2) * 20;
-  b.y = (-state.pan.y + (canvas.clientHeight / 2)) / state.zoom - (h / 2) + ((n % 5) - 2) * 16;
-  state.blocks.push(b);
-  render();
-  popCard(board.querySelector('.block[data-id="' + b.id + '"]'));   /* v7：创建弹入 */
-  saveNow();   /* 图片不落盘，其余数据照常保存 */
-  toast('已粘贴为图片块（' + w + '×' + h + '）');
-}
-document.addEventListener('paste', function(e){
-  if(e.target && e.target.closest && (e.target.closest('.block-text') || e.target.closest('.modal-body') || e.target.closest('.sp-item'))) return;   /* 编辑/输入场景保留原生粘贴 */
-  var cd = e.clipboardData;
-  if(cd && cd.items){
-    var imgItem = null;
-    for(var i = 0; i < cd.items.length; i++){
-      var it = cd.items[i];
-      if(it.type && it.type.indexOf('image/') === 0){ imgItem = it; break; }
-    }
-    if(imgItem){
-      var f = imgItem.getAsFile();
-      if(f){
-        e.preventDefault();
-        var rd = new FileReader();
-        rd.onload = function(){
-          var img = new Image();
-          img.onload = function(){ addImageBlock(rd.result, img.naturalWidth, img.naturalHeight); };
-          img.src = rd.result;
-        };
-        rd.readAsDataURL(f);
-        return;
-      }
-    }
-  }
-  var txt = (cd && cd.getData('text/plain')) || '';
-  if(!txt || !txt.trim()) return;
-  e.preventDefault();
-  var n = state.blocks.length;
-  var b = { id: uid(), text: txt.trim() };
-  b.x = (-state.pan.x + (canvas.clientWidth / 2)) / state.zoom - (MIN_BLOCK_W / 2) + ((n % 5) - 2) * 20;
-  b.y = (-state.pan.y + (canvas.clientHeight / 2)) / state.zoom - 60 + ((n % 5) - 2) * 16;
-  state.blocks.push(b);
-  render();
-  popCard(board.querySelector('.block[data-id="' + b.id + '"]'));   /* v7：创建弹入 */
-  saveNow();
-  toast('已粘贴为块（' + b.text.length + ' 字符）');
-});
 
 window.addEventListener('beforeunload', flush);
 document.addEventListener('visibilitychange', function(){ if(document.hidden) flush(); });
 
 load();
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.boot = { exportJSON, exportName };
 })();
 </script>
 </body>

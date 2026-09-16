@@ -43,4 +43,5 @@ document.addEventListener('keyup', function(e){
 });
 window.addEventListener('blur', function(){ keyState.ArrowUp = keyState.ArrowDown = keyState.ArrowLeft = keyState.ArrowRight = false; updateKeyDir(); });
 window.addEventListener('blur', function(){ closeCtxMenu(); });
-
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.keys = { KEY_ACCEL, KEY_MAX_VEL, keyDir, keyLastT, keyLoop, keyPanLoop, keyState, keyVel, updateKeyDir };

@@ -19,6 +19,13 @@
       降为中性示例」已由 v7.8.2 撤销；Holly 认定风格包即语料的一部分），52-complete 的 resp 已改写
       为事实陈述。当前现状以 dev/_build/snapshots/BASELINE_v7.9.md 为准。
    ── 变更记录 ──────────────────────────────────────────────────────────────
+   · v0.5-p2-2026-09-16（相对 v0.4-p2）：**P2 收口 = 模块划分落地 + 显式导出面**——
+     (1) 合并：`view/canvas`（render+blocks）、`view/modals`（template+menu）、`interact/pointer`
+         （selection+zoom+pan+drag）；拆分：`core/store` + `core/persist`（原 state）、`interact/paste`（原 boot）；
+     (2) 17 个模块文件全部落地；每个文件末尾 `PHJ.<module> = {…}` **显式导出对外面**，`shell/head.js` 定义 `var PHJ = {}`；
+     (3) `SLICES` 顺序 = **加载顺序**（由加载期副作用决定，见文件头 ★顺序不变式），17 条，**不建议按 deps 重排**；
+     (4) `MODULES` 重写为**与实现一致**的清单（id/path/layer/deps/exports=PHJ.<id>）；`resolveOrder()` 保留备 P3；
+     (5) 本阶段**改了字节**（合并/拆分 + 导出面）→ 新基线 `PHJ_v7.10_20260916.html`；闸门 **7/7 全绿**（83 / 18 / 16 / 46 / 18，体积 229609 B，容量限制已解除）。
    · v0.4-p2-2026-09-16（相对 v0.3-p2）：**P2 阶段二/三**——
      (1) `50-editor.js` 按职责切为 `editor/highlight.js` + `editor/block-editor.js`（行边界切分 → 拼接恒等）；
      (2) 余下 10 片改名归位（`core/state.js`、`view/render.js|template.js|menu.js|blocks.js`、
@@ -47,7 +54,7 @@
          editor/asset 的开放问题保留）。
    ============================================================================ */
 
-export const MANIFEST_VERSION = 'v0.4-p2';
+export const MANIFEST_VERSION = 'v0.5-p2';
 
 /* ════════════════════════════════════════════════════════════════════════════
    P1 · 切片序列（SLICES / CSS）—— **当前构建的唯一顺序源**
@@ -60,32 +67,37 @@ export const MANIFEST_VERSION = 'v0.4-p2';
    · P2 完成后本数组退役（改由 `resolveOrder(MODULES)` 决定）。
    ════════════════════════════════════════════════════════════════════════════ */
 
-/* JS 源文件：顺序 = 现 index.html 的 <script src> 顺序（首条 shell/head.js 首行即 'use strict';）
-   P2 阶段一/二/三（2026-09-16）：全部 20 个源文件已按职责归入 shell/core/editor/view/interact，
-   **编号片目录 `js/` 已消失**。以下三条不变式在 P2 全程成立，故产物字节恒等（222381 B / a6d3a6f6…）：
-     ① 只搬家/改名 → 不动内容；② 只在行边界切分 → 拼接结果恒等；③ 顺序表逐条保持原相对次序。
-   `module` = 本阶段认定的模块名；`open` = 架构师原稿里更粗的合并/拆分**仍待评估**（见 PENDING）。 */
+/* JS 源文件：**顺序 = 加载顺序**（首条 shell/head.js 首行即 'use strict';，末条 shell/boot.js 末尾调 load()）
+   ----------------------------------------------------------------------------
+   P2 收口（2026-09-16）：全部 17 个模块文件已按 manifest 模块划分落地（合并 canvas/modals/pointer，
+   拆分 store+persist、boot+paste），并在各文件末尾以 `PHJ.<module> = {…}` 显式导出对外面。
+   ★ **顺序不变式（本文件最重要的约定）**：本数组的顺序由**加载期副作用**决定，不由 `deps` 决定——
+     `deps` 描述的是**运行期调用关系**（函数声明提升 → 调用顺序与文件顺序无关）；
+     真正对顺序敏感的是：① `addEventListener` 的**注册顺序**（同一事件按注册序调用 → Escape/keydown
+     处理链、拖拽 vs 平移的 mousedown 优先级都靠它）；② 顶层 `var x = <表达式>` 的**初始化顺序**。
+     当前顺序刻意保持与 v7.9 相同的**副作用注册序**：complete(DOMContentLoaded) → modals(contextmenu/click/
+     keydown·Esc) → keys(keydown/keyup/blur) → pointer(pan keydown/keyup → drag blur/mousedown/move/up) → boot(DCL/
+     beforeunload/visibilitychange/load)。
+     ⚠️ **不要**为了让顺序"等于 resolveOrder(MODULES) 的拓扑序"而重排本数组——那会改变上述注册序 → 行为改变。
+     `resolveOrder()` 保留为 P3（模块真正隔离、deps 成为加载契约）时的参考工具。 */
 export const SLICES = [
-  { id: 'head',        module: 'head',         layer: 'shell',    file: 'shell/head.js' },
-  { id: 'state',       module: 'state',        layer: 'core',     file: 'core/state.js',        open: '架构师原稿拆 store+persist：需重排（LS 键/vars 在文件头）→ 会改字节，另议' },
-  { id: 'clipboard',   module: 'clipboard',    layer: 'core',     file: 'core/clipboard.js' },
-  { id: 'render',      module: 'render',       layer: 'view',     file: 'view/render.js',       open: '架构师原稿并入 canvas（与 blocks 合）：两片不相邻，合并会重排 → 会改字节，另议' },
-  { id: 'overlay',     module: 'overlay',      layer: 'view',     file: 'view/overlay.js' },
-  { id: 'selection',   module: 'selection',    layer: 'interact', file: 'interact/selection.js', open: '架构师原稿并入 pointer（4 片合）：不相邻，另议' },
-  { id: 'splice',      module: 'splice',       layer: 'view',     file: 'view/splice.js' },
-  { id: 'template',    module: 'template',     layer: 'view',     file: 'view/template.js',     open: '架构师原稿并入 modals（与 menu 合）：不相邻，另议' },
-  { id: 'highlight',   module: 'highlight',    layer: 'editor',   file: 'editor/highlight.js' },
-  { id: 'blockEditor', module: 'block-editor', layer: 'editor',   file: 'editor/block-editor.js' },
-  { id: 'struct',      module: 'struct',       layer: 'editor',   file: 'editor/struct.js' },
-  { id: 'complete',    module: 'complete',     layer: 'editor',   file: 'editor/complete.js' },
-  { id: 'library',     module: 'library',      layer: 'editor',   file: 'editor/library.js' },
-  { id: 'menu',        module: 'menu',         layer: 'view',     file: 'view/menu.js',         open: '架构师原稿并入 modals，另议' },
-  { id: 'keys',        module: 'keys',         layer: 'interact', file: 'interact/keys.js' },
-  { id: 'blocks',      module: 'blocks',       layer: 'view',     file: 'view/blocks.js',       open: '架构师原稿并入 canvas，另议（本片实测藏着 buildCard 等「命名称谎」符号，已随改名归位）' },
-  { id: 'zoom',        module: 'zoom',         layer: 'interact', file: 'interact/zoom.js',     open: '架构师原稿并入 pointer，另议' },
-  { id: 'pan',         module: 'pan',          layer: 'interact', file: 'interact/pan.js',      open: '架构师原稿并入 pointer，另议' },
-  { id: 'drag',        module: 'drag',         layer: 'interact', file: 'interact/drag.js',     open: '架构师原稿并入 pointer，另议' },
-  { id: 'boot',        module: 'boot',         layer: 'shell',    file: 'shell/boot.js',        open: '架构师原稿拆出 interact/paste：会改字节，另议' },
+  { id: 'head',        module: 'head',        layer: 'shell',    file: 'shell/head.js' },
+  { id: 'store',       module: 'store',       layer: 'core',     file: 'core/store.js' },
+  { id: 'persist',     module: 'persist',     layer: 'core',     file: 'core/persist.js' },
+  { id: 'clipboard',   module: 'clipboard',   layer: 'core',     file: 'core/clipboard.js' },
+  { id: 'overlay',     module: 'overlay',     layer: 'view',     file: 'view/overlay.js' },
+  { id: 'highlight',   module: 'highlight',   layer: 'editor',   file: 'editor/highlight.js' },
+  { id: 'blockEditor', module: 'blockEditor', layer: 'editor',   file: 'editor/block-editor.js' },
+  { id: 'struct',      module: 'struct',      layer: 'editor',   file: 'editor/struct.js' },
+  { id: 'complete',    module: 'complete',    layer: 'editor',   file: 'editor/complete.js' },
+  { id: 'library',     module: 'library',     layer: 'editor',   file: 'editor/library.js' },
+  { id: 'canvas',      module: 'canvas',      layer: 'view',     file: 'view/canvas.js' },
+  { id: 'splice',      module: 'splice',      layer: 'view',     file: 'view/splice.js' },
+  { id: 'modals',      module: 'modals',      layer: 'view',     file: 'view/modals.js' },
+  { id: 'keys',        module: 'keys',        layer: 'interact', file: 'interact/keys.js' },
+  { id: 'paste',       module: 'paste',       layer: 'interact', file: 'interact/paste.js' },
+  { id: 'pointer',     module: 'pointer',     layer: 'interact', file: 'interact/pointer.js' },
+  { id: 'boot',        module: 'boot',        layer: 'shell',    file: 'shell/boot.js' },
 ];
 
 /* CSS 切片：顺序 = 现 index.html 的 <link rel=stylesheet> 顺序（构建据此校验） */
@@ -116,64 +128,55 @@ export const LAYERS = ['shell', 'core', 'editor', 'view', 'interact'];
    --------------------------------------------------------------------------- */
 export const MODULES = [
   /* ── shell ── */
-  { id: 'boot', path: 'src/shell/boot.js', from: ['90-boot.js'], layer: 'shell',
-    exports: ['PHJ.boot'], deps: ['store', 'persist', 'library', 'complete', 'keys', 'modals', 'paste'],
-    resp: '唯一启动入口（PHJ.boot.init）：加载/迁移/首帧渲染/事件接线；末尾单点调用' },
-  { id: 'head', path: 'src/shell/head.js', from: [], layer: 'shell',
-    exports: ['PHJ'], deps: [], resp: "IIFE 首行 + 'use strict' + PHJ 命名空间骨架" },
-  { id: 'tail', path: 'src/shell/tail.js', from: [], layer: 'shell',
-    exports: [], deps: ['boot'], resp: 'IIFE 末行：唯一启动调用 PHJ.boot.init()' },
+  { id: 'head',  path: 'src/shell/head.js', layer: 'shell', exports: ['PHJ'], deps: [],
+    resp: "IIFE 首行 + 'use strict' + PHJ 命名空间骨架" },
+  { id: 'boot',  path: 'src/shell/boot.js', layer: 'shell', exports: ['PHJ.boot'],
+    deps: ['store', 'persist', 'library', 'complete', 'keys', 'modals', 'paste'],
+    resp: '唯一启动入口：事件接线 + 末尾 load()；P2 后不再含粘贴部分（已拆 interact/paste）' },
 
   /* ── core ── */
-  { id: 'ns', path: 'src/core/ns.js', from: [], layer: 'core',
-    exports: ['PHJ.define', 'PHJ.require'], deps: [], resp: '极简 define/require（≈20 行，零依赖）；仅用于模块间解析' },
-  { id: 'store', path: 'src/core/store.js', from: ['10-state.js（持久模型部分）'], layer: 'core',
-    exports: ['PHJ.store'], deps: ['ns'],
-    resp: '★唯一状态源：持久 state（含 state.cmpl） + 会话 ui（selected/drag/pan/keyState…）；订阅通知（干 E1）' },
-  { id: 'persist', path: 'src/core/persist.js', from: ['10-state.js（load/save/migrate 部分）'], layer: 'core',
-    exports: ['PHJ.persist'], deps: ['ns', 'store'],
-    resp: 'localStorage / 防抖 / migrate(v1→v14) / sanitize / 导入导出；LS 键与 version 契约的**唯一持有者**' },
-  { id: 'clipboard', path: 'src/core/clipboard.js', from: ['15-clipboard.js'], layer: 'core',
-    exports: ['PHJ.clipboard'], deps: ['ns'], resp: 'copyText / fallbackCopy / toast' },
+  { id: 'store',   path: 'src/core/store.js',   layer: 'core', exports: ['PHJ.store'],   deps: [],
+    resp: '★唯一状态源：持久 state（含 state.cmpl）+ 会话 ui（selected/drag/pan/keyState…）+ 默认值/坐标工具' },
+  { id: 'persist', path: 'src/core/persist.js', layer: 'core', exports: ['PHJ.persist'], deps: ['store'],
+    resp: 'localStorage / 防抖 saveNow / migrate(v1→v14) / sanitize；LS 键与 version 契约的唯一持有者' },
+  { id: 'clipboard', path: 'src/core/clipboard.js', layer: 'core', exports: ['PHJ.clipboard'], deps: [],
+    resp: 'copyText / fallbackCopy / toast' },
 
   /* ── editor（纯引擎 + 窗口接线） ── */
-  { id: 'highlight', path: 'src/editor/highlight.js', from: ['50-editor.js（HL_* 引擎）'], layer: 'editor',
-    exports: ['PHJ.highlight'], deps: ['ns'],
-    resp: '★纯函数引擎：零领域语义 tokenizer（classify/toHTML/status）；输入文本→分类，可单测' },
-  { id: 'struct', path: 'src/editor/struct.js', from: ['51-struct.js'], layer: 'editor',
-    exports: ['PHJ.struct'], deps: ['ns'],
-    resp: '★结构层（节解析）：STRUCT_MARKS 单表 + structMap/structAt/structSummary；零 DOM、零私有资产（只认符号 风格：/硬性要求：/【…】）' },
-  { id: 'complete', path: 'src/editor/complete.js', from: ['52-complete.js'], layer: 'editor',
-    exports: ['PHJ.complete'], deps: ['ns', 'store', 'persist', 'struct'],
-    resp: '★候选引擎：触发/评分/两级气泡/槽位 ${n}；**内置风格包**（＝v7.8 原文逐字，5 段 + 硬性要求）+ 生效表回落 + 资产导入/导出' },
-  { id: 'library', path: 'src/editor/library.js', from: ['53-library.js'], layer: 'editor',
-    exports: ['PHJ.library'], deps: ['ns', 'store', 'complete'],
+  { id: 'highlight', path: 'src/editor/highlight.js', layer: 'editor', exports: ['PHJ.highlight'], deps: [],
+    resp: '★纯函数引擎：零领域语义 tokenizer + 彩色层尺寸/滚动同步 + 状态栏' },
+  { id: 'struct', path: 'src/editor/struct.js', layer: 'editor', exports: ['PHJ.struct'], deps: [],
+    resp: '★结构层（节解析）：STRUCT_MARKS 单表 + structMap/structAt/structSummary；零 DOM、零私有资产' },
+  { id: 'complete', path: 'src/editor/complete.js', layer: 'editor', exports: ['PHJ.complete'],
+    deps: ['store', 'persist', 'struct'],
+    resp: '★候选引擎：触发/评分/两级气泡/槽位 ${n}；内置风格包（＝v7.8 原文逐字）+ 生效表回落 + 资产导入/导出' },
+  { id: 'library', path: 'src/editor/library.js', layer: 'editor', exports: ['PHJ.library'],
+    deps: ['store', 'complete'],
     resp: '★片段库配置界面（浏览/改/增/删/排序/导入导出/恢复内置默认；改 state.cmpl）' },
-  { id: 'block-editor', path: 'src/editor/block-editor.js', from: ['50-editor.js（窗口接线部分）'], layer: 'editor',
-    exports: ['PHJ.blockEditor'], deps: ['ns', 'store', 'highlight', 'struct', 'complete'],
-    resp: '编辑器窗口接线（openBlockEditor/closeBlockEditor 等）；依赖 highlight/struct/complete' },
+  { id: 'blockEditor', path: 'src/editor/block-editor.js', layer: 'editor', exports: ['PHJ.blockEditor'],
+    deps: ['highlight', 'struct', 'complete'],
+    resp: '编辑器窗口接线（openBlockEditor/closeBlockEditor/fitBlkWidth）' },
 
   /* ── view ── */
-  { id: 'canvas', path: 'src/view/canvas.js', from: ['20-render.js', '62-block-size.js'], layer: 'view',
-    exports: ['PHJ.canvas'], deps: ['ns', 'store', 'persist'],
-    resp: '块渲染归属地：buildCard/fitBlock/autoResize/arrangeAll + render() 编排（干 E2/E3「命名说谎」）' },
-  { id: 'splice', path: 'src/view/splice.js', from: ['35-splice.js'], layer: 'view',
-    exports: ['PHJ.splice'], deps: ['ns', 'store', 'canvas'],
+  { id: 'canvas', path: 'src/view/canvas.js', layer: 'view', exports: ['PHJ.canvas'], deps: ['store', 'persist'],
+    resp: '块渲染归属地：buildCard/fitBlkWidth/autoSizeAll + render() 编排（P2 合并 20-render + 62-block-size）' },
+  { id: 'splice', path: 'src/view/splice.js', layer: 'view', exports: ['PHJ.splice'], deps: ['store', 'canvas'],
     resp: '拼接栏：renderSplice/spItem/spUnit/copySpliced' },
-  { id: 'overlay', path: 'src/view/overlay.js', from: ['25-overlay.js'], layer: 'view',
-    exports: ['PHJ.overlay'], deps: ['ns', 'store'], resp: 'peek 光点 + 拼入光线（视角刷新只在此触发一次）' },
-  { id: 'modals', path: 'src/view/modals.js', from: ['40-template.js', '55-menu.js'], layer: 'view',
-    exports: ['PHJ.modals'], deps: ['ns', 'store', 'library', 'block-editor'],
-    resp: '通用 modal / 模板窗 / 预览窗 / ★补全配置窗 / 右键菜单（统一开合与遮罩）' },
+  { id: 'overlay', path: 'src/view/overlay.js', layer: 'view', exports: ['PHJ.overlay'], deps: ['store'],
+    resp: 'peek 光点 + 拼入光线（视角刷新只在此触发一次）' },
+  { id: 'modals', path: 'src/view/modals.js', layer: 'view', exports: ['PHJ.modals'],
+    deps: ['store', 'library', 'blockEditor'],
+    resp: '通用 modal / 模板窗 / 预览窗 / 补全配置窗 / 右键菜单（P2 合并 40-template + 55-menu）' },
 
   /* ── interact ── */
-  { id: 'pointer', path: 'src/interact/pointer.js', from: ['30-selection.js', '64-zoom.js', '66-pan.js', '68-drag.js'], layer: 'interact',
-    exports: ['PHJ.pointer'], deps: ['ns', 'store', 'canvas', 'splice'], resp: '拖/平移/缩放/多选：统一 mousedown/move/up 路由（干 E5）' },
-  { id: 'keys', path: 'src/interact/keys.js', from: ['60-keyboard.js'], layer: 'interact',
-    exports: ['PHJ.keys'], deps: ['ns', 'store', 'modals', 'block-editor'],
-    resp: '★方向键/空格 + 统一 Escape 分发（显式 modal 栈；收编 v7.8 新增 3 处，干 E4′）' },
-  { id: 'paste', path: 'src/interact/paste.js', from: ['90-boot.js（粘贴部分）'], layer: 'interact',
-    exports: ['PHJ.paste'], deps: ['ns', 'store', 'canvas'], resp: 'Ctrl+V 文本/图片粘贴为块' },
+  { id: 'pointer', path: 'src/interact/pointer.js', layer: 'interact', exports: ['PHJ.pointer'],
+    deps: ['store', 'canvas', 'splice'],
+    resp: '多选 / 缩放 / 平移 / 拖拽：统一指针路由（P2 合并 30-selection + 64-zoom + 66-pan + 68-drag）' },
+  { id: 'keys', path: 'src/interact/keys.js', layer: 'interact', exports: ['PHJ.keys'],
+    deps: ['store', 'modals', 'blockEditor'],
+    resp: '★方向键/空格平滑移动；Escape 统一分发仍属 P3' },
+  { id: 'paste', path: 'src/interact/paste.js', layer: 'interact', exports: ['PHJ.paste'], deps: ['store', 'canvas'],
+    resp: 'Ctrl+V 文本/图片粘贴为块（P2 由 90-boot 拆出）' },
 ];
 
 /* ── ★v7.8 的 5 条隐式时序边 → 显式依赖（P2 目标）──────────────────────────────

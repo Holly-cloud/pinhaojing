@@ -81,3 +81,5 @@ function structSummary(text){
   }
   return order;
 }
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.struct = { STRUCT_MARKS, structAt, structLineMark, structMap, structSummary };

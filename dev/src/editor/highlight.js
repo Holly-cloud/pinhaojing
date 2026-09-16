@@ -163,3 +163,5 @@ function hlRefresh(){
   hlSyncBox();
   hlStatus(fam);
 }
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.highlight = { HL_CLOSERS, HL_DLG, HL_DLG_OPEN, HL_ERR, HL_PAIRS, HL_SYM, HL_TOGGLE, _hlCode, _hlPre, hlClassify, hlDialogueMask, hlEsc, hlFamOf, hlFindMatch, hlRefresh, hlStatus, hlSyncBox, hlToHTML };

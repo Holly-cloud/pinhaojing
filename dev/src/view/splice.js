@@ -235,3 +235,5 @@ function copySpliced(){
     toast(ok ? '已复制拼接（' + countSpliced() + ' 块）' : '复制失败，请手动全选复制');
   });
 }
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.splice = { activeUnit, copySpliced, countSpliced, isActiveUnit, popCard, popSpliceEntry, renderSplice, setActiveUnit, spItem, spUBlock, spUnit, spliceAdd, spliceClear, spliceRemove, spliceRemoveIds, spliceRemoveUnit, suckBlock };

@@ -30,7 +30,7 @@ const BUILD_DIR     = path.resolve(HERE, '..');                        /* dev/_b
 export const ROOT   = path.resolve(BUILD_DIR, '..', '..');             /* 项目根 */
 export const PRODUCT = path.join(ROOT, 'PHJ.html');                    /* 真实产物（权威源） */
 export const ARTIFACT_DIR = path.join(BUILD_DIR, 'artifacts');
-export const ARTIFACT_VERSION = 'v7.9';
+export const ARTIFACT_VERSION = 'v7.10';
 export const ARTIFACT_PATH = path.join(ARTIFACT_DIR, 'PHJ_test_' + ARTIFACT_VERSION + '.html');
 
 /** 取产物的内联 JS 段（`<script>…</script>` 之间，含 CRLF，逐字）。 */

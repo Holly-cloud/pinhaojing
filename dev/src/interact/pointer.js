@@ -1,3 +1,235 @@
+/* ==================== interact/pointer · 指针手势路由 ====================
+    多选 / 缩放 / 平移 / 拖拽；由 30-selection + 64-zoom + 66-pan + 68-drag 合并。
+    （P2 收口 2026-09-16：文件按 manifest 模块划分重排；**仅换边界，未改任何语句**）
+   ================================================================= */
+
+function isSel(id){ return selected.indexOf(id) >= 0; }
+/* v6.3：Ctrl+左键点选多选（toggle：已选则取消） */
+function toggleSel(card){
+  if(!card) return;
+  var i = state.blocks.findIndex(function(b){ return b.id === card.dataset.id; });
+  if(i < 0) return;
+  var id = state.blocks[i].id;
+  var at = selected.indexOf(id);
+  if(at >= 0){ selected.splice(at, 1); }else{ selected.push(id); }
+  refreshSel();
+}
+function refreshSel(){
+  var cards = board.querySelectorAll('.block');
+  for(var i = 0; i < cards.length; i++){
+    cards[i].classList.toggle('selected', isSel(cards[i].dataset.id));
+  }
+}
+function clearSel(){ selected = []; refreshSel(); }
+/* v6.1：批量操作（多选「新单体」：原本对单块的操作对选中集全部可用） */
+function findBlockById(id){
+  for(var j = 0; j < state.blocks.length; j++){ if(state.blocks[j].id === id) return state.blocks[j]; }
+  return null;
+}
+function actIds(bi){
+  /* v6.3：右键块在选中集内 → 批量作用于整个选中集；否则单块 */
+  if(bi >= 0 && selected.length > 1 && isSel(state.blocks[bi].id)) return selected.slice();
+  if(bi >= 0) return [state.blocks[bi].id];
+  return [];
+}
+function bulkAction(act, ids){
+  if(!ids.length) return;
+  var lastNew = null;
+  if(act === 'splice'){
+    ids.forEach(function(id){ spliceAdd(id); });
+    toast(ids.length > 1 ? '已加入拼接（' + ids.length + ' 块）' : '已加入拼接');
+  }else if(act === 'copy'){
+    var parts = ids.map(function(id){ var b = findBlockById(id); return (b && b.text) ? b.text.trim() : ''; }).filter(Boolean);   /* v6.16：图片块无文本，跳过 */
+    if(!parts.length){ toast('所选块还没有内容'); return; }
+    copyText(parts.join('\n\n')).then(function(ok){
+      toast(ok ? (ids.length > 1 ? '已复制 ' + ids.length + ' 块（按序拼接）' : '已复制该块') : '复制失败，请手动全选复制');
+    });
+  }else if(act === 'clone'){
+    var added = 0;
+    for(var k = ids.length - 1; k >= 0; k--){   /* 从后往前插，索引不漂移 */
+      var idx = state.blocks.findIndex(function(b){ return b.id === ids[k]; });
+      if(idx < 0) continue;
+      if(state.blocks[idx].type === 'image') continue;   /* v6.16：图片块不可克隆（仅展示） */
+      var cp = JSON.parse(JSON.stringify(state.blocks[idx]));
+      cp.id = uid();
+      cp.x += 28; cp.y += 28;
+      state.blocks.splice(idx + 1, 0, cp);
+      lastNew = cp;
+      added++;
+    }
+    toast('已克隆 ' + added + ' 块');
+  }else if(act === 'strip-blank'){
+    var done = 0;
+    ids.forEach(function(id){
+      var b = findBlockById(id);
+      if(!b) return;
+      var lines = (b.text || '').split('\n');
+      var kept = lines.filter(function(l){ return l.trim() !== ''; });
+      var v = kept.join('\n');
+      if(v !== (b.text || '')){ b.text = v; done++; }
+    });
+    toast(done ? (done > 1 ? '已移除空行（' + done + ' 块）' : '已移除空行') : '所选块没有空行');
+  }else if(act === 'del'){
+      var snap = null;
+      if(ids.length > 1) snap = JSON.parse(JSON.stringify({ blocks: state.blocks, splice: state.splice }));   /* 批量删除快照，可撤销 */
+      /* v7：先播删除动画（110ms 收拢淡出），再真正移除——块「消失」有质感 */
+      ids.forEach(function(id){
+        var dc = board.querySelector('.block[data-id="' + id + '"]');
+        if(dc) dc.classList.add('del-anim');
+      });
+      setTimeout(function(){
+        spliceRemoveIds(ids);
+        state.blocks = state.blocks.filter(function(b){ return ids.indexOf(b.id) < 0; });   /* v6.15 修复：v6.6 重构丢失画布块删除（此前「删除」仅移出拼接引用，块留在画布） */
+        selected = [];
+        render();
+        if(snap){
+          toast('已删除 ' + ids.length + ' 块', { label: '撤销', fn: function(){
+            state.blocks = snap.blocks;
+            state.splice = snap.splice;
+            render();
+            saveNow();
+            toast('已恢复删除的块');
+          }});
+        }else{
+          toast('已删除');
+        }
+        saveNow();
+      }, 130);
+      return;   /* v7：删除走动画分支自行收尾（render/saveNow 在动画后执行） */
+    }
+  selected = [];
+  if(act === 'clone' || act === 'del' || act === 'strip-blank'){
+    render();
+    if(act === 'clone' && lastNew){
+      var nc = board.querySelector('.block[data-id="' + lastNew.id + '"]');
+      if(nc){ popCard(nc); var nt = nc.querySelector('.block-text'); if(nt) focusCaretEnd(nt); }   /* v7：克隆弹入 */
+    }
+  }else{
+    refreshSel();
+  }
+  saveNow();
+}
+
+/* v6.9：画布缩放——Ctrl+滚轮以光标为基准（光标下内容不动），范围 25%~400%，每格 ×1.1 */
+var ZOOM_MIN = 0.25, ZOOM_MAX = 4;
+function zoomAt(cx, cy, factor){
+  var cr = canvas.getBoundingClientRect();
+  var mx = cx - cr.left, my = cy - cr.top;
+  var s0 = state.zoom;
+  var s1 = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, s0 * factor));
+  if(s1 === s0) return;
+  var bx = (mx - state.pan.x) / s0;
+  var by = (my - state.pan.y) / s0;
+  state.pan.x = mx - bx * s1;
+  state.pan.y = my - by * s1;
+  state.zoom = s1;
+  applyPan();
+  updateZoomBtn();
+  fixTextBlur();   /* v6.18：缩放后强制重绘（修复放大后文字模糊） */
+  if(drag && !drag.ghost) updateDragTransform();   /* v7.3：虚影拖拽中真实块不动 */
+  scheduleSave();
+}
+function updateZoomBtn(){
+  var b = document.getElementById('btnZoom');
+  if(!b) return;
+  var txt = Math.round(state.zoom * 100) + '%';
+  if(b.textContent === txt) return;
+  b.textContent = txt;
+  /* v7.1：数字变化 tick（动画期间不重播——连续滚轮缩放不闪） */
+  if(!b.classList.contains('tick')){
+    b.classList.add('tick');
+    b.addEventListener('animationend', function(){ b.classList.remove('tick'); }, { once: true });
+  }
+}
+function resetZoom(){
+  if(state.zoom === 1) return;
+  /* v7.3：恢复 100% 时保持画布位置——以视野中心为锚（中心处内容不动，pan 不归零） */
+  var cr = canvas.getBoundingClientRect();
+  var mx = cr.width / 2, my = cr.height / 2;
+  var bx = (mx - state.pan.x) / state.zoom;   /* 视野中心处的画布坐标 */
+  var by = (my - state.pan.y) / state.zoom;
+  state.zoom = 1;
+  state.pan.x = mx - bx;
+  state.pan.y = my - by;
+  panVel = null;
+  panLooping = false;
+  applyPan();
+  updateZoomBtn();
+  fixTextBlur();   /* v6.18：缩放后强制重绘（修复放大后文字模糊） */
+  saveNow();
+  toast('已恢复默认缩放 100%（画布位置保持）');
+}
+/* v6.18：缩放后强制重绘所有块（transform scale 下文本光栅化滞留会模糊，重绘后按新缩放渲染清晰） */
+function fixTextBlur(){
+  var cards = board.querySelectorAll('.block');
+  if(!cards.length) return;
+  for(var i = 0; i < cards.length; i++) cards[i].classList.add('rf');
+  requestAnimationFrame(function(){
+    for(var i = 0; i < cards.length; i++) cards[i].classList.remove('rf');
+  });
+}
+/* v6.19：抢走画布焦点（独立窗口打开时防打字/方向键作用于背景画布） */
+function blurActive(){
+  var ae = document.activeElement;
+  if(ae && typeof ae.blur === 'function' && ae !== document.body){ try{ ae.blur(); }catch(err){} }
+}
+
+/* v6.1：画布移动粘滞感——拖动中平滑阻尼跟随 + 松手轻惯性缓停 */
+var PAN_LERP = 0.32;     /* 阻尼系数：每帧向目标收敛比例（轻微滞后、有粘度） */
+var PAN_FRICTION = 0.92; /* 惯性摩擦：每帧速度衰减（轻滑缓停） */
+function panStep(){
+  if(panning){
+    var tx = panning.panX + (panning.lastX - panning.startX) / state.zoom;
+    var ty = panning.panY + (panning.lastY - panning.startY) / state.zoom;
+    panVel = { x: (tx - state.pan.x) * PAN_LERP, y: (ty - state.pan.y) * PAN_LERP };
+    state.pan.x += panVel.x;
+    state.pan.y += panVel.y;
+    applyPan();
+  }else if(panVel){
+    /* 惯性滑行：沿最后速度滑行，但不越过拖动终点（避免甩动过冲） */
+    var nx = state.pan.x + panVel.x;
+    var ny = state.pan.y + panVel.y;
+    var hitX = false, hitY = false;
+    if((panVel.x > 0 && nx >= panEndX) || (panVel.x < 0 && nx <= panEndX)){ nx = panEndX; hitX = true; }
+    if((panVel.y > 0 && ny >= panEndY) || (panVel.y < 0 && ny <= panEndY)){ ny = panEndY; hitY = true; }
+    state.pan.x = nx;
+    state.pan.y = ny;
+    panVel.x *= PAN_FRICTION;
+    panVel.y *= PAN_FRICTION;
+    applyPan();
+    if((hitX && hitY) || (Math.abs(panVel.x) < 0.4 && Math.abs(panVel.y) < 0.4)){
+      panVel = null;
+      panLooping = false;
+      saveNow();          /* 惯性结束才落盘 pan */
+      return;
+    }
+  }else{
+    panLooping = false;
+    return;
+  }
+  requestAnimationFrame(panStep);
+}
+function focusCaretEnd(el){
+  el.focus();
+  if(typeof el.selectionStart === 'number'){ el.selectionStart = el.selectionEnd = el.value.length; }
+}
+
+/* ---- 交互：块拖拽 + 画布平移 ---- */
+/* v7.5：按住空格 + 左键拖动 = 平移画布（等价中键；文字编辑/独立窗口场景豁免，UI 区域不接管） */
+var spacePan = false;
+document.addEventListener('keydown', function(e){
+  if(e.key !== ' ' && e.code !== 'Space') return;
+  var ae = document.activeElement;
+  if(ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT' || ae.isContentEditable)) return;   /* 文字编辑状态：空格就是空格 */
+  if(document.querySelector('.modal-mask:not(.hide)')) return;   /* 独立窗口打开时豁免 */
+  e.preventDefault();   /* 阻止空格默认行为（滚动/激活聚焦按钮） */
+  if(!spacePan){ spacePan = true; document.body.classList.add('space-pan'); }
+});
+document.addEventListener('keyup', function(e){
+  if(e.key !== ' ' && e.code !== 'Space') return;
+  if(spacePan){ spacePan = false; document.body.classList.remove('space-pan'); }
+});
+
 window.addEventListener('blur', function(){ if(spacePan){ spacePan = false; document.body.classList.remove('space-pan'); } });
 function onMouseDown(e){
   /* v6.17：鼠标中键按下 = 全局平移视角（不论鼠标在哪里） */
@@ -295,3 +527,5 @@ function onMouseUp(e){
 document.addEventListener('mousedown', onMouseDown);
 document.addEventListener('mousemove', onMouseMove);
 document.addEventListener('mouseup', onMouseUp);
+/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
+PHJ.pointer = { PAN_FRICTION, PAN_LERP, ZOOM_MAX, ZOOM_MIN, actIds, blurActive, bulkAction, clearDropTarget, clearSel, createGhost, destroyGhost, dragOffset, dropUnitEl, findBlockById, fixTextBlur, focusCaretEnd, ghostEl, ghostOffX, ghostOffY, ghostSrcId, isSel, moveGhost, onMouseDown, onMouseMove, onMouseUp, panStart, panStep, refreshSel, resetZoom, spacePan, spliceDropAt, spliceMode, syncSpliceText, toggleSel, toggleSpliceMode, updateDragTransform, updateDropTarget, updateZoomBtn, zoomAt };
