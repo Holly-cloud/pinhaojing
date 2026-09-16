@@ -11,7 +11,7 @@
      [3] 回归 verify_v7 verify/verify_v7.mjs                期望 87/87（v7.8.1 新增 B10b/C8b 产品上限）
      [4] F 组 verify_v76 verify/verify_v76.mjs              期望 18/18
      [5] G 组 verify_v77 verify/verify_v77.mjs              期望 16/16
-     [6] v7.8 verify_v78 verify/verify_v78.mjs              期望 H+I+X 42/42（v7.8.2 的 40 + P1 构建器 2 条：dev≡prod 逐字 / CSS 链序）
+     [6] v7.8 verify_v78 verify/verify_v78.mjs              期望 H+I+X 44/44（v7.8.2 的 40 + P1 构建器 4 条：dev≡prod 逐字 / CSS 链序 / 测试产物审计 / 产品纯度）
      [7] 开发态         diag/probe_dev_index.mjs             期望 18/18
 
    环境变量：

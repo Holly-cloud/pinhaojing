@@ -1,7 +1,10 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildTestArtifact, auditArtifactDiff } from '../lib/test-artifact.mjs';
 import { CSS as MANIFEST_CSS } from '../../manifest.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+const TEST_BUILD = buildTestArtifact();
+const TEST_ARTIFACT = TEST_BUILD.path;   /* A+：测试产物（= 产物 + 1 行访问器），4 套件对它执行；真实产物仅用于体积/P1-A/C/D 断言 */
 /* v7.8 验收 · H 组：编辑器结构层 + 结构感知候选气泡 + 槽位 + 复制全文；I 组：补全配置窗口
    —— v7.8.2 收敛：风格包**已放回内置**（v7.8.1「内置降为中性示例」的决定被 Holly 撤销）；
       H 组断言仍**键于「导入后的用户表」**（导入/导出能力本身未变，v7.8.1 成果保留）；
@@ -86,7 +89,9 @@ async function digit(d) {   /* v7.8：数字键跳位（输入法式） */
   await sleep(90);
 }
 
-const TARGET = 'file:///' + encodeURI(path.resolve(HERE, '../../../PHJ.html').replace(/\\/g, '/'));
+const TARGET = 'file:///' + encodeURI(TEST_ARTIFACT.replace(/\\/g, '/'));   /* A+：对测试产物执行 */
+const REAL_PRODUCT = path.resolve(HERE, '../../../PHJ.html');   /* 真实产物：P1-A/P1-C/P1-D 断言的对象 */
+const REAL_PRODUCT_URL = 'file:///' + encodeURI(REAL_PRODUCT.replace(/\\/g, '/'));
 await send('Page.enable'); await send('Runtime.enable');
 /* 记录「每次新文档清空 localStorage」脚本的 id：X3「导入→reload→仍在」需临时摘掉它（否则 reload 即被清空） */
 const clearScriptId = (await send('Page.addScriptToEvaluateOnNewDocument', { source: 'try{ localStorage.clear(); }catch(e){}' })).identifier;
@@ -807,9 +812,24 @@ if (SHOT) {
   }
 }
 
+/* ---------- P1-C 审计：测试产物 vs 真实产物，逐行 diff 恰为插入的 1 行访问器 ---------- */
+const AUDIT = auditArtifactDiff();
+t('P1-C 审计：测试产物 == 产物 且逐行 diff 恰为插入的 1 行访问器（保证被测的就是同一份代码，只多这一行）',
+  AUDIT.ok, `行数 ${AUDIT.da}→${AUDIT.db}；插入行长 ${AUDIT.insertedLineLen}；prefix=${AUDIT.prefixOk} suffix=${AUDIT.suffixOk} 是访问器行=${AUDIT.isAccessor}`);
+
+/* ---------- P1-D 产品纯度：pristine PHJ.html 加载后 window 自有键增量 ⊆ 白名单（预期空集） ---------- */
+const W0_ID = (await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.__W0 = Object.getOwnPropertyNames(window).slice();' })).identifier;
+await send('Page.navigate', { url: REAL_PRODUCT_URL });
+for (let i = 0; i < 40; i++) { if (await evalJS('document.readyState === "complete"')) break; await sleep(200); }
+await sleep(400);
+const P1_DELTA = await evalJS('(() => { const s = new Set(window.__W0 || []); return Object.getOwnPropertyNames(window).filter(k => !s.has(k) && k !== "__W0"); })()');
+await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: W0_ID });
+t('P1-D 产品纯度：pristine PHJ.html 加载后 window 自有键增量 ⊆ 白名单（当前预期 = 空集 → ' + TEST_BUILD.nameCount + ' 个顶层声明零泄漏）',
+  Array.isArray(P1_DELTA) && P1_DELTA.length === 0, 'delta=' + JSON.stringify(P1_DELTA));
+
 const pass = R.filter(r => r.pass).length;
 console.log('=== v7.8 验收（真机 headless Edge + CDP）：H 组 候选/槽位/复制 + I 组 补全配置 + X 组 资产 导入/导出 ===');
 for (const r of R) console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.name}  ${r.detail}`);
-console.log(`\nH+I 组合计 ${pass}/${R.length}（含 X 组资产 导入/导出 2 条 + H0 夹具前置 + H19 内置风格包逐字 + P1 构建器 2 条；标签沿用「H+I」以兼容 run-gate 汇总解析）`);
+console.log(`\nH+I 组合计 ${pass}/${R.length}（含 X 组资产 导入/导出 2 条 + H0 夹具前置 + H19 内置风格包逐字 + P1 构建器 4 条；标签沿用「H+I」以兼容 run-gate 汇总解析）`);
 ws.close();
 process.exit(pass === R.length ? 0 : 1);

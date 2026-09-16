@@ -1,6 +1,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildTestArtifact } from '../lib/test-artifact.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+const TEST_ARTIFACT = buildTestArtifact().path;   /* A+：测试产物（= 产物 + 1 行访问器），4 套件对它执行；真实产物仅用于体积/P1-A/C/D 断言 */
 /* v7.6 验收 · F 组：coding 编辑器（着色/行号/状态栏/配对/错误标红）+ 画布块「放大」入口
    用法：headless Edge --remote-debugging-port=9222 起好后： node verify_v76.mjs [截图输出.png]
    真机口径：全部走真实 DOM 事件与真实鼠标点击（Input.dispatchMouseEvent），不做内部函数直调取巧。 */
@@ -28,7 +30,7 @@ async function click(sel) {
   await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: r.x, y: r.y, button: 'left', clickCount: 1 });
   await sleep(120);
 }
-const TARGET = 'file:///' + encodeURI(path.resolve(HERE, '../../../PHJ.html').replace(/\\/g, '/'));
+const TARGET = 'file:///' + encodeURI(TEST_ARTIFACT.replace(/\\/g, '/'));   /* A+：对测试产物执行 */
 await send('Page.enable'); await send('Runtime.enable');
 await send('Page.addScriptToEvaluateOnNewDocument', { source: 'try{ localStorage.clear(); }catch(e){}' });
 await send('Page.navigate', { url: TARGET });

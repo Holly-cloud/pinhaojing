@@ -1,7 +1,9 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { buildTestArtifact } from '../lib/test-artifact.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+const TEST_ARTIFACT = buildTestArtifact().path;   /* A+：测试产物（= 产物 + 1 行访问器），4 套件对它执行；真实产物仅用于体积/P1-A/C/D 断言 */
 /* 拼好镜 v7.0 headless 验收：
    功能回归（v6.21 十项全量）+ 动效专项（P0 九项：块创建弹入/删除收拢/一键整理 FLIP/拼入吸入+条目弹入+光线生长/光点淡入/窗口弹开/菜单弹入/toast 滑入滑出/reduce-motion 降级）
 
@@ -32,7 +34,7 @@ async function evalJS(expr) {
 }
 /* 钉桩媒体特性（页目标会话级）：value ∈ 'no-preference' | 'reduce' */
 const setMotion = value => send('Emulation.setEmulatedMedia', { media: '', features: [{ name: 'prefers-reduced-motion', value }] });
-const TARGET = 'file:///' + encodeURI(path.resolve(HERE, '../../../PHJ.html').replace(/\\/g, '/'));
+const TARGET = 'file:///' + encodeURI(TEST_ARTIFACT.replace(/\\/g, '/'));   /* A+：对测试产物执行 */
 const OUT = path.resolve(HERE, '../../../PHJ.html');   /* 真实产物路径：体积断言直接 stat 它（不再比对字面量） */
 /* 体积预算（B10a/B10b、C8a/C8b 共用，集中一处便于维护）：
    · SIZE_BUDGET_B = 229376 B（224KB）= **工程临时护栏**（**临时、非产品政策**）≈ v7.8 实测之上留约 7% 余量；

@@ -10,3 +10,6 @@ dev/_build/artifacts/写作资产*
 # P1：开发态 bundle 由构建生成（= 产物内联 JS 段逐字），不入库。
 # 生成命令：node dev/build.mjs（build.mjs 自动写出）。
 dev/src/dev-bundle.js
+
+# P1(A+)：测试产物由 lib/test-artifact.mjs 生成（= 产物 + 1 行访问器），不入库。
+dev/_build/artifacts/PHJ_test_*.html
