@@ -1,9 +1,9 @@
 /* 等价性 / 构建可复现校验：构建产物 vs 交付快照
-   用法（默认 = 当前交付快照 v7.9「构建可复现」语义）：
+   用法（默认 = 当前交付快照 v7.10「构建可复现」语义）：
          node dev/_build/verify/verify_build_equivalence.mjs
          node dev/_build/verify/verify_build_equivalence.mjs <产物> <基线>
    默认判定：断言「node dev/build.mjs 的产出」（= 根目录 PHJ.html）与「当前交付快照
-         dev/_build/snapshots/PHJ_v7.9_20260916.html」**逐字节一致（含 banner，不做 stripBanner）**。
+         dev/_build/snapshots/PHJ_v7.10_20260916.html」**逐字节一致（含 banner，不做 stripBanner）**。
          即：源码能如实、逐字节地构建出已交付的产物 → 构建可复现 + src 与交付物一致。
 
    —— 为什么把 v7.7 的语义换掉（改义理由，务必保留本段）——

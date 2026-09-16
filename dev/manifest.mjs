@@ -17,7 +17,7 @@
    ★ = v7.8 新增片（51-struct/52-complete/53-library）。
    ✅ 2026-09-15 更新：本清单描述**已按 v7.8.2 现状校准**——风格包位于**内置**（Q7「资产分离 /
       降为中性示例」已由 v7.8.2 撤销；Holly 认定风格包即语料的一部分），52-complete 的 resp 已改写
-      为事实陈述。当前现状以 dev/_build/snapshots/BASELINE_v7.9.md 为准。
+      为事实陈述。当前现状以 dev/_build/snapshots/BASELINE_v7.10.md 为准。
    ── 变更记录 ──────────────────────────────────────────────────────────────
    · v0.5-p2-2026-09-16（相对 v0.4-p2）：**P2 收口 = 模块划分落地 + 显式导出面**——
      (1) 合并：`view/canvas`（render+blocks）、`view/modals`（template+menu）、`interact/pointer`
