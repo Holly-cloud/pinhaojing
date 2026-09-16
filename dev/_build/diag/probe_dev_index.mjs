@@ -1,12 +1,14 @@
 import path from 'node:path';
-import { readdirSync, existsSync } from 'node:fs';
+import { readdirSync, existsSync, statSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 /* 开发态检查（指导书第 10 节 P3）：src/index.html 直接双击（file://）能否正常跑
    用法：headless Edge --remote-debugging-port=9222 起好后： node _build/diag/probe_dev_index.mjs
-   断言：① 无 Console/页面报错；② 切片完好性（两步，取代旧的写死条数）——
-         ②a 片数下限：dev/src/js、dev/src/styles **目录实况** ≥ 基线（抓「文件与标签一起删」的一致删除）；
-         ②b 目录 == manifest：dev/src/js 片数 == manifest.SLICES 条数、styles == manifest.CSS 条数（抓「加了片但漏接线」）；
+   断言：① 无 Console/页面报错；② 源文件完好性（两步，布局无关）——
+         ②a 清单文件齐全且不少于下限：manifest 列的每个源文件**存在** + 源文件总数 ≥ 独立下限
+             （抓「文件与 manifest 条目一起删」的一致删除）；
+         ②b 无清单外源码文件：dev/src 下（除 dev-bundle.js）不得有 manifest 未列的 .js/.css
+             （抓「加了片但漏接线」）；
         ③ 骨架渲染出块、拼接栏与顶栏在位、样式真生效；
         ④ 开发态≡产物的作用域：index.html 的 JS 链**恰为** ./dev-bundle.js（且该文件存在）、
            内部符号**不再泄漏到全局**（P1 起产物与开发态跑同一个 IIFE）；
@@ -15,20 +17,33 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
    —— P1（2026-09-16）：dev/src/index.html 不再手写 19 个 <script src>，改引**由同一份代码生成**的
       dev/src/dev-bundle.js（= 产物内联 JS 段逐字）→ 开发态与产物**同作用域 / 同顺序 / 同字节**；
       故旧断言「跨片全局函数在 window 上可用」按其**反面**重写为「内部符号不泄漏全局」（断言数不变）。
+   —— P2 阶段一（2026-09-16）：源文件已按职责迁入 `shell/ core/ editor/ view/ interact/`，
+      故 ② 从「数 dev/src/js 目录」改为「按 manifest 清单校验完整性 + 反向扫描无清单外文件」（仍是两步，
+      两个反例各自可命中：① 删文件+删条目 → 下限红；② 加文件不登记 → 清单外红）。
 */
 const SRC_DIR = path.resolve(HERE, '../../src');
 /* manifest = 唯一顺序源（P1）；用其条数校验「目录实况 == manifest」，抓加片漏接线。 */
 const MANIFEST = (await import(pathToFileURL(path.resolve(HERE, '../../manifest.mjs')).href)).default;
-const SLICES_N = MANIFEST.SLICES.length;
-const CSS_N    = MANIFEST.CSS.length;
 const BUNDLE   = path.resolve(SRC_DIR, 'dev-bundle.js');
-/* 目录实况（供「目录 == manifest」断言） */
-const EXPECT_JS  = readdirSync(path.join(SRC_DIR, 'js')).filter(f => f.endsWith('.js')).length;
-const EXPECT_CSS = readdirSync(path.join(SRC_DIR, 'styles')).filter(f => f.endsWith('.css')).length;
-/* 片数「下限」基线（golden 下限，抓一致删除）——沿革：v7.7 = 16/7 → v7.8 = 19/9（P1 未改片数）。
-   只作下限：以后加片无需改这里（加片不会触发下限）；减片（哪怕文件与 <script> 标签一起删）会红。
-   之所以同时保留「下限」与「目录==manifest」两步，是为了既不假红（加片）、又不丢保护（减片）：
-   仅用目录实况做等值断言会产生自指——删一片则期望值同降、断言反而通过（QA 反例 A）。 */
+/* 清单（layout 无关）：P2 起源文件可位于 shell/core/editor/view/interact/…；dev-bundle.js 是构建产物，不算源文件 */
+const LISTED_JS  = MANIFEST.SLICES.map(s => s.file);
+const LISTED_CSS = MANIFEST.CSS.map(c => c.file);
+const BUNDLE_REL = 'dev-bundle.js';
+const walkSrc = (dir = SRC_DIR, out = []) => {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walkSrc(p, out);
+    else if (/\.(js|css)$/.test(e.name)) out.push(path.relative(SRC_DIR, p).replace(/\\/g, '/'));
+  }
+  return out;
+};
+const ALL_SRC   = walkSrc();
+const MISSING   = [...LISTED_JS, ...LISTED_CSS].filter(f => !existsSync(path.join(SRC_DIR, f)));
+const UNLISTED  = ALL_SRC.filter(f => f !== BUNDLE_REL && !LISTED_JS.includes(f) && !LISTED_CSS.includes(f));
+/* 片数「下限」基线（golden 下限，抓一致删除）——沿革：v7.7 = 16/7 → v7.8 = 19/9（P1/P2 未改片数）。
+   只作下限：以后加片无需改这里（加片不会触发下限）；减片（哪怕文件与 manifest 条目一起删）会红。
+   之所以同时保留「下限 + 清单齐全」与「无清单外文件」两步，是为了既不假红（加片）、又不丢保护（减片）：
+   仅用清单条数做实况断言会产生自指——删一片并同步删条目则期望值同降、断言反而通过（QA 反例 A）。 */
 const BASE_JS_MIN = 19, BASE_CSS_MIN = 9;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const PORT = process.env.PHJ_BROWSER_PORT || '9222';   /* 调试端口：run-gate.mjs 经此环境变量传入，缺省 9222 */
@@ -80,11 +95,12 @@ const R = []; const t = (name, cond, info) => { R.push([name, !!cond]); console.
 console.log('=== 开发态检查：' + HERE_URL + ' ===');
 t('页面标题正常', (await evalJS('document.title')) === '拼好镜', 'title=' + await evalJS('document.title'));
 t('URL 确为 src/index.html', (await evalJS('location.pathname')).endsWith('/src/index.html'));
-/* P1 起 index.html 只引 1 个 JS bundle（不再列 19 个 ./js/*），故「实际加载片数」改看**目录实况**。 */
-t('切片文件完整：dev/src/js ≥ ' + BASE_JS_MIN + ' / dev/src/styles ≥ ' + BASE_CSS_MIN + '（抓一致删除）',
-  EXPECT_JS >= BASE_JS_MIN && EXPECT_CSS >= BASE_CSS_MIN, 'dir=' + EXPECT_JS + '/' + EXPECT_CSS);
-t('切片目录 == manifest：js == SLICES(' + SLICES_N + ') / styles == CSS(' + CSS_N + ')（抓加片漏接线）',
-  EXPECT_JS === SLICES_N && EXPECT_CSS === CSS_N, 'dir=' + EXPECT_JS + '/' + EXPECT_CSS + ' manifest=' + SLICES_N + '/' + CSS_N);
+/* P1 起 index.html 只引 1 个 JS bundle（不再列 19 个 ./js/*），故「源文件完好性」改按 **manifest 清单**校验。 */
+t('源文件齐全：清单所列文件全部存在，且 JS ≥ ' + BASE_JS_MIN + ' / CSS ≥ ' + BASE_CSS_MIN + '（抓一致删除）',
+  MISSING.length === 0 && LISTED_JS.length >= BASE_JS_MIN && LISTED_CSS.length >= BASE_CSS_MIN,
+  '缺失=' + JSON.stringify(MISSING) + ' 清单=' + LISTED_JS.length + '/' + LISTED_CSS.length);
+t('无清单外源码文件（抓加片漏接线）',
+  UNLISTED.length === 0, '清单外=' + JSON.stringify(UNLISTED));
 t('骨架渲染出块', (await evalJS('document.querySelectorAll(".block").length')) > 0, 'blocks=' + await evalJS('document.querySelectorAll(".block").length'));
 t('拼接栏在位', await evalJS('!!document.getElementById("spSplice") || !!document.querySelector(".splice-panel")'));
 t('样式真生效（.block 有背景色）', (await evalJS('getComputedStyle(document.querySelector(".block")).backgroundColor')) !== 'rgba(0, 0, 0, 0)', await evalJS('getComputedStyle(document.querySelector(".block")).backgroundColor'));

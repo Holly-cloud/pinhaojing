@@ -19,6 +19,13 @@
       降为中性示例」已由 v7.8.2 撤销；Holly 认定风格包即语料的一部分），52-complete 的 resp 已改写
       为事实陈述。当前现状以 dev/_build/snapshots/BASELINE_v7.9.md 为准。
    ── 变更记录 ──────────────────────────────────────────────────────────────
+   · v0.3-p2-2026-09-16（相对 v0.2-p1）：**P2 阶段一 = 纯搬迁（产物字节恒等）**——
+     (1) 8 个模块迁入分层目录：`shell/head.js`、`core/clipboard.js`、`view/overlay.js`、`view/splice.js`、
+         `editor/struct.js`、`editor/complete.js`、`editor/library.js`、`interact/keys.js`（**内容逐字节未改**，
+         只用 `git mv`，故产物字节不变 = 222381 B）；
+     (2) `SLICES` 条目新增 `module` / `layer` 字段：已迁者给出目标模块 id，未切者仍指向 `js/xx.js`
+         并附「待拆 / 待合」注记；
+     (3) 阶段一**不改顺序**，故 `SLICES` 仍是唯一顺序源；待全部模块迁完，再改由 `resolveOrder(MODULES)` 接管。
    · v0.2-p1-2026-09-16（相对 v0.1-draft-2026-09-15）：**接入 P1 止血**——
      (1) 新增 `SLICES`（19 条 JS，顺序 = 现有 index.html 的 `<script src>` 顺序）与
          `CSS`（9 条，顺序 = 现有 index.html 的 `<link rel=stylesheet>` 顺序）；
@@ -33,7 +40,7 @@
          editor/asset 的开放问题保留）。
    ============================================================================ */
 
-export const MANIFEST_VERSION = 'v0.2-p1';
+export const MANIFEST_VERSION = 'v0.3-p2';
 
 /* ════════════════════════════════════════════════════════════════════════════
    P1 · 切片序列（SLICES / CSS）—— **当前构建的唯一顺序源**
@@ -46,27 +53,30 @@ export const MANIFEST_VERSION = 'v0.2-p1';
    · P2 完成后本数组退役（改由 `resolveOrder(MODULES)` 决定）。
    ════════════════════════════════════════════════════════════════════════════ */
 
-/* JS 切片：顺序 = 现 index.html 的 <script src> 顺序（00-header 首行即 'use strict';） */
+/* JS 源文件：顺序 = 现 index.html 的 <script src> 顺序（首位 head.js 首行即 'use strict';）
+   P2 进行中：`module` = 已迁入的 manifest 模块 id；`null` = 尚未重切（仍沿用编号片名）。
+   已迁 8 个（2026-09-16 阶段一，**纯搬迁、字节恒等**）：head / clipboard / overlay / splice /
+   struct / complete / library / keys。 */
 export const SLICES = [
-  { id: 'header',    file: 'js/00-header.js' },
-  { id: 'state',     file: 'js/10-state.js' },
-  { id: 'clipboard', file: 'js/15-clipboard.js' },
-  { id: 'render',    file: 'js/20-render.js' },
-  { id: 'overlay',   file: 'js/25-overlay.js' },
-  { id: 'selection', file: 'js/30-selection.js' },
-  { id: 'splice',    file: 'js/35-splice.js' },
-  { id: 'template',  file: 'js/40-template.js' },
-  { id: 'editor',    file: 'js/50-editor.js' },
-  { id: 'struct',    file: 'js/51-struct.js' },
-  { id: 'complete',  file: 'js/52-complete.js' },
-  { id: 'library',   file: 'js/53-library.js' },
-  { id: 'menu',      file: 'js/55-menu.js' },
-  { id: 'keyboard',  file: 'js/60-keyboard.js' },
-  { id: 'blockSize', file: 'js/62-block-size.js' },
-  { id: 'zoom',      file: 'js/64-zoom.js' },
-  { id: 'pan',       file: 'js/66-pan.js' },
-  { id: 'drag',      file: 'js/68-drag.js' },
-  { id: 'boot',      file: 'js/90-boot.js' },
+  { id: 'head',      module: 'head',      layer: 'shell',    file: 'shell/head.js' },
+  { id: 'state',     module: null,        layer: 'core',     file: 'js/10-state.js',      /* 待拆 → core/store.js + core/persist.js */ },
+  { id: 'clipboard', module: 'clipboard', layer: 'core',     file: 'core/clipboard.js' },
+  { id: 'render',    module: null,        layer: 'view',     file: 'js/20-render.js',     /* 待并入 → view/canvas.js（与 blockSize 合） */ },
+  { id: 'overlay',   module: 'overlay',   layer: 'view',     file: 'view/overlay.js' },
+  { id: 'selection', module: null,        layer: 'interact', file: 'js/30-selection.js',  /* 待并入 → interact/pointer.js */ },
+  { id: 'splice',    module: 'splice',    layer: 'view',     file: 'view/splice.js' },
+  { id: 'template',  module: null,        layer: 'view',     file: 'js/40-template.js',   /* 待并入 → view/modals.js（与 menu 合） */ },
+  { id: 'editor',    module: null,        layer: 'editor',   file: 'js/50-editor.js',     /* 待拆 → editor/highlight.js + editor/block-editor.js */ },
+  { id: 'struct',    module: 'struct',    layer: 'editor',   file: 'editor/struct.js' },
+  { id: 'complete',  module: 'complete',  layer: 'editor',   file: 'editor/complete.js' },
+  { id: 'library',   module: 'library',   layer: 'editor',   file: 'editor/library.js' },
+  { id: 'menu',      module: null,        layer: 'view',     file: 'js/55-menu.js',       /* 待并入 → view/modals.js */ },
+  { id: 'keyboard',  module: 'keys',      layer: 'interact', file: 'interact/keys.js' },
+  { id: 'blockSize', module: null,        layer: 'view',     file: 'js/62-block-size.js', /* 待并入 → view/canvas.js */ },
+  { id: 'zoom',      module: null,        layer: 'interact', file: 'js/64-zoom.js',       /* 待并入 → interact/pointer.js */ },
+  { id: 'pan',       module: null,        layer: 'interact', file: 'js/66-pan.js',        /* 待并入 → interact/pointer.js */ },
+  { id: 'drag',      module: null,        layer: 'interact', file: 'js/68-drag.js',       /* 待并入 → interact/pointer.js */ },
+  { id: 'boot',      module: null,        layer: 'shell',    file: 'js/90-boot.js',       /* 待拆 → shell/boot.js + interact/paste.js */ },
 ];
 
 /* CSS 切片：顺序 = 现 index.html 的 <link rel=stylesheet> 顺序（构建据此校验） */

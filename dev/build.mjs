@@ -41,34 +41,35 @@ let html = read(path.join(SRC, 'index.html'));
 const CSS_RE = /^[ \t]*<link[^>]*rel="stylesheet"[^>]*href="\.\/(styles\/[^"]+)"[^>]*>[ \t]*\n?/gm;
 const JS_RE  = /^[ \t]*<script[^>]*src="\.\/dev-bundle\.js"[^>]*><\/script>[ \t]*\n?/gm;
 
-/* 读片：读回统一 LF，剥离自身那一个末尾换行符后逐片拼接（保留既有修正）。 */
-function slice(dirRel, names, kind) {
+/* 读片：路径**相对 dev/src/** 给出（P2 起源文件按职责分层，不再固定在 js/、styles/）。
+   读回统一 LF，剥离自身那一个末尾换行符后逐片拼接（保留既有修正）。 */
+function slice(names, kind) {
   let all = '';
   for (const n of names) {
-    const p = path.join(SRC, dirRel, n);
-    if (!fs.existsSync(p)) throw new Error('manifest ' + kind + ' 引用的切片缺失：' + dirRel + '/' + n);
+    const p = path.join(SRC, n);
+    if (!fs.existsSync(p)) throw new Error('manifest ' + kind + ' 引用的源文件缺失：' + n);
     const body = read(p);
     if (kind === 'CSS' ? /<\/style/i.test(body) : /<\/script/i.test(body)) {
-      throw new Error(dirRel + '/' + n + ' 中含有 </' + kind.toLowerCase() + '>，内联会破损');
+      throw new Error(n + ' 中含有 </' + kind.toLowerCase() + '>，内联会破损');
     }
     all += body.replace(/\n$/, '') + '\n';   /* ← 修正点：只剥自身那一个换行符 */
-    console.log('  内联 ' + dirRel + '/' + n + '  ' + body.split('\n').length + ' 行');
+    console.log('  内联 ' + n + '  ' + body.split('\n').length + ' 行');
   }
   return all.replace(/\n$/, '');
 }
 
 /* ── CSS：顺序源 = manifest.CSS；并校验 index.html 的链顺序 == manifest（不一致即报错） ── */
-const cssNames = CSS.map(c => c.file.replace(/^styles\//, ''));
-const htmlCss  = [...html.matchAll(CSS_RE)].map(m => m[1].replace(/^styles\//, ''));
+const cssNames = CSS.map(c => c.file);
+const htmlCss  = [...html.matchAll(CSS_RE)].map(m => m[1]);
 if (htmlCss.length !== cssNames.length || htmlCss.join('\u0000') !== cssNames.join('\u0000')) {
   throw new Error('index.html 的 CSS 链顺序与 manifest.CSS 不一致（防顺序漂移）：\n  index:    ' +
     htmlCss.join(', ') + '\n  manifest: ' + cssNames.join(', '));
 }
-const cssAll = slice('styles', cssNames, 'CSS');
+const cssAll = slice(cssNames, 'CSS');
 
 /* ── JS：顺序源 = manifest.SLICES；包 IIFE（'use strict' 落在函数体首条语句 → 覆盖全函数体） ── */
-const jsNames = SLICES.map(s => s.file.replace(/^js\//, ''));
-const jsBody  = slice('js', jsNames, 'JS');
+const jsNames = SLICES.map(s => s.file);
+const jsBody  = slice(jsNames, 'JS');
 const IIFE    = ';(function(){\n' + jsBody + '\n})();';
 
 /* 产物内联 JS 段 = <script> 与 </script> 之间的**逐字**内容；把同一串写入 dev-bundle.js ⇒ dev≡prod。 */
