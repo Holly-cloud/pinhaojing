@@ -66,7 +66,8 @@ export const SLICES = [
   { id: 'selection', module: null,        layer: 'interact', file: 'js/30-selection.js',  /* 待并入 → interact/pointer.js */ },
   { id: 'splice',    module: 'splice',    layer: 'view',     file: 'view/splice.js' },
   { id: 'template',  module: null,        layer: 'view',     file: 'js/40-template.js',   /* 待并入 → view/modals.js（与 menu 合） */ },
-  { id: 'editor',    module: null,        layer: 'editor',   file: 'js/50-editor.js',     /* 待拆 → editor/highlight.js + editor/block-editor.js */ },
+  { id: 'highlight',   module: 'highlight',    layer: 'editor', file: 'editor/highlight.js' },   /* P2 切出：50-editor.js 上半（着色引擎 + 渲染/状态栏同步） */
+  { id: 'blockEditor', module: 'block-editor', layer: 'editor', file: 'editor/block-editor.js' }, /* P2 切出：50-editor.js 下半（编辑器窗口接线） */
   { id: 'struct',    module: 'struct',    layer: 'editor',   file: 'editor/struct.js' },
   { id: 'complete',  module: 'complete',  layer: 'editor',   file: 'editor/complete.js' },
   { id: 'library',   module: 'library',   layer: 'editor',   file: 'editor/library.js' },
