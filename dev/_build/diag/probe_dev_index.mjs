@@ -1,24 +1,33 @@
 import path from 'node:path';
-import { readdirSync } from 'node:fs';
+import { readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 /* 开发态检查（指导书第 10 节 P3）：src/index.html 直接双击（file://）能否正常跑
    用法：headless Edge --remote-debugging-port=9222 起好后： node _build/diag/probe_dev_index.mjs
    断言：① 无 Console/页面报错；② 切片完好性（两步，取代旧的写死条数）——
-         ②a 片数下限：实际加载的 JS/CSS 片数 ≥ 基线（抓「文件与标签一起删」的一致删除）；
-         ②b 目录↔页面一致：src/ 目录计数 == 页面 <script src>/<link> 条数（抓「加了片但忘接线」）；
-        ③ 骨架渲染出块、拼接栏与顶栏在位、样式真生效；④ 跨片全局函数可用（证明加载顺序正确）；
+         ②a 片数下限：dev/src/js、dev/src/styles **目录实况** ≥ 基线（抓「文件与标签一起删」的一致删除）；
+         ②b 目录 == manifest：dev/src/js 片数 == manifest.SLICES 条数、styles == manifest.CSS 条数（抓「加了片但漏接线」）；
+        ③ 骨架渲染出块、拼接栏与顶栏在位、样式真生效；
+        ④ 开发态≡产物的作用域：index.html 的 JS 链**恰为** ./dev-bundle.js（且该文件存在）、
+           内部符号**不再泄漏到全局**（P1 起产物与开发态跑同一个 IIFE）；
         ⑤ 编辑器能开（真实鼠标点「⤢ 放大」）、带入块文本、能打字、着色层与状态栏随之更新；
         ⑥ localStorage 正常写入。
-   已知差异（指导书第 7 节）：只有第 1 片带 'use strict'，开发态第 2 片起跑在非严格模式 —— 属预期。
+   —— P1（2026-09-16）：dev/src/index.html 不再手写 19 个 <script src>，改引**由同一份代码生成**的
+      dev/src/dev-bundle.js（= 产物内联 JS 段逐字）→ 开发态与产物**同作用域 / 同顺序 / 同字节**；
+      故旧断言「跨片全局函数在 window 上可用」按其**反面**重写为「内部符号不泄漏全局」（断言数不变）。
 */
 const SRC_DIR = path.resolve(HERE, '../../src');
-/* 目录实况（供「目录↔页面一致」断言） */
+/* manifest = 唯一顺序源（P1）；用其条数校验「目录实况 == manifest」，抓加片漏接线。 */
+const MANIFEST = (await import(pathToFileURL(path.resolve(HERE, '../../manifest.mjs')).href)).default;
+const SLICES_N = MANIFEST.SLICES.length;
+const CSS_N    = MANIFEST.CSS.length;
+const BUNDLE   = path.resolve(SRC_DIR, 'dev-bundle.js');
+/* 目录实况（供「目录 == manifest」断言） */
 const EXPECT_JS  = readdirSync(path.join(SRC_DIR, 'js')).filter(f => f.endsWith('.js')).length;
 const EXPECT_CSS = readdirSync(path.join(SRC_DIR, 'styles')).filter(f => f.endsWith('.css')).length;
-/* 片数「下限」基线（golden 下限，抓一致删除）——沿革：v7.7 = 16/7 → v7.8 = 19/9。
+/* 片数「下限」基线（golden 下限，抓一致删除）——沿革：v7.7 = 16/7 → v7.8 = 19/9（P1 未改片数）。
    只作下限：以后加片无需改这里（加片不会触发下限）；减片（哪怕文件与 <script> 标签一起删）会红。
-   之所以同时保留「下限」与「目录↔页面一致」两步，是为了既不假红（加片）、又不丢保护（减片）：
+   之所以同时保留「下限」与「目录==manifest」两步，是为了既不假红（加片）、又不丢保护（减片）：
    仅用目录实况做等值断言会产生自指——删一片则期望值同降、断言反而通过（QA 反例 A）。 */
 const BASE_JS_MIN = 19, BASE_CSS_MIN = 9;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -71,17 +80,24 @@ const R = []; const t = (name, cond, info) => { R.push([name, !!cond]); console.
 console.log('=== 开发态检查：' + HERE_URL + ' ===');
 t('页面标题正常', (await evalJS('document.title')) === '拼好镜', 'title=' + await evalJS('document.title'));
 t('URL 确为 src/index.html', (await evalJS('location.pathname')).endsWith('/src/index.html'));
-const domJsNow  = await evalJS('document.querySelectorAll("script[src]").length');
-const domCssNow = await evalJS('document.querySelectorAll("link[rel=stylesheet]").length');
-t('切片数下限：实际加载 JS ≥ ' + BASE_JS_MIN + ' / CSS ≥ ' + BASE_CSS_MIN + '（v7.8 基线，抓一致删除）',
-  domJsNow >= BASE_JS_MIN && domCssNow >= BASE_CSS_MIN, 'dom=' + domJsNow + '/' + domCssNow);
-t('切片目录↔页面一致：readdir 计数 == 外链条数（抓加片漏接线）',
-  domJsNow === EXPECT_JS && domCssNow === EXPECT_CSS, 'dir=' + EXPECT_JS + '/' + EXPECT_CSS + ' dom=' + domJsNow + '/' + domCssNow);
+/* P1 起 index.html 只引 1 个 JS bundle（不再列 19 个 ./js/*），故「实际加载片数」改看**目录实况**。 */
+t('切片文件完整：dev/src/js ≥ ' + BASE_JS_MIN + ' / dev/src/styles ≥ ' + BASE_CSS_MIN + '（抓一致删除）',
+  EXPECT_JS >= BASE_JS_MIN && EXPECT_CSS >= BASE_CSS_MIN, 'dir=' + EXPECT_JS + '/' + EXPECT_CSS);
+t('切片目录 == manifest：js == SLICES(' + SLICES_N + ') / styles == CSS(' + CSS_N + ')（抓加片漏接线）',
+  EXPECT_JS === SLICES_N && EXPECT_CSS === CSS_N, 'dir=' + EXPECT_JS + '/' + EXPECT_CSS + ' manifest=' + SLICES_N + '/' + CSS_N);
 t('骨架渲染出块', (await evalJS('document.querySelectorAll(".block").length')) > 0, 'blocks=' + await evalJS('document.querySelectorAll(".block").length'));
 t('拼接栏在位', await evalJS('!!document.getElementById("spSplice") || !!document.querySelector(".splice-panel")'));
 t('样式真生效（.block 有背景色）', (await evalJS('getComputedStyle(document.querySelector(".block")).backgroundColor')) !== 'rgba(0, 0, 0, 0)', await evalJS('getComputedStyle(document.querySelector(".block")).backgroundColor'));
-const missing = JSON.parse(await evalJS('JSON.stringify(["render","renderSplice","applyTemplate","hlToHTML","panStep","openCtxMenu","openBlockEditor"].filter(f => typeof window[f] !== "function"))'));
-t('跨片全局函数全部可用（加载顺序正确）', missing.length === 0, 'missing=' + JSON.stringify(missing));
+
+/* ---- P1：开发态≡产物的作用域（单 bundle 链 + 内部符号不泄漏全局） ----
+   P1 起开发态与产物跑**同一个 IIFE**（dev/src/dev-bundle.js = 产物内联 JS 段逐字），
+   故：① index.html 的 JS 链**恰为** ['./dev-bundle.js'] 且该文件存在；
+       ② 顶层声明（render/state/…）已收进 IIFE 私有作用域 → **不再**在 window 上可见。 */
+const devChain = JSON.parse(await evalJS('JSON.stringify([...document.querySelectorAll("script[src]")].map(s => s.getAttribute("src")))'));
+const leaked = JSON.parse(await evalJS('JSON.stringify(["render","renderSplice","hlToHTML","openBlockEditor","applyTemplate","saveNow"].filter(f => f in window))'));
+t('开发态≡产物作用域：JS 链恰为 ./dev-bundle.js（文件存在）+ 内部符号不泄漏全局',
+  devChain.length === 1 && devChain[0] === './dev-bundle.js' && existsSync(BUNDLE) && leaked.length === 0,
+  'chain=' + JSON.stringify(devChain) + ' bundle存在=' + existsSync(BUNDLE) + ' leaked=' + JSON.stringify(leaked));
 
 /* ---- 编辑器：真实鼠标点块内「⤢ 放大」 ---- */
 const blocker = await evalJS('(function(){var bs=[...document.querySelectorAll(".block")];for(var i=0;i<bs.length;i++){var tx=bs[i].querySelector(".block-text");if(tx&&tx.value.trim()){var r=bs[i].getBoundingClientRect();return JSON.stringify({id:bs[i].dataset.id,x:r.left+40,y:r.top+30,len:tx.value.length})}}return "null"})()');
@@ -112,7 +128,8 @@ if (!blocker || blocker === 'null') {
       t('可打字（长度增长）', len1 > len0, len0 + '→' + len1);
       t('着色层已渲染', (await evalJS('document.querySelectorAll("#blkHl span").length')) > 0, 'spans=' + await evalJS('document.querySelectorAll("#blkHl span").length'));
       t('状态栏错误数随之更新', (await evalJS('parseInt(document.getElementById("stErr").textContent,10)')) > 0, '错误=' + await evalJS('document.getElementById("stErr").textContent'));
-      await evalJS('closeBlockEditor && closeBlockEditor()');
+      /* P1：closeBlockEditor 已收进 IIFE（非全局），改走真实 UI：点「取消」按钮关闭。 */
+      await evalJS('document.getElementById("blkCancel").click()');
       await sleep(200);
       t('关闭后 mask 复位', await evalJS('document.getElementById("blkMask").classList.contains("hide")'));
     }

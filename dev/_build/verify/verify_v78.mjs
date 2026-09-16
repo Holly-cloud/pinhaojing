@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CSS as MANIFEST_CSS } from '../../manifest.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 /* v7.8 验收 · H 组：编辑器结构层 + 结构感知候选气泡 + 槽位 + 复制全文；I 组：补全配置窗口
    —— v7.8.2 收敛：风格包**已放回内置**（v7.8.1「内置降为中性示例」的决定被 Holly 撤销）；
@@ -761,6 +762,25 @@ t('X4 真实导入路径可用：导入 → **reload 后仍在**（localStorage 
   x4.v === 14 && x4.hasAsset && x4.styleLen === 7 && x4.fullOk,
   `version=${x4.v}；含 asset=${x4.hasAsset}；风格包 ${x4.styleLen} 条；全套逐字=${x4.fullOk}`);
 
+/* ---------- P1 新增（构建器止血，**非产品行为**）：dev≡prod 逐字 + CSS 链顺序 ----------
+   ① 产物内联 JS 段 == dev/src/dev-bundle.js **逐字一致**：这是「开发态≡产物」的机器证明。
+      必须**真读两个对象**并整串逐字比对（不用 includes 局部命中——本项目历史上三次抓到「假装通过」）。
+   ② index.html 的 CSS 链顺序 == manifest.CSS 列表：防顺序漂移（与 build.mjs 的构建期校验同源、互为双保险）。 */
+const P1_PHJ   = fs.readFileSync(path.resolve(HERE, '../../../PHJ.html'), 'utf8');
+const P1_SEG_M = P1_PHJ.match(/<script>([\s\S]*?)<\/script>/);
+const P1_SEG   = P1_SEG_M ? P1_SEG_M[1] : '';
+const P1_BUNDLE_PATH = path.resolve(HERE, '../../src/dev-bundle.js');
+const P1_BUNDLE = fs.existsSync(P1_BUNDLE_PATH) ? fs.readFileSync(P1_BUNDLE_PATH, 'utf8') : null;
+t('P1-A dev≡prod：产物内联 JS 段 == dev/src/dev-bundle.js（**逐字一致**，含 IIFE 外壳 + 严格模式）',
+  P1_BUNDLE !== null && P1_SEG.length > 0 && P1_SEG === P1_BUNDLE,
+  `段长=${P1_SEG.length} bundle长=${P1_BUNDLE === null ? 'MISSING' : P1_BUNDLE.length} 逐字一致=${P1_BUNDLE !== null && P1_SEG === P1_BUNDLE} 段首=${JSON.stringify(P1_SEG.slice(0, 16))}`);
+const P1_IDX = fs.readFileSync(path.resolve(HERE, '../../src/index.html'), 'utf8');
+const P1_GOT_CSS  = [...P1_IDX.matchAll(/<link[^>]*rel="stylesheet"[^>]*href="([^"]+)"/g)].map(m => m[1]);
+const P1_WANT_CSS = MANIFEST_CSS.map(c => './' + c.file);
+t('P1-B CSS 链顺序：index.html 的 <link rel=stylesheet> 顺序 == manifest.CSS 列表（防顺序漂移）',
+  P1_GOT_CSS.length === P1_WANT_CSS.length && P1_GOT_CSS.join('\u0000') === P1_WANT_CSS.join('\u0000'),
+  `index=${JSON.stringify(P1_GOT_CSS)}`);
+
 /* ---------- 截图 ---------- */
 const SHOT = process.argv[2] || '';
 if (SHOT) {
@@ -790,6 +810,6 @@ if (SHOT) {
 const pass = R.filter(r => r.pass).length;
 console.log('=== v7.8 验收（真机 headless Edge + CDP）：H 组 候选/槽位/复制 + I 组 补全配置 + X 组 资产 导入/导出 ===');
 for (const r of R) console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.name}  ${r.detail}`);
-console.log(`\nH+I 组合计 ${pass}/${R.length}（含 X 组资产 导入/导出 2 条 + H0 夹具前置 + H19 内置风格包逐字；标签沿用「H+I」以兼容 run-gate 汇总解析）`);
+console.log(`\nH+I 组合计 ${pass}/${R.length}（含 X 组资产 导入/导出 2 条 + H0 夹具前置 + H19 内置风格包逐字 + P1 构建器 2 条；标签沿用「H+I」以兼容 run-gate 汇总解析）`);
 ws.close();
 process.exit(pass === R.length ? 0 : 1);
