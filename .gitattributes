@@ -1,0 +1,15 @@
+# 拼好镜 · 行尾策略（换机可交接的关键）
+#
+# 为何需要：等价性闸门「构建可复现」是**逐字节**比对，build.mjs 固定输出 CRLF →
+#          比对基准（交付物 + 版本快照）在任何机器 checkout 后都必须是 CRLF。
+#          若所在机器 core.autocrlf=false（macOS / Linux 默认），git 会按仓库字节原样检出；
+#          若仓库字节是 LF，闸门就会因行尾不一致而红。
+#
+# ⚠️ 注意行序：git 取**最后一条匹配**——具体规则必须写在通配规则之后，否则会被 text=auto 覆盖。
+
+# 1) 全局默认：文本按 git 规范化（入库 LF，检出随各机配置）——与历史行为一致
+* text=auto
+
+# 2) 交付物 + 版本快照：-text = **永不转换**，检出即仓库字节（CRLF）→ 闸门跨机一致
+PHJ.html                        -text
+dev/_build/snapshots/**/*.html  -text
