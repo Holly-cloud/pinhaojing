@@ -12,7 +12,7 @@
 | **sha256** | **0b66ff140a40793f7a63986d2e4d347c1420d130409a4dfbe8c636fc695ce0a6** |
 | 行尾 | CRLF（Windows 行尾） |
 | 末行 | `</html>`，**文件结尾无换行符** |
-| 快照 | `dev/_build/snapshots/PHJ_v7.13_20260917.html`（同一字节内容，等价性闸门的比对基准） |
+| 快照 | `dev/_qa/snapshots/PHJ_v7.13_20260917.html`（同一字节内容，等价性闸门的比对基准） |
 
 ## 本轮变更要点（v7.12 → v7.13 · R1 皮肤抽取）
 
@@ -77,7 +77,7 @@
 |---|---|
 | 构建命令 | `node dev/build.mjs` |
 | 产物 | `PHJ.html` = **230492 B**，sha256 `0b66ff140a40793f7a63986d2e4d347c1420d130409a4dfbe8c636fc695ce0a6` |
-| 比对基准 | `dev/_build/snapshots/PHJ_v7.13_20260917.html`（逐字节相同） |
+| 比对基准 | `dev/_qa/snapshots/PHJ_v7.13_20260917.html`（逐字节相同） |
 | 源文件 | CSS **9 片 / 396 行**；JS **18 模块 / 3492 行**（`wc -l` 口径） |
 | JS 片序（18） | head · boot · store · persist · clipboard · overlay · highlight · block-editor · struct · **corpus(皮肤)** · complete · library · canvas · splice · modals · keys · paste · pointer · boot(wiring) |
 
@@ -95,7 +95,7 @@
 | `core/store.js` | 51 | | `core/clipboard.js` | 47 |
 | `editor/block-editor.js` | 29 | | | |
 
-## 回归闸门（本轮实测 · `node dev/_build/run-gate.mjs` = 7/7 全绿，退出码 0）
+## 回归闸门（本轮实测 · `node dev/_qa/run-gate.mjs` = 7/7 全绿，退出码 0）
 
 | 闸门 | 结果 |
 |---|---|
@@ -125,6 +125,6 @@
 
 ```bash
 node dev/build.mjs                              # 期望：PHJ.html 230492 B
-node dev/_build/run-gate.mjs                    # 期望：7/7 全绿（83/18/16/50/18），退出码 0
-node dev/_build/diag/probe_dev_index.mjs        # 开发态 18/18（需先起 headless 浏览器）
+node dev/_qa/run-gate.mjs                    # 期望：7/7 全绿（83/18/16/50/18），退出码 0
+node dev/_qa/diag/probe_dev_index.mjs        # 开发态 18/18（需先起 headless 浏览器）
 ```

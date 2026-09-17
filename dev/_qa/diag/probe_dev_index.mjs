@@ -3,7 +3,7 @@ import { readdirSync, existsSync, statSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 /* 开发态检查（指导书第 10 节 P3）：src/index.html 直接双击（file://）能否正常跑
-   用法：headless Edge --remote-debugging-port=9222 起好后： node _build/diag/probe_dev_index.mjs
+   用法：headless Edge --remote-debugging-port=9222 起好后： node dev/_qa/diag/probe_dev_index.mjs
    断言：① 无 Console/页面报错；② 源文件完好性（两步，布局无关）——
          ②a 清单文件齐全且不少于下限：manifest 列的每个源文件**存在** + 源文件总数 ≥ 独立下限
              （抓「文件与 manifest 条目一起删」的一致删除）；

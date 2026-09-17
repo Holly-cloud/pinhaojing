@@ -11,5 +11,6 @@
 * text=auto
 
 # 2) 交付物 + 版本快照：-text = **永不转换**，检出即仓库字节（CRLF）→ 闸门跨机一致
+# （2026-09-17 结构整理：dev/_build/ 已更名 dev/_qa/）
 PHJ.html                        -text
-dev/_build/snapshots/**/*.html  -text
+dev/_qa/snapshots/**/*.html     -text

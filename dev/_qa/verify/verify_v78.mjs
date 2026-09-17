@@ -8,7 +8,7 @@ const TEST_ARTIFACT = TEST_BUILD.path;   /* A+：测试产物（= 产物 + 1 行
 /* v7.8 验收 · H 组：编辑器结构层 + 结构感知候选气泡 + 槽位 + 复制全文；I 组：补全配置窗口
    —— v7.8.2 收敛：风格包**已放回内置**（v7.8.1「内置降为中性示例」的决定被 Holly 撤销）；
       H 组断言仍**键于「导入后的用户表」**（导入/导出能力本身未变，v7.8.1 成果保留）；
-      夹具（v7.8 风格包 5 段 + 硬性要求）仍**运行时从 dev/_build/snapshots/PHJ_v7.8_20260913.html 提取**
+      夹具（v7.8 风格包 5 段 + 硬性要求）仍**运行时从 dev/_qa/snapshots/PHJ_v7.8_20260913.html 提取**
       （快照在 git 历史内）→ 夹具运行时提取机制保留，本脚本不硬编码夹具文本。
    —— X 组边界断言收敛：X1/X2（「内置/产物不含私有正文」）随需求撤销 **已删除**（非放宽）；
       保留 X3（导出 → 再导入 往返一致）/ X4（导入 → reload → 仍在）。
@@ -18,7 +18,7 @@ const TEST_ARTIFACT = TEST_BUILD.path;   /* A+：测试产物（= 产物 + 1 行
    仅「中文输入法组合态门控」一项用页面内合成 CompositionEvent（无头环境无法真起 IME），该条已在断言名标注。 */
 import fs from 'node:fs';
 /* ── 夹具：**从 v7.8 快照文本运行时提取**（快照已存在于 git 历史）──
-   风格包（5 段 + 硬性要求）为便于断言复用，**运行时从 dev/_build/snapshots/PHJ_v7.8_20260913.html 提取**；
+   风格包（5 段 + 硬性要求）为便于断言复用，**运行时从 dev/_qa/snapshots/PHJ_v7.8_20260913.html 提取**；
    H 组重锚仍键于「导入后的用户表」，故夹具文本**不硬编码在本脚本**（夹具运行时提取机制保留）。 */
 const SNAP = path.join(HERE, '..', 'snapshots', 'PHJ_v7.8_20260913.html');
 if (!fs.existsSync(SNAP)) { console.error('夹具快照缺失（应为 git 历史内文件）：' + SNAP); process.exit(3); }

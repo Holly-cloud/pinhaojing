@@ -1,7 +1,7 @@
 /* v7.8.2 自检 · 风格包回内置的「逐字」独立比对（node 侧，不经浏览器）
    从**产物 PHJ.html** 提取内置风格包（CMPL_STYLE 5 段 + CMPL_TAIL），与 v7.8 原文
    （`git show ce8b7a0:dev/src/js/52-complete.js`）逐字比对，报告不一致处数。
-   用法：node dev/_build/diag/probe_v782_verbatim.mjs
+   用法：node dev/_qa/diag/probe_v782_verbatim.mjs
    期望结果：在 v7.8.2 交付产物上「不一致处数 = 0」（5 段 body + tail 共 6 项全 OK），退出码 0。
    退出码：0 = 0 处不一致；1 = 存在不一致（证伪用：故意改字后应退出 1）。 */
 import { execFileSync } from 'node:child_process';

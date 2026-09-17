@@ -1,12 +1,12 @@
 /* v7.8.2 自检 · 冷启动「零动作」取证 + 内置风格包逐字活断言（真机 headless Edge + CDP）
    ---------------------------------------------------------------------------
-   用法：node dev/_build/diag/probe_v782_coldstart.mjs
+   用法：node dev/_qa/diag/probe_v782_coldstart.mjs
    自包含：自己起 headless Edge（临时 profile + 自动选空闲端口）→ 跑断言 → 自收浏览器。
    检查项：
      C1 冷启动（state.cmpl.items === null，未物化）时打开「补」窗 → 「风格包」组**直接就是真实风格包**
         （7 条：全套 + 5 段 + 硬性要求），且不含任何「示例（请替换）」标记。
      C2 **逐字活断言**：内置 cmplSeedItems() 的「风格包」组 body 与 v7.8 原文（运行时从
-        dev/_build/snapshots/PHJ_v7.8_20260913.html 提取的夹具）**逐字相同**（5 段 + 硬性要求）。
+        dev/_qa/snapshots/PHJ_v7.8_20260913.html 提取的夹具）**逐字相同**（5 段 + 硬性要求）。
    期望结果：在 v7.8.2 交付产物上 C0/C1/C2 全 PASS（合计 3/3），退出码 0。
    退出码：0 = 全绿；1 = 存在失败（证伪用：故意改字后应退出 1）。 */
 import { spawn, spawnSync } from 'node:child_process';
@@ -22,7 +22,7 @@ const ROOT = path.resolve(HERE, '../../..');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ── 夹具：从 v7.8 快照运行时提取（与 verify_v78.mjs 同口径） ── */
-const SNAP = path.join(ROOT, 'dev', '_build', 'snapshots', 'PHJ_v7.8_20260913.html');
+const SNAP = path.join(ROOT, 'dev', '_qa', 'snapshots', 'PHJ_v7.8_20260913.html');
 if (!fs.existsSync(SNAP)) { console.error('夹具快照缺失：' + SNAP); process.exit(3); }
 const SNAP_TXT = fs.readFileSync(SNAP, 'utf8');
 const STYLE_BLOCK = (SNAP_TXT.match(/var CMPL_STYLE = \[([\s\S]*?)\];/) || [])[1] || '';

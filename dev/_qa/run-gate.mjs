@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* 拼好镜 · 一键验收闸门 runner（自包含 / 零依赖 / 只用 node 内建模块）
    ---------------------------------------------------------------------------
-   用法：  node dev/_build/run-gate.mjs
+   用法：  node dev/_qa/run-gate.mjs
    作用：  自动定位浏览器 → 自动选空闲调试端口 → 起 headless 浏览器 → 依次跑全部闸门
           → 无论成败回收浏览器与临时 profile → 汇总各闸门通过数 → 语义化退出码。
 
@@ -39,7 +39,7 @@ import { fileURLToPath } from 'node:url';
 import { browserCandidates, detectBrowser } from './lib/browser-detect.mjs';
 
 /* ── 路径：一律相对本文件解析，不硬编码任何机器绝对路径 ── */
-const HERE = path.dirname(fileURLToPath(import.meta.url));      // dev/_build
+const HERE = path.dirname(fileURLToPath(import.meta.url));      // dev/_qa
 const ROOT = path.resolve(HERE, '..', '..');                    // 项目根（PHJ.html 所在层）
 const NODE = process.execPath;                                  // 当前 node，避免写死安装路径
 

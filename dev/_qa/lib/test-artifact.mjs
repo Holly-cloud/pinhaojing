@@ -25,13 +25,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const HERE          = path.dirname(fileURLToPath(import.meta.url));   /* dev/_build/lib */
-const BUILD_DIR     = path.resolve(HERE, '..');                        /* dev/_build */
+const HERE          = path.dirname(fileURLToPath(import.meta.url));   /* dev/_qa/lib */
+const BUILD_DIR     = path.resolve(HERE, '..');                        /* dev/_qa */
 export const ROOT   = path.resolve(BUILD_DIR, '..', '..');             /* 项目根 */
 export const PRODUCT = path.join(ROOT, 'PHJ.html');                    /* 真实产物（权威源） */
-export const ARTIFACT_DIR = path.join(BUILD_DIR, 'artifacts');
-export const ARTIFACT_VERSION = 'v7.11';
-export const ARTIFACT_PATH = path.join(ARTIFACT_DIR, 'PHJ_test_' + ARTIFACT_VERSION + '.html');
+export const ARTIFACT_DIR = path.join(BUILD_DIR, 'gen');               /* 可再生产物隔离区（gitignore） */
+export const ARTIFACT_PATH = path.join(ARTIFACT_DIR, 'PHJ_test.html'); /* 文件名**不带版本号**——从根上消灭「文件名撒谎」 */
 
 /** 取产物的内联 JS 段（`<script>…</script>` 之间，含 CRLF，逐字）。 */
 export function extractSegment(html) {
@@ -141,7 +140,7 @@ export function auditArtifactDiff() {
            prefixOk, suffixOk, isAccessor, da: A.length, db: B.length, insertedHead: (inserted || '').slice(0, 60) };
 }
 
-/* ── CLI：node dev/_build/lib/test-artifact.mjs ── */
+/* ── CLI：node dev/_qa/lib/test-artifact.mjs ── */
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const r = buildTestArtifact();
   const a = auditArtifactDiff();

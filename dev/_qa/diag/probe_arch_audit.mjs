@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* 拼好镜 · 架构审计探针（一次性取证；只读，不改任何源码/产物）
    目的：为「整体架构设计 + 长期发展规划」提供**可复现的硬数据**，而非印象。
-   用法：node dev/_build/diag/probe_arch_audit.mjs
+   用法：node dev/_qa/diag/probe_arch_audit.mjs
    输出：顶层声明数 / 跨模块引用面 / PHJ.x 重复导出行 / addEventListener 注册序 / 模块规模分布 / 循环依赖
 */
 import fs from 'node:fs';

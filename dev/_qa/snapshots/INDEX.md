@@ -1,8 +1,9 @@
 # 交付快照索引（snapshots/INDEX.md）
 
-> **P4 文档收口产物**（2026-09-16）。本目录里的文件**全部仍被引用**——有脚本 argv 复跑、有历史文档、有闸门夹具，
-> 因此**不做移动/删除**（移动会让引用失效、删夹具会让闸门变红）。本索引的作用是：**一眼看清哪个是当前基准、哪个不能动**。
-> 复现方式见项目根 `README.md`（一条命令：`node dev/_build/run-gate.mjs`）。
+> **P4 文档收口产物**（2026-09-16）。本目录里的文件**仍被引用**——有脚本 argv 复跑、有历史文档、有闸门夹具，
+> 因此**除「内容逐字节重复的副本」外不做移动/删除**（移动会让引用失效、删夹具会让闸门变红）。本索引的作用是：**一眼看清哪个是当前基准、哪个不能动**。
+> 复现方式见项目根 `README.md`（一条命令：`node dev/_qa/run-gate.mjs`）。
+> **2026-09-17 结构整理**：本目录随 `dev/_build/` 更名 `dev/_qa/` 迁至 `dev/_qa/snapshots/`；并删除 **2 组内容逐字节重复的别名快照**（见 §四）。
 
 ## 一、当前基准（**在用**）
 
@@ -27,7 +28,7 @@
 用法示例（复跑历史比对）：
 
 ```bash
-node dev/_build/verify/verify_build_equivalence.mjs PHJ.html dev/_build/snapshots/PHJ_v7.8.2_20260915.html
+node dev/_qa/verify/verify_build_equivalence.mjs PHJ.html dev/_qa/snapshots/PHJ_v7.8.2_20260915.html
 ```
 
 ## 三、纯历史（**仍被历史文档引用，故留在原地**）
@@ -39,9 +40,18 @@ node dev/_build/verify/verify_build_equivalence.mjs PHJ.html dev/_build/snapshot
 
 > 这两份是"改动前基线"（pre-v7.6 / pre-v7.7），只作档案。**若将来要移入 `archive/`，须同步改上面两份文档的引用**，否则文档里的路径会失效。
 
-## 四、`archive/`（更早的 v6.x / v7.0–v7.5 整文件拷贝，30 项）
+## 四、`archive/`（更早的 v6.x / v7.0–v7.5 整文件拷贝，28 项）
 
 纯历史档案：`PHJ_v6.0 … v7.5` 各版本交付快照 + `storyboard-prompt-panel_v5.4_20260908.html`（更名前）。**只读留档，不参与任何闸门**。
+
+### 去重说明（2026-09-17 结构整理 · 删 2 组内容逐字节重复的别名）
+
+> 原则：**只删「内容逐字节重复」的别名，不移位任何活基准**。
+
+| 删除的别名 | 内容相同的保留对象（sha256 相同） |
+|---|---|
+| `archive/PHJ_v7.5_20260911.html` | `PHJ_v7.5_20260913_pre-v7.6.html`（被 `dev/docs/` 文档引用，保留） |
+| `archive/PHJ_v6.21_20260911_pre-v7.html` | `archive/PHJ_v6.21_20260910.html` |
 
 ## 五、维护约定
 
@@ -49,3 +59,4 @@ node dev/_build/verify/verify_build_equivalence.mjs PHJ.html dev/_build/snapshot
 2. **不要**把归入"当前基准"的快照移进 `archive/`（闸门会立刻红）。
 3. **不要**动 `PHJ_v7.8_20260913.html`（H 组夹具来源）。
 4. 体积限制已解除（2026-09-16）：新快照只需与构建产物逐字节一致，不再有大小门槛。
+5. **分区语义**：本目录文档分「当前基准」（§一）/「历史 argv 基准」（§二）/「纯历史 · 被文档引用」（§三）/「更早 archive/」（§四）四类。**`dev/_build/` 为整理前旧名**（2026-09-17 更名 `dev/_qa/`）；v7.13 之前的 BASELINE 文档里出现的 `dev/_build/` 属整理前旧路径，刻意未改。
