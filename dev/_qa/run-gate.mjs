@@ -6,12 +6,12 @@
           → 无论成败回收浏览器与临时 profile → 汇总各闸门通过数 → 语义化退出码。
 
    闸门顺序（与 README「改完必过的闸门」一致）：
-     [1] 构建           dev/build.mjs                       期望 230492 B（v7.13）
-     [2] 等价性校验     verify/verify_build_equivalence.mjs 期望 PASS（构建可复现：对 snapshots/PHJ_v7.13_20260917.html 含 banner 逐字节一致）
+     [1] 构建           dev/build.mjs                       期望 230494 B（v7.14）
+     [2] 等价性校验     verify/verify_build_equivalence.mjs 期望 PASS（构建可复现：对 snapshots/PHJ_v7.14_20260917.html 含 banner 逐字节一致）
      [3] 回归 verify_v7 verify/verify_v7.mjs                期望 83/83（**体积限制已解除** → B10a/B10b/C8a/C8b 四条体积断言已删除）
      [4] F 组 verify_v76 verify/verify_v76.mjs              期望 18/18
      [5] G 组 verify_v77 verify/verify_v77.mjs              期望 16/16
-     [6] v7.8 verify_v78 verify/verify_v78.mjs              期望 H+I+X+P1+P2+P3+R1 50/50（v7.8.2 的 40 + P1 构建器 4 + P2 收口 2 + P3 1 + **R0 新增 P2-B2 导出面内容契约 1** + **R1 新增 皮肤边界/语料归属 2**）；标签仍沿用「H+I」以兼容本脚本的汇总解析
+     [6] v7.8 verify_v78 verify/verify_v78.mjs              期望 H+I+X+P1+P2+P3+R1+R3+R4 53/53（v7.8.2 的 40 + P1 构建器 4 + P2 收口 2 + P3 1 + R0 导出面内容契约 1 + R1 皮肤边界/语料归属 2 + **R3-A/R3-B 皮肤棘轮/零泄漏 2** + **R4 皮肤可摘除 1**）；标签仍沿用「H+I」以兼容本脚本的汇总解析
      [7] 开发态         diag/probe_dev_index.mjs             期望 18/18
 
    环境变量：

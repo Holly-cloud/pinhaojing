@@ -269,4 +269,4 @@ document.addEventListener('visibilitychange', function(){ if(document.hidden) fl
 load();
 
 /* 本模块对外面 = 被他模块引用的顶层名（P3 客观统计口径） */
-PHJ.boot = { exportJSON };
+PHJ.wiring = { exportJSON };

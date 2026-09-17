@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildTestArtifact, auditArtifactDiff } from '../lib/test-artifact.mjs';
-import { CSS as MANIFEST_CSS } from '../../manifest.mjs';
+import { CSS as MANIFEST_CSS, SLICES as MANIFEST_SLICES } from '../../manifest.mjs';
+import { harvestDomainTokens, harvestCorpusStrings, listEngineFiles, DOMAIN_HITS_GOLDEN } from '../lib/skin-guard.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEST_BUILD = buildTestArtifact();
 const TEST_ARTIFACT = TEST_BUILD.path;   /* A+：测试产物（= 产物 + 1 行访问器），4 套件对它执行；真实产物仅用于体积/P1-A/C/D 断言 */
@@ -845,7 +846,7 @@ t('P3-A Escape 统一分发：document 级 keydown 处理器共 3 处、其中�
    ★2026-09-17 加固（R0 证伪发现）：原断言【只查 16 个模块键存在】，把某个模块的导出面清空为
    `PHJ.x = {}` 仍会 PASS —— 即"键在、内容空"这一整类腐化抓不到。现补一条内容断言，
    要求每个模块的导出面 == 契约清单（逐名精确），任一模块被清空/缩水即红。 */
-const P2_MODULES = ['blockEditor', 'boot', 'canvas', 'clipboard', 'complete', 'highlight', 'keys', 'library', 'modals', 'overlay', 'paste', 'persist', 'pointer', 'splice', 'store', 'struct'];
+const P2_MODULES = ['blockEditor', 'canvas', 'clipboard', 'complete', 'highlight', 'keys', 'library', 'modals', 'overlay', 'paste', 'persist', 'pointer', 'splice', 'store', 'struct', 'wiring'];
 const P2_KEYS = JSON.parse(await evalJS('JSON.stringify(Object.keys(PHJ).sort())'));
 t('P2-B 显式导出面：PHJ 恰含 16 个模块键（PHJ.<module> = {…}，读页面实例）',
   Array.isArray(P2_KEYS) && P2_KEYS.join(',') === P2_MODULES.join(','), 'keys=' + JSON.stringify(P2_KEYS));
@@ -853,7 +854,6 @@ t('P2-B 显式导出面：PHJ 恰含 16 个模块键（PHJ.<module> = {…}，�
 /* P2-B2 导出面【内容】契约：每模块导出名逐名精确匹配（键存在 ≠ 面正确） */
 const P2_EXPORTS_GOLDEN = {
   blockEditor: ['blkCb', 'closeBlockEditor', 'fitBlkWidth', 'openBlockEditor'],
-  boot: ['exportJSON'],
   canvas: ['applyPan', 'arrangeAll', 'autoResize', 'board', 'canvas', 'fitBlock', 'render', 'textWidth'],
   clipboard: ['copyText', 'toast'],
   complete: ['CMPL_SEED_V', 'cmplActive', 'cmplExportAsset', 'cmplGroupOrder', 'cmplImportAsset', 'cmplNewKey', 'cmplReset', 'cmplSeedItems', 'cmplSetItems'],
@@ -868,6 +868,7 @@ const P2_EXPORTS_GOLDEN = {
   splice: ['copySpliced', 'countSpliced', 'popCard', 'popSpliceEntry', 'renderSplice', 'spliceAdd', 'spliceClear', 'spliceRemoveIds', 'suckBlock'],
   store: ['MIN_BLOCK_W', 'defaultState', 'drag', 'gridPos', 'keyDir', 'keyLastT', 'keyLoop', 'keyState', 'keyVel', 'panEndX', 'panEndY', 'panLooping', 'panVel', 'panning', 'selected', 'spacePan', 'spliceMode', 'state', 'tplCur', 'tplOpen', 'uid'],
   struct: ['structAt'],
+  wiring: ['exportJSON'],
 };
 const P2_EXPORTS_ACTUAL = JSON.parse(await evalJS(
   'JSON.stringify(Object.fromEntries(Object.keys(PHJ).sort().map(k => [k, Object.keys(PHJ[k]).sort()])))'));
@@ -926,9 +927,64 @@ t('R1 语料归属：领域语料（风格包）在 skin/ 内、且不在 core/e
   R1_SKIN_TXT.includes(R1_STYLE_TOKEN) && !R1_ENGINE_TXT.includes(R1_STYLE_TOKEN),
   'skin 命中=' + R1_SKIN_TXT.includes(R1_STYLE_TOKEN) + ' 引擎命中=' + R1_ENGINE_TXT.includes(R1_STYLE_TOKEN));
 
+/* ---------- R3-A/R3-B 引擎零领域语义**棘轮** + 皮肤语料**零泄漏**（★2026-09-17 新增） ----------
+   把「引擎零领域语义」从 R1 的「一条边断言」升级为**可执行、可证伪**的棘轮（口径见 lib/skin-guard.mjs）。
+   · R3-A：从皮肤源码字面量抽「领域词元」→ 命中**引擎代码（剥注释）**的去重数 **≤ DOMAIN_HITS_GOLDEN**。
+     ≤ 而非 =0：现存 STRUCT_MARKS / CMPL_GROUP_HINT 等是**符号契约**，不是待清债；棘轮冻结水位、只堵新增。
+     证伪：往 editor/ 写一行**未出现过的**皮肤词元（如 `暖主体`）→ 命中 +1 > golden → 必红。
+   · R3-B：皮肤**长语料字符串**（≥40 字）在**非皮肤源码原文**里**零命中**（硬零容忍）。
+     证伪：把一段长语料原样粘进 editor/ → 命中非空 → 必红。 */
+const R3_TOKENS = harvestDomainTokens(SKIN_FILES);
+const R3_ENGINE_FILES = listEngineFiles(SRC_ROOT);
+const R3_ENGINE_RAW = R3_ENGINE_FILES.map((f) => readIf(f) || '').join('\n');
+const R3_ENGINE_CODE = stripComments(R3_ENGINE_RAW);
+const R3_LEAK = R3_TOKENS.filter((tk) => R3_ENGINE_CODE.includes(tk));
+t('R3-A 皮肤词元棘轮：皮肤领域词元命中「引擎代码（剥注释）」的去重数 ≤ 冻结尾数（只堵新增泄漏）',
+  R3_LEAK.length <= DOMAIN_HITS_GOLDEN,
+  '词元 ' + R3_TOKENS.length + ' 个；命中 ' + R3_LEAK.length + ' ≤ golden ' + DOMAIN_HITS_GOLDEN +
+    '；命中词元=' + JSON.stringify(R3_LEAK));
+const R3_CORPUS = harvestCorpusStrings(SKIN_FILES, 40);
+const R3_CORPUS_LEAK = R3_CORPUS.filter((s) => R3_ENGINE_RAW.includes(s));
+t('R3-B 皮肤语料零泄漏：皮肤长语料字符串（≥40 字）在「非皮肤源码原文」里零命中（硬零容忍）',
+  R3_CORPUS_LEAK.length === 0,
+  '长语料 ' + R3_CORPUS.length + ' 条；非皮肤原文命中 ' + R3_CORPUS_LEAK.length +
+    (R3_CORPUS_LEAK.length ? '；首段=' + JSON.stringify(R3_CORPUS_LEAK[0].slice(0, 40)) : ''));
+
+/* ---------- R4 皮肤可摘除（**真读产物** 的逐字节证明 + 合成皮肤替换演练）（★2026-09-17 新增） ----------
+   命题：产物内联 JS 段 == 「各**非皮肤**片按构建规则拼接」+「**皮肤**片的贡献」，且皮肤片可**整段摘除**
+        （摘除后逐字节等于各非皮肤片的拼接）→ 皮肤是**可替换的独立段**：换皮肤不动引擎。
+   构建规则（与 build.mjs 同源）：每片贡献 = 内容(LF 归一).replace(/\n$/,'') + '\n'；整体末尾再剥一个 '\n'；
+        IIFE 外壳 = '\n;(function(){\n' + 体 + '\n})();\n'。
+   证伪：① 改 skin/corpus.js 一个字符 → 产物与「非皮肤拼接 + 皮肤贡献」不再逐字节相等 → 必红；
+        ②（替换演练）用合成皮肤内容替换皮肤段 → 引擎前缀/后缀逐字节不变、仅皮肤段变化。 */
+const R4_SEG = fs.readFileSync(REAL_PRODUCT, 'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
+const R4_LF = R4_SEG.replace(/\r\n/g, '\n');
+const R4_PRE = '\n;(function(){\n', R4_SUF = '\n})();\n';
+const R4_BODY = (R4_LF.startsWith(R4_PRE) && R4_LF.endsWith(R4_SUF))
+  ? R4_LF.slice(R4_PRE.length, R4_LF.length - R4_SUF.length) : null;
+const R4_C = (rel) => (readIf(path.join(SRC_ROOT, rel)) || '').replace(/\r\n/g, '\n').replace(/\n$/, '');
+const R4_SKIN_REL = MANIFEST_SLICES.filter((s) => s.layer === 'skin').map((s) => s.file);
+const R4_NONSKIN_REL = MANIFEST_SLICES.filter((s) => s.layer !== 'skin').map((s) => s.file);
+const R4_EXPECT_NON = R4_NONSKIN_REL.map(R4_C).join('\n');
+const R4_SKIN_CONTRIB = R4_SKIN_REL.length === 1 ? (R4_C(R4_SKIN_REL[0]) + '\n') : null;
+const R4_IDX = (R4_BODY !== null && R4_SKIN_CONTRIB !== null) ? R4_BODY.indexOf(R4_SKIN_CONTRIB) : -1;
+const R4_STRIP = R4_IDX >= 0 ? (R4_BODY.slice(0, R4_IDX) + R4_BODY.slice(R4_IDX + R4_SKIN_CONTRIB.length)) : null;
+const R4_REMOVABLE = R4_STRIP !== null && R4_STRIP === R4_EXPECT_NON;
+/* 替换演练：合成皮肤（唯一标记「合成皮肤·R4」）替换真皮肤段 → 引擎前缀/后缀逐字节不变 */
+const R4_SYNTH = "var CMPL_STYLE=[{label:'合成皮肤·R4',body:'【合成皮肤·R4】 用于证明皮肤段可替换的合成语料。'}];\nvar CMPL_TAIL='硬性要求：合成皮肤·R4。';\nfunction cmplFullStyle(){ return '合成皮肤·R4'; }\nvar CMPL_GROUPS=[];\n";
+const R4_SWAPPED = R4_IDX >= 0 ? (R4_BODY.slice(0, R4_IDX) + R4_SYNTH + R4_BODY.slice(R4_IDX + R4_SKIN_CONTRIB.length)) : null;
+const R4_SWAP_OK = R4_SWAPPED !== null && R4_SWAPPED !== R4_BODY && R4_SWAPPED.includes(R4_SYNTH)
+  && R4_SWAPPED.slice(0, R4_IDX) === R4_BODY.slice(0, R4_IDX)
+  && R4_SWAPPED.slice(R4_IDX + R4_SYNTH.length) === R4_BODY.slice(R4_IDX + R4_SKIN_CONTRIB.length);
+t('R4 皮肤可摘除：产物 JS 段 = 非皮肤片拼接 + 皮肤片贡献；摘除皮肤后逐字节 == 非皮肤拼接（+ 合成皮肤替换演练：引擎前后缀不变）',
+  R4_REMOVABLE && R4_SWAP_OK,
+  '皮肤片 ' + R4_SKIN_REL.length + ' / 非皮肤片 ' + R4_NONSKIN_REL.length +
+    '；段长 ' + (R4_BODY === null ? -1 : R4_BODY.length) + '；可摘除=' + R4_REMOVABLE +
+    '；替换演练=' + R4_SWAP_OK + '；皮肤段偏移=' + R4_IDX);
+
 const pass = R.filter(r => r.pass).length;
 console.log('=== v7.8 验收（真机 headless Edge + CDP）：H 组 候选/槽位/复制 + I 组 补全配置 + X 组 资产 导入/导出 ===');
 for (const r of R) console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.name}  ${r.detail}`);
-console.log(`\nH+I 组合计 ${pass}/${R.length}（含 X 组资产 导入/导出 2 条 + H0 夹具前置 + H19 内置风格包逐字 + P1 构建器 4 条；标签沿用「H+I」以兼容 run-gate 汇总解析）`);
+console.log(`\nH+I 组合计 ${pass}/${R.length}（含 X 组资产 导入/导出 2 条 + H0 夹具前置 + H19 内置风格包逐字 + P1 构建器 4 条 + P2 2 条 + P3 1 条 + R0 1 条 + R1 2 条 + **R3-A/R3-B 皮肤棘轮/零泄漏 2 条** + **R4 皮肤可摘除 1 条**；标签沿用「H+I」以兼容 run-gate 汇总解析）`);
 ws.close();
 process.exit(pass === R.length ? 0 : 1);

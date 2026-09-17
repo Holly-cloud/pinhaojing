@@ -2,7 +2,7 @@
 
 > `_qa/` = 本项目**全部验收脚本 / 诊断探针 / 版本快照 / 物证留档 / 可再生产物**。
 > **一眼分清「在用 / 历史 / 留档 / 生成物」**，是本文件存在的唯一理由。
-> 一条命令复现全部验收：`node dev/_qa/run-gate.mjs` → 期望 **7/7 全绿**（83 / 18 / 16 / 50 / 18），退出码 0。
+> 一条命令复现全部验收：`node dev/_qa/run-gate.mjs` → 期望 **7/7 全绿**（83 / 18 / 16 / **53** / 18），退出码 0。
 >
 > 命名沿革：本目录原名 `dev/_build/`；2026-09-17 结构整理改名 `dev/_qa/`（原名名实不符——它不只是「构建产物」，而是**验收工装 + 基准 + 物证**三合一）。
 
@@ -11,8 +11,8 @@
 | 分区 | 内容 | 存在理由（删了会怎样） | 状态 |
 |---|---|---|---|
 | `run-gate.mjs` | ★ 一键闸门入口：自动定位浏览器 → 选空闲端口 → 起 headless → 依次跑 7 道 → 语义化退出码 | 没有它，7 道验收要人工逐条起浏览器跑 | ★ **在用** |
-| `lib/` | 共享模块：`browser-detect.mjs`（浏览器探测/端口）、`test-artifact.mjs`（生成「产物 + 1 行访问器」的测试产物，供 4 套件操纵内部态；产物落 `gen/PHJ_test.html`） | 没有它，CDP 套件无法在「不改产品」前提下触达内部态 | ★ **在用** |
-| `verify/` | **5 个在用套件**：`verify_build_equivalence.mjs`（等价性，闸门第 2 道）、`verify_v7.mjs`（回归 83）、`verify_v76.mjs`（F 18）、`verify_v77.mjs`（G 16）、`verify_v78.mjs`（H+I+X+P1+P2+P3+R0+R1 50） | 闸门的主体；删了等于没有回归保护 | ★ **在用** |
+| `lib/` | 共享模块：`browser-detect.mjs`（浏览器探测/端口）、`test-artifact.mjs`（生成「产物 + 1 行访问器」的测试产物，供 4 套件操纵内部态；产物落 `gen/PHJ_test.html`）、**`skin-guard.mjs`（R3 皮肤边界护栏：抽皮肤词元 / 列引擎文件 / `DOMAIN_HITS_GOLDEN`）** | 没有它，CDP 套件无法在「不改产品」前提下触达内部态，R3 棘轮也无处实现 | ★ **在用** |
+| `verify/` | **5 个在用套件**：`verify_build_equivalence.mjs`（等价性，闸门第 2 道）、`verify_v7.mjs`（回归 83）、`verify_v76.mjs`（F 18）、`verify_v77.mjs`（G 16）、`verify_v78.mjs`（H+I+X+P1+P2+P3+R0+R1+**R3+R4** **53**） | 闸门的主体；删了等于没有回归保护 | ★ **在用** |
 | `verify/archive/` | **22 个 v6 系列套件**（`verify_v6` … `verify_v621`，逐版历史验收） | 历史验收口径的可追溯留档 | 历史（只读） |
 | `diag/` | **在用/契约探针 5 个**：`probe_dev_index.mjs`（闸门第 7 道）、`probe_arch_audit.mjs`（架构审计只读探针，R0/R1 的事实依据）、`probe_v782_verbatim.mjs` + `probe_v782_coldstart.mjs`（内置风格包契约）、`spike_emulate_media.mjs` | 提供闸门之外的可复现诊断数据 | ★ **在用** |
 | `diag/archive/` | **15 个历史探针**：v7.2 跟手量化 / v7.4 虚影偏移 / v7.6-7.7 着色对齐 / 审计复核 `diag_audit_claims`；`split_phj_to_src.mjs`（**P2 后已退役**）、`migrate_paths_to_relative.py`（一次性）、R0/R1 一次性脚本 3 个 | 历史诊断与一次性脚本的留档 | 历史（只读） |
@@ -31,9 +31,10 @@
 
 ```bash
 node dev/build.mjs                          # 构建（产出 PHJ.html + src/dev-bundle.js）
-node dev/_qa/run-gate.mjs                   # ★ 全部 7 道闸门（自包含）；期望 7/7 全绿，退出码 0；各闸门 83/18/16/50/18
+node dev/_qa/run-gate.mjs                   # ★ 全部 7 道闸门（自包含）；期望 7/7 全绿，退出码 0；各闸门 83/18/16/53/18
+node dev/_qa/lib/skin-guard.mjs             # R3 皮肤边界：R3-A 命中 ≤ golden；R3-B 长语料零命中（纯静态，无需浏览器）
 node dev/_qa/diag/probe_dev_index.mjs       # 开发态单跑（需先有 headless 浏览器监听 PHJ_BROWSER_PORT，缺省 9222）
 node dev/_qa/diag/probe_v782_verbatim.mjs   # 内置风格包逐字（v7.8.2 契约）
-node dev/_qa/verify/verify_build_equivalence.mjs PHJ.html dev/_qa/snapshots/PHJ_v7.10_20260916.html
+node dev/_qa/verify/verify_build_equivalence.mjs PHJ.html dev/_qa/snapshots/PHJ_v7.13_20260917.html
                                             # 等价性：以历史基线复跑（argv[3] 指定基线）
 ```

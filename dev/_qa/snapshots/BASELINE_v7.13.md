@@ -128,3 +128,20 @@ node dev/build.mjs                              # 期望：PHJ.html 230492 B
 node dev/_qa/run-gate.mjs                    # 期望：7/7 全绿（83/18/16/50/18），退出码 0
 node dev/_qa/diag/probe_dev_index.mjs        # 开发态 18/18（需先起 headless 浏览器）
 ```
+
+---
+
+## 补记（2026-09-17 · R2/R3/R4 收口后）
+
+> 本文件是 **v7.13 的冻结记录**，正文（含上文「已知遗留」里的 R2/R3/R4 三条）**一字未改**；
+> 此「补记」只**追加**后续演进，不改史实。
+
+- **R2 已落地**：`dev/src/shell/boot.js` → **`dev/src/shell/wiring.js`**（`git mv`，只改名不拆）；
+  导出键 `PHJ.boot` → `PHJ.wiring`；`manifest.mjs` 的 `SLICES`/`MODULES` 与 `verify_v78` 的
+  `P2_MODULES`/`P2_EXPORTS_GOLDEN` 三处同步。
+- **R3/R4 已落地**：「引擎零领域语义」由 R1 的「一条边断言」升级为**棘轮**（新模块
+  `dev/_qa/lib/skin-guard.mjs`，`DOMAIN_HITS_GOLDEN = 15`）+ **皮肤可摘除**逐字节证明（R4）；
+  新增断言 3 条，`verify_v78` 由 50 → **53**。
+- **产物**：230492 → **230494 B**（**+2 B**，恰好是 `boot`→`wiring` 这一个导出键）。
+- **闸门**：`node dev/_qa/run-gate.mjs` = **7/7 全绿**（**83 / 18 / 16 / 53 / 18**）。
+- **当前现状**以 `dev/_qa/snapshots/BASELINE_v7.14.md` 为准。

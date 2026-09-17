@@ -82,7 +82,7 @@ export const MANIFEST_VERSION = 'v0.6-p3';
    · P2 完成后本数组退役（改由 `resolveOrder(MODULES)` 决定）。
    ════════════════════════════════════════════════════════════════════════════ */
 
-/* JS 源文件：**顺序 = 加载顺序**（首条 shell/head.js 首行即 'use strict';，末条 shell/boot.js 末尾调 load()）
+/* JS 源文件：**顺序 = 加载顺序**（首条 shell/head.js 首行即 'use strict';，末条 shell/wiring.js 末尾调 load()）
    ----------------------------------------------------------------------------
    P2 收口（2026-09-16）：全部 17 个模块文件已按 manifest 模块划分落地（合并 canvas/modals/pointer，
    拆分 store+persist、boot+paste），并在各文件末尾以 `PHJ.<module> = {…}` 显式导出对外面。
@@ -91,7 +91,7 @@ export const MANIFEST_VERSION = 'v0.6-p3';
      真正对顺序敏感的是：① `addEventListener` 的**注册顺序**（同一事件按注册序调用 → Escape/keydown
      处理链、拖拽 vs 平移的 mousedown 优先级都靠它）；② 顶层 `var x = <表达式>` 的**初始化顺序**。
      当前顺序刻意保持与 v7.9 相同的**副作用注册序**：complete(DOMContentLoaded) → modals(contextmenu/click/
-     keydown·Esc) → keys(keydown/keyup/blur) → pointer(pan keydown/keyup → drag blur/mousedown/move/up) → boot(DCL/
+     keydown·Esc) → keys(keydown/keyup/blur) → pointer(pan keydown/keyup → drag blur/mousedown/move/up) → wiring(DCL/
      beforeunload/visibilitychange/load)。
      ⚠️ **不要**为了让顺序"等于 resolveOrder(MODULES) 的拓扑序"而重排本数组——那会改变上述注册序 → 行为改变。
      `resolveOrder()` 保留为 P3（模块真正隔离、deps 成为加载契约）时的参考工具。 */
@@ -113,7 +113,7 @@ export const SLICES = [
   { id: 'keys',        module: 'keys',        layer: 'interact', file: 'interact/keys.js' },
   { id: 'paste',       module: 'paste',       layer: 'interact', file: 'interact/paste.js' },
   { id: 'pointer',     module: 'pointer',     layer: 'interact', file: 'interact/pointer.js' },
-  { id: 'boot',        module: 'boot',        layer: 'shell',    file: 'shell/boot.js' },
+  { id: 'wiring',      module: 'wiring',      layer: 'shell',    file: 'shell/wiring.js' },
 ];
 
 /* CSS 切片：顺序 = 现 index.html 的 <link rel=stylesheet> 顺序（构建据此校验） */
@@ -153,9 +153,9 @@ export const MODULES = [
   /* ── shell ── */
   { id: 'head',  path: 'src/shell/head.js', layer: 'shell', exports: ['PHJ'], deps: [],
     resp: "IIFE 首行 + 'use strict' + PHJ 命名空间骨架" },
-  { id: 'boot',  path: 'src/shell/boot.js', layer: 'shell', exports: ['PHJ.boot'],
+  { id: 'wiring', path: 'src/shell/wiring.js', layer: 'shell', exports: ['PHJ.wiring'],
     deps: ['store', 'persist', 'library', 'complete', 'keys', 'modals', 'paste'],
-    resp: '唯一启动入口：事件接线 + 末尾 load()；P2 后不再含粘贴部分（已拆 interact/paste）' },
+    resp: '★R2 唯一接线/启动入口（原 shell/boot.js，2026-09-17 只改名不拆）：事件接线 + 末尾 load()；P2 后不再含粘贴部分（已拆 interact/paste）' },
 
   /* ── core ── */
   { id: 'store',   path: 'src/core/store.js',   layer: 'core', exports: ['PHJ.store'],   deps: [],
@@ -210,7 +210,7 @@ export const V78_EDGES = [
   { edge: '50 → 52', was: 'block-editor 运行期调 cmplReset 等',     now: "block-editor.deps ∋ 'complete'" },
   { edge: '52 → 51', was: 'complete 运行期调 structAt',            now: "complete.deps ∋ 'struct'" },
   { edge: '53 → 52', was: 'library 调 cmplActive/SetItems/...',    now: "library.deps ∋ 'complete'" },
-  { edge: '90 → 52/53', was: 'boot 调 cmplCfg* / cmplBind/...',    now: "boot.deps ∋ 'complete','library'" },
+  { edge: '90 → 52/53', was: 'boot 调 cmplCfg* / cmplBind/...',    now: "wiring.deps ∋ 'complete','library'" },
 ];
 
 /* ── 拓扑求解：返回模块 id 的加载顺序（同层按清单出现序，跨层按 deps） ──
@@ -227,7 +227,7 @@ export function resolveOrder(mods = MODULES) {
     m.deps.forEach(visit);
     inStack.delete(id); seen.add(id); out.push(id);
   };
-  /* 入口优先：head → ns → … → tail（tail 依赖 boot，故最后） */
+  /* 入口优先：head → ns → … → tail（tail 依赖 wiring，故最后） */
   visit('head');
   mods.forEach(m => visit(m.id));
   visit('tail');

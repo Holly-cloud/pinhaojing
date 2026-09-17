@@ -18,13 +18,16 @@
 |---|---|
 | `src/index.html` | 骨架：引**单一** `./dev-bundle.js` + 9 条 CSS 链（顺序须与 `manifest.mjs` 的 `CSS` 一致，构建会校验） |
 | `src/styles/` | 9 片 CSS |
-| `src/shell/` `src/core/` `src/editor/` `src/view/` `src/interact/` | **引擎：17 个职责模块**（head/boot；store/persist/clipboard；highlight/struct/complete/library/block-editor；canvas/splice/overlay/modals；pointer/keys/paste） |
+| `src/shell/` `src/core/` `src/editor/` `src/view/` `src/interact/` | **引擎：17 个职责模块**（head/**wiring**；store/persist/clipboard；highlight/struct/complete/library/block-editor；canvas/splice/overlay/modals；pointer/keys/paste） |
 | **`src/skin/`** | ★ **皮肤层（R1）**：领域语料/术语/默认值。当前 1 片 `corpus.js`（风格包 5 段 + 硬性要求 + 补全分组语料） |
 
-> **引擎 × 皮肤分层（R1，2026-09-17）**：`core/` + `editor/` = **引擎（零领域语义）**；`skin/` = **域内容**。
-> 方向单一：引擎**不得**引用 `skin/`，`skin/` **不得**反向依赖引擎。由 `verify_v78.mjs` 的 **R1 皮肤边界** + **R1 语料归属** 两条断言守门（违反即红）。含义：换领域只需替换 `skin/`，**不动引擎**。`skin/` 不导出到 `PHJ` 对外面。
+> **引擎 × 皮肤分层（R1）+ 边界机制化（R3/R4，2026-09-17）**：`core/` + `editor/` = **引擎（零领域语义）**；`skin/` = **域内容**。
+> 方向单一：引擎**不得**引用 `skin/`，`skin/` **不得**反向依赖引擎。由 `verify_v78.mjs` 的 **R1 皮肤边界 / R1 语料归属** 守门；
+> 另有 **R3-A 棘轮**（皮肤词元命中引擎代码 ≤ 冻结尾数 15，只堵新增）/ **R3-B 零泄漏**（皮肤长语料在非皮肤原文零命中）/ **R4 皮肤可摘除**（真读产物证明）。口径见 `_qa/lib/skin-guard.mjs`。
+> 含义：换领域只需替换 `skin/`，**不动引擎**。`skin/` 不导出到 `PHJ` 对外面。
 
-- **顺序唯一来源 = `manifest.mjs` 的 `SLICES`（18 条 = 加载序，含 1 片皮肤）**；顺序对「加载期副作用注册序」敏感，**改顺序要跑 P2-A 断言**（见 `_qa/snapshots/BASELINE_v7.13.md` 的说明）。
+- **顺序唯一来源 = `manifest.mjs` 的 `SLICES`（18 条 = 加载序，含 1 片皮肤）**；顺序对「加载期副作用注册序」敏感，**改顺序要跑 P2-A 断言**（见 `_qa/snapshots/BASELINE_v7.14.md` 的说明）。
+- ★ **R2（2026-09-17）**：末片由 `shell/boot.js` **改名** `shell/wiring.js`（`git mv`，只改名不拆；导出键 `PHJ.boot` → `PHJ.wiring`）。三处同步：文件 + `manifest`（`SLICES`/`MODULES`）+ `verify_v78`（`P2_MODULES`/`P2_EXPORTS_GOLDEN`）。
 - ⚠️ **`skin/corpus` 的加载位置（`struct` 之后 / `complete` 之前）勿随手改**：它提供的是顶层 `var`，被 `complete.js` 的顶层 `var` 消费，必须**先声明后消费**。
 - 改完跑：`node dev/build.mjs`（产出根目录 `PHJ.html` + `dev/src/dev-bundle.js`）。
 - ⚠️ `PHJ.html` 与 `src/dev-bundle.js` 都是**生成物**，勿手改（后者已 gitignore）。
@@ -35,7 +38,8 @@
 |---|---|
 | `build.mjs` | 纯 node、**零依赖**：按 manifest 顺序内联 → `PHJ.html`；同一份字节写入 `src/dev-bundle.js`（**dev≡prod**） |
 | `manifest.mjs` | 模块清单：`SLICES`（顺序源）/ `CSS` / `MODULES`+`deps`（文档性质）/ `PENDING`（已全部判定关闭） |
-| `_qa/run-gate.mjs` | ★ **一键闸门**（构建 / 等价性 / verify_v7 / F / G / H+I / 开发态），期望 **7/7** |
+| `_qa/run-gate.mjs` | ★ **一键闸门**（构建 / 等价性 / verify_v7 / F / G / H+I / 开发态），期望 **7/7**（83/18/16/**53**/18） |
+| `_qa/lib/skin-guard.mjs` | ★ **皮肤边界护栏（R3）**：抽皮肤词元 / 列引擎文件 / `DOMAIN_HITS_GOLDEN`；可 CLI 单跑 |
 | `_qa/README.md` | `_qa/` 分区导览（在用 / 历史 / 留档 / 生成物一眼分清） |
 | `_qa/snapshots/INDEX.md` | 快照角色表（当前基准 / 历史 argv 基准 / 不可动清单） |
 
@@ -46,6 +50,7 @@
 | 版本沿革（逐版功能史 v6.1→v7.8） | `dev/CHANGELOG.md` |
 | 历史决策 / 设计 / 发布 / 交接（**分类索引 + 旧名→新名映射表**） | `dev/docs/README.md` |
 | 为什么是现在这个结构 | `dev/docs/decisions/项目结构整理_2026-09-17.md` |
+| R2 改名 + R3/R4 边界机制化 | `dev/docs/decisions/R2-R4_模块改名与皮肤边界机制化_2026-09-17.md` |
 | 目标架构与长期规划 | `dev/docs/ops/目标架构与长期规划_2026-09-17.md` |
 | 换机 / 交接 | `dev/docs/ops/交接与换机指南_2026-09-16.md` |
 
