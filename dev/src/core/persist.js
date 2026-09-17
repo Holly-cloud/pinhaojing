@@ -128,8 +128,6 @@ function saveNow(){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(sanitizeState())); }
   catch(e){ toast('保存失败：' + e.message); }
 }
-/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
-PHJ.persist = { BACKUP_KEY, LS_KEY, flush, load, migrate, sanitizeState, saveNow, saveTimer, scheduleSave, toastTimer };
 
-/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+/* 本模块对外面 = 被他模块引用的顶层名（P3 客观统计口径） */
 PHJ.persist = { BACKUP_KEY, flush, load, migrate, sanitizeState, saveNow, scheduleSave, toastTimer };

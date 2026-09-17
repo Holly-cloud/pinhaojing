@@ -81,8 +81,6 @@ function structSummary(text){
   }
   return order;
 }
-/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
-PHJ.struct = { STRUCT_MARKS, structAt, structLineMark, structMap, structSummary };
 
-/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+/* 本模块对外面 = 被他模块引用的顶层名（P3 客观统计口径） */
 PHJ.struct = { structAt };

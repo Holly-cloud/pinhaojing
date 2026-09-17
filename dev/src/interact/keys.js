@@ -67,8 +67,6 @@ document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
   if(closeTopLayer()) e.preventDefault();
 });
-/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
-PHJ.keys = { KEY_ACCEL, KEY_MAX_VEL, closeTopLayer, keyDir, keyLastT, keyLoop, keyPanLoop, keyState, keyVel, updateKeyDir };
 
-/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出）；本模块自包含，无对外面 */
+/* 本模块对外面 = 空（自包含，无跨模块引用） */
 PHJ.keys = {};

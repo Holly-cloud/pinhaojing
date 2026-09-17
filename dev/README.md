@@ -10,9 +10,16 @@
 |---|---|
 | `src/index.html` | 骨架：引**单一** `./dev-bundle.js` + 9 条 CSS 链（顺序须与 `manifest.mjs` 的 `CSS` 一致，构建会校验） |
 | `src/styles/` | 9 片 CSS |
-| `src/shell/` `src/core/` `src/editor/` `src/view/` `src/interact/` | **17 个职责模块**（head/boot；store/persist/clipboard；highlight/struct/complete/library/block-editor；canvas/splice/overlay/modals；pointer/keys/paste） |
+| `src/shell/` `src/core/` `src/editor/` `src/view/` `src/interact/` | **引擎：17 个职责模块**（head/boot；store/persist/clipboard；highlight/struct/complete/library/block-editor；canvas/splice/overlay/modals；pointer/keys/paste） |
+| **`src/skin/`** | ★ **皮肤层（R1 新增）**：领域语料/术语/默认值。当前 1 片 `corpus.js`（风格包 5 段 + 硬性要求 + 补全分组语料） |
 
-- **顺序唯一来源 = `manifest.mjs` 的 `SLICES`（17 条 = 加载序）**；顺序对"加载期副作用注册序"敏感，**改顺序要跑 P2-A 断言**（见 `_build/snapshots/BASELINE_v7.11.md` 的说明）。
+> **引擎 × 皮肤分层（R1，2026-09-17）**：`core/` + `editor/` = **引擎（零领域语义）**；`skin/` = **域内容**。
+> 方向单一：引擎**不得**引用 `skin/`，`skin/` **不得**反向依赖引擎。由 `verify_v78.mjs` 的
+> **R1 皮肤边界** + **R1 语料归属** 两条断言守门（违反即红）。含义：换领域（换术语/语料/默认值）
+> 只需替换 `skin/`，**不动引擎**。`skin/` 不导出到 `PHJ` 对外面。
+
+- **顺序唯一来源 = `manifest.mjs` 的 `SLICES`（18 条 = 加载序，含 1 片皮肤）**；顺序对"加载期副作用注册序"敏感，**改顺序要跑 P2-A 断言**（见 `_build/snapshots/BASELINE_v7.13.md` 的说明）。
+- ⚠️ **`skin/corpus` 的加载位置（`struct` 之后 / `complete` 之前）勿随手改**：它提供的是顶层 `var`，被 `complete.js` 的顶层 `var` 消费，必须**先声明后消费**。
 - 改完跑：`node dev/build.mjs`（产出根目录 `PHJ.html` + `dev/src/dev-bundle.js`）。
 - ⚠️ `PHJ.html` 与 `src/dev-bundle.js` 都是**生成物**，勿手改（后者已 gitignore）。
 
@@ -39,8 +46,9 @@
 | `08_重构简报_2026-09-14.md` | ★ **重构路线 P0–P4 的决策与迁移路径**（含执行结果标注） | **当前参考** |
 | `09_增量需求_v7.8.1_资产分离.md` | v7.8.1 增量需求（Q7 已由 v7.8.2 撤销，文首有指向） | 历史 |
 | `10_交接与换机指南_2026-09-16.md` | ★ **交接 / 换机指南**（前置要求 / 换机五步 / 演练实测 / 跨平台兜底 / 数据迁移） | **当前参考** |
+| `11_架构设计_目标架构与长期规划_2026-09-17.md` | ★ **目标架构与长期发展规划**（F1/F2/F3 三条断层、引擎×皮肤路线、迁移路线 R0–R4、决策点 Q9–Q12） | **当前参考** |
 
-> 编号只表示**时间先后**，不表示"最新最权威"；**当前现状一律以 `_build/snapshots/BASELINE_v7.11.md` 与根 `README.md` 为准**。
+> 编号只表示**时间先后**，不表示"最新最权威"；**当前现状一律以 `_build/snapshots/BASELINE_v7.13.md` 与根 `README.md` 为准**。
 
 ## 四、档案原则（本项目一直遵守）
 

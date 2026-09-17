@@ -381,8 +381,6 @@ function cmplCfgReset(){
   saveNow(); renderCmplCfg();
   toast('已恢复内置片段（保留你导入/自建的 ' + kept.length + ' 条）');
 }
-/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
-PHJ.library = { closeCmplCfg, cmplCfgAdding, cmplCfgDel, cmplCfgDnd, cmplCfgDrag, cmplCfgEditing, cmplCfgForm, cmplCfgGroups, cmplCfgMaterialize, cmplCfgMoveGroup, cmplCfgMoveGroupTo, cmplCfgMoveItem, cmplCfgMoveItemTo, cmplCfgQ, cmplCfgReset, cmplCfgResetAsk, cmplCfgRow, cmplCfgSave, cmplOrderHide, cmplOrderRows, cmplOrderShow, openCmplCfg, renderCmplCfg };
 
-/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+/* 本模块对外面 = 被他模块引用的顶层名（P3 客观统计口径） */
 PHJ.library = { closeCmplCfg, cmplCfgAdding, cmplCfgDel, cmplCfgEditing, cmplCfgQ, cmplCfgReset, cmplCfgResetAsk, cmplCfgSave, openCmplCfg, renderCmplCfg };

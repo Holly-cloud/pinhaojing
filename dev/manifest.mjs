@@ -104,6 +104,7 @@ export const SLICES = [
   { id: 'highlight',   module: 'highlight',   layer: 'editor',   file: 'editor/highlight.js' },
   { id: 'blockEditor', module: 'blockEditor', layer: 'editor',   file: 'editor/block-editor.js' },
   { id: 'struct',      module: 'struct',      layer: 'editor',   file: 'editor/struct.js' },
+  { id: 'corpus',      module: 'corpus',      layer: 'skin',     file: 'skin/corpus.js' },
   { id: 'complete',    module: 'complete',    layer: 'editor',   file: 'editor/complete.js' },
   { id: 'library',     module: 'library',     layer: 'editor',   file: 'editor/library.js' },
   { id: 'canvas',      module: 'canvas',      layer: 'view',     file: 'view/canvas.js' },
@@ -128,10 +129,12 @@ export const CSS = [
   { id: 'effects',  file: 'styles/90-effects.css' },
 ];
 
-/* 分层：core（无 DOM 状态/持久）→ editor（纯引擎 + 窗口）→ view（DOM 生成）
-        → interact（输入路由）→ shell（外壳/启动）。箭头 = 允许的依赖方向。
+/* 分层：skin（产品皮肤·领域内容）→ core（无 DOM 状态/持久）→ editor（纯引擎 + 窗口）
+        → view（DOM 生成）→ interact（输入路由）→ shell（外壳/启动）。箭头 = 允许的依赖方向。
+   ★R1（2026-09-17）：新增 **skin** 层——领域内容（语料/文案/默认值）的唯一边界。
+     红线：core/** 与 editor/** **不得**引用 skin/**（引擎零领域语义）；skin 只放内容、不放机制。
    （P2 目标；P1 不据此排序。） */
-export const LAYERS = ['shell', 'core', 'editor', 'view', 'interact'];
+export const LAYERS = ['skin', 'shell', 'core', 'editor', 'view', 'interact'];
 
 /* ── 模块清单（P2 目标）────────────────────────────────────────────────────────
    id      : 稳定标识（= PHJ 命名空间二级名）
@@ -142,6 +145,11 @@ export const LAYERS = ['shell', 'core', 'editor', 'view', 'interact'];
    resp    : 一句话职责
    --------------------------------------------------------------------------- */
 export const MODULES = [
+  /* ── skin（★R1：产品皮肤——领域内容，引擎不引用）── */
+  { id: 'corpus', path: 'src/skin/corpus.js', layer: 'skin', exports: [],
+    deps: [],
+    resp: '★R1 皮肤层：内置语料（CMPL_STYLE/CMPL_TAIL/CMPL_GROUPS/cmplFullStyle）。换皮肤即换本文件，引擎零改动' },
+
   /* ── shell ── */
   { id: 'head',  path: 'src/shell/head.js', layer: 'shell', exports: ['PHJ'], deps: [],
     resp: "IIFE 首行 + 'use strict' + PHJ 命名空间骨架" },

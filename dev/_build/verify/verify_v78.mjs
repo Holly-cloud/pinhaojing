@@ -841,11 +841,42 @@ t('P3-A Escape 统一分发：document 级 keydown 处理器共 3 处、其中�
   P3_CHUNKS.length === 3 && P3_WITH_ESC === 1,
   'doc-keydown=' + P3_CHUNKS.length + ' 含 Esc=' + P3_WITH_ESC);
 
-/* ---------- P2-B 显式导出面：PHJ 命名空间恰含 16 个模块键（真读页面内的 PHJ，非静态文本） ---------- */
+/* ---------- P2-B 显式导出面：PHJ 恰含 16 个模块键（真读页面内的 PHJ，非静态文本） ----------
+   ★2026-09-17 加固（R0 证伪发现）：原断言【只查 16 个模块键存在】，把某个模块的导出面清空为
+   `PHJ.x = {}` 仍会 PASS —— 即"键在、内容空"这一整类腐化抓不到。现补一条内容断言，
+   要求每个模块的导出面 == 契约清单（逐名精确），任一模块被清空/缩水即红。 */
 const P2_MODULES = ['blockEditor', 'boot', 'canvas', 'clipboard', 'complete', 'highlight', 'keys', 'library', 'modals', 'overlay', 'paste', 'persist', 'pointer', 'splice', 'store', 'struct'];
 const P2_KEYS = JSON.parse(await evalJS('JSON.stringify(Object.keys(PHJ).sort())'));
 t('P2-B 显式导出面：PHJ 恰含 16 个模块键（PHJ.<module> = {…}，读页面实例）',
   Array.isArray(P2_KEYS) && P2_KEYS.join(',') === P2_MODULES.join(','), 'keys=' + JSON.stringify(P2_KEYS));
+
+/* P2-B2 导出面【内容】契约：每模块导出名逐名精确匹配（键存在 ≠ 面正确） */
+const P2_EXPORTS_GOLDEN = {
+  blockEditor: ['blkCb', 'closeBlockEditor', 'fitBlkWidth', 'openBlockEditor'],
+  boot: ['exportJSON'],
+  canvas: ['applyPan', 'arrangeAll', 'autoResize', 'board', 'canvas', 'fitBlock', 'render', 'textWidth'],
+  clipboard: ['copyText', 'toast'],
+  complete: ['CMPL_SEED_V', 'cmplActive', 'cmplExportAsset', 'cmplGroupOrder', 'cmplImportAsset', 'cmplNewKey', 'cmplReset', 'cmplSeedItems', 'cmplSetItems'],
+  highlight: ['hlRefresh', 'hlSyncBox'],
+  keys: [],
+  library: ['closeCmplCfg', 'cmplCfgAdding', 'cmplCfgDel', 'cmplCfgEditing', 'cmplCfgQ', 'cmplCfgReset', 'cmplCfgResetAsk', 'cmplCfgSave', 'openCmplCfg', 'renderCmplCfg'],
+  modals: ['addBlockHere', 'closeCtxMenu', 'closeModal', 'closeTplWin', 'modalCb', 'newTemplate', 'newUnit', 'openCtxMenu', 'openTplWin', 'renderTplList', 'renderTplWin', 'toggleCollapsed'],
+  overlay: ['activeId', 'bringToFront', 'peekBlock', 'refreshOverlays', 'updateLinks', 'updatePeekDots'],
+  paste: [],
+  persist: ['BACKUP_KEY', 'flush', 'load', 'migrate', 'sanitizeState', 'saveNow', 'scheduleSave', 'toastTimer'],
+  pointer: ['actIds', 'blurActive', 'bulkAction', 'findBlockById', 'focusCaretEnd', 'ghostEl', 'ghostSrcId', 'isSel', 'refreshSel', 'resetZoom', 'syncSpliceText', 'toggleSpliceMode', 'updateDragTransform', 'updateZoomBtn', 'zoomAt'],
+  splice: ['copySpliced', 'countSpliced', 'popCard', 'popSpliceEntry', 'renderSplice', 'spliceAdd', 'spliceClear', 'spliceRemoveIds', 'suckBlock'],
+  store: ['MIN_BLOCK_W', 'defaultState', 'drag', 'gridPos', 'keyDir', 'keyLastT', 'keyLoop', 'keyState', 'keyVel', 'panEndX', 'panEndY', 'panLooping', 'panVel', 'panning', 'selected', 'spacePan', 'spliceMode', 'state', 'tplCur', 'tplOpen', 'uid'],
+  struct: ['structAt'],
+};
+const P2_EXPORTS_ACTUAL = JSON.parse(await evalJS(
+  'JSON.stringify(Object.fromEntries(Object.keys(PHJ).sort().map(k => [k, Object.keys(PHJ[k]).sort()])))'));
+const P2_EXPORT_MISMATCH = P2_MODULES.filter(m =>
+  JSON.stringify(P2_EXPORTS_ACTUAL[m] || []) !== JSON.stringify(P2_EXPORTS_GOLDEN[m].slice().sort()));
+t('P2-B2 导出面内容契约：每模块的导出名逐名精确（清空/缩水即红，护 R0 后的对外面）',
+  P2_EXPORT_MISMATCH.length === 0,
+  P2_EXPORT_MISMATCH.length ? '不符模块=' + JSON.stringify(P2_EXPORT_MISMATCH.map(m => [m, P2_EXPORTS_ACTUAL[m]])) :
+    '16 个模块导出面一致，合计 ' + Object.values(P2_EXPORTS_GOLDEN).reduce((a, v) => a + v.length, 0) + ' 名');
 
 /* ---------- P1-D 产品纯度：pristine PHJ.html 加载后 window 自有键增量 ⊆ 白名单（预期空集） ---------- */
 const W0_ID = (await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.__W0 = Object.getOwnPropertyNames(window).slice();' })).identifier;
@@ -856,6 +887,44 @@ const P1_DELTA = await evalJS('(() => { const s = new Set(window.__W0 || []); re
 await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: W0_ID });
 t('P1-D 产品纯度：pristine PHJ.html 加载后 window 自有键增量 ⊆ 白名单（当前预期 = 空集 → ' + TEST_BUILD.nameCount + ' 个顶层声明零泄漏）',
   Array.isArray(P1_DELTA) && P1_DELTA.length === 0, 'delta=' + JSON.stringify(P1_DELTA));
+
+/* ---------- R1 皮肤边界：core/** 与 editor/** 不得引用 skin/**（引擎零领域语义） ----------
+   ★2026-09-17 新增（R1）。这是「引擎 × 皮肤」路线的**唯一守法断言**：
+     · 引擎（core/editor）若直接引用皮肤（skin/），则"换皮肤不动引擎"不成立 → 产品族路线失效；
+     · 断言对象 = dev/src 的**源码文本**（静态，不依赖浏览器）——故意做成**可证伪**：
+       在 editor/ 任一文件写一行 `skin/corpus` 即必红。
+   反向也守：skin/** 不得引用 core/** 或 editor/**（皮肤只放内容、不放机制、不反向依赖引擎）。 */
+const SRC_ROOT = path.resolve(HERE, '../../src');
+const readIf = (p) => { try { return fs.readFileSync(p, 'utf8'); } catch { return null; } };
+const walkJs = (dir) => {
+  const out = [];
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) out.push(...walkJs(p));
+    else if (e.name.endsWith('.js')) out.push(p);
+  }
+  return out;
+};
+const ENGINE_FILES = ['core', 'editor'].flatMap((d) => walkJs(path.join(SRC_ROOT, d)));
+const SKIN_FILES = fs.existsSync(path.join(SRC_ROOT, 'skin')) ? walkJs(path.join(SRC_ROOT, 'skin')) : [];
+/* 引擎文件里出现「skin/」即视为违规（注释里提及不算：先剥注释再判） */
+const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+const R1_ENGINE_VIOLATIONS = ENGINE_FILES.filter((f) => /skin\//.test(stripComments(readIf(f) || '')))
+  .map((f) => path.relative(SRC_ROOT, f).replace(/\\/g, '/'));
+const R1_SKIN_VIOLATIONS = SKIN_FILES.filter((f) => /(core|editor)\//.test(stripComments(readIf(f) || '')))
+  .map((f) => path.relative(SRC_ROOT, f).replace(/\\/g, '/'));
+t('R1 皮肤边界：引擎（core/editor）零引用 skin/，且 skin/ 不反向依赖引擎（引擎零领域语义的守法断言）',
+  R1_ENGINE_VIOLATIONS.length === 0 && R1_SKIN_VIOLATIONS.length === 0,
+  '引擎文件 ' + ENGINE_FILES.length + ' 个 / 皮肤文件 ' + SKIN_FILES.length + ' 个；违规 引擎→skin ' +
+    JSON.stringify(R1_ENGINE_VIOLATIONS) + ' skin→引擎 ' + JSON.stringify(R1_SKIN_VIOLATIONS));
+
+/* ---------- R1 语料归属：领域语料在 skin 内、且不在引擎内 ---------- */
+const R1_SKIN_TXT = SKIN_FILES.map((f) => readIf(f) || '').join('\n');
+const R1_ENGINE_TXT = ENGINE_FILES.map((f) => readIf(f) || '').join('\n');
+const R1_STYLE_TOKEN = '【光影逻辑】';       /* 风格包正文的特征片段（领域内容） */
+t('R1 语料归属：领域语料（风格包）在 skin/ 内、且不在 core/editor 内',
+  R1_SKIN_TXT.includes(R1_STYLE_TOKEN) && !R1_ENGINE_TXT.includes(R1_STYLE_TOKEN),
+  'skin 命中=' + R1_SKIN_TXT.includes(R1_STYLE_TOKEN) + ' 引擎命中=' + R1_ENGINE_TXT.includes(R1_STYLE_TOKEN));
 
 const pass = R.filter(r => r.pass).length;
 console.log('=== v7.8 验收（真机 headless Edge + CDP）：H 组 候选/槽位/复制 + I 组 补全配置 + X 组 资产 导入/导出 ===');

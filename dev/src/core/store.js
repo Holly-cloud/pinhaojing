@@ -46,8 +46,6 @@ function defaultState(){
 function gridPos(i){
   return { x: 20 + (i % 4) * 360, y: 20 + Math.floor(i / 4) * 150 };
 }
-/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
-PHJ.store = { MIN_BLOCK_W, defaultState, drag, gridPos, panEndX, panEndY, panLooping, panVel, panning, selected, state, uid };
 
-/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+/* 本模块对外面 = 被他模块引用的顶层名（P3 客观统计口径） */
 PHJ.store = { MIN_BLOCK_W, defaultState, drag, gridPos, keyDir, keyLastT, keyLoop, keyState, keyVel, panEndX, panEndY, panLooping, panVel, panning, selected, spacePan, spliceMode, state, tplCur, tplOpen, uid };

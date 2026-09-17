@@ -10,8 +10,8 @@
 |---|---|---|
 | `verify/` | **5 个在用套件**：`verify_build_equivalence.mjs`、`verify_v7.mjs`（回归 83）、`verify_v76.mjs`（F 18）、`verify_v77.mjs`（G 16）、`verify_v78.mjs`（H+I+X+P1+P2+P3 47） | ★ **闸门在用** |
 | `verify/archive/` | **22 个 v6 系列套件**（`verify_v6` … `verify_v621`，逐版历史验收） | 历史（只读留档） |
-| `diag/` | **4 个在用/契约探针**：`probe_dev_index.mjs`（闸门第 7 道）、`probe_v782_verbatim.mjs` + `probe_v782_coldstart.mjs`（v7.8.2 内置风格包契约）、`spike_emulate_media.mjs`（`lib/browser-detect.mjs` 依赖的动效钉桩实验） | ★ 在用 |
-| `diag/archive/` | **12 个历史探针**：`diag_*`（v7.2 跟手量化、v7.4 虚影偏移、v7.6/7.7 着色对齐、审计复核 `diag_audit_claims`）+ `split_phj_to_src.mjs`（**P2 后已退役**：其存在意义只是"保序切分"）+ `migrate_paths_to_relative.py`（一次性路径迁移）+ `split_user_dev.py` | 历史（只读留档） |
+| `diag/` | **5 个在用/契约探针**：`probe_dev_index.mjs`（闸门第 7 道）、`probe_arch_audit.mjs`（★ 架构审计只读探针，8 段：模块规模分布 / 重复导出行 / 跨模块引用面 / 导出契约 vs 实际 / 加载期副作用 / 环检测 / 状态边界 / 产物全局面；**R0/R1 的事实依据来源，可随时复跑**）、`probe_v782_verbatim.mjs` + `probe_v782_coldstart.mjs`（v7.8.2 内置风格包契约）、`spike_emulate_media.mjs`（`lib/browser-detect.mjs` 依赖的动效钉桩实验） | ★ 在用 |
+| `diag/archive/` | **15 个历史探针**：`diag_*`（v7.2 跟手量化、v7.4 虚影偏移、v7.6/7.7 着色对齐、审计复核 `diag_audit_claims`）+ `split_phj_to_src.mjs`（**P2 后已退役**：其存在意义只是"保序切分"）+ `migrate_paths_to_relative.py`（一次性路径迁移）+ `split_user_dev.py` + **R0/R1 一次性脚本 3 个**（`_r0_strip_dup_exports.mjs` 删死导出行、`_r1_verify_verbatim.mjs` 语料逐字校验、`_r1_falsify_run.mjs` 绕等价性闸门直跑 verify_v78 的证伪跑手） | 历史（只读留档） |
 | `snapshots/` | 当前与历史**版本快照 + BASELINE 文档**；角色与"不可动"清单见 `snapshots/INDEX.md` | ★ 见 INDEX |
 | `snapshots/archive/` | v5.4–v7.5 整文件拷贝（30 项） | 历史 |
 | `lib/` | 共享模块：`browser-detect.mjs`（浏览器探测/端口）、`test-artifact.mjs`（生成"产物 + 1 行访问器"的测试产物，供 4 套件操纵内部态） | ★ 在用 |

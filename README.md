@@ -92,15 +92,15 @@
 |---|---|
 | 日常改功能 | 改 `dev/src/`（`styles/` 9 片 + **分层模块 17 个**：`shell/ core/ editor/ view/ interact/`）→ `node dev/build.mjs` → 双击 `PHJ.html` |
 | 开发态直接看效果（**不用构建**） | 双击 `dev/src/index.html`（P1 起 JS 引**单一** `./dev-bundle.js`〔= 产物内联 JS 段逐字，构建生成〕+ 外链 CSS，`file://` 实测可用；差异见下） |
-| 出交付版 | `node dev/build.mjs` → 产物 `PHJ.html` **234243 B**（v7.11 = 234243 B〔P3 收口：Escape 统一分发 + 会话态收编 + 对外面收敛〕；v7.10 = 229609 B〔P2 收口〕；v7.9 = 222381 B〔P1：单 IIFE 外壳〕；v7.8.2 = 222359 B；v7.8.1 = 222400 B；v7.8 = 214433 B；v7.7 = 155315 B） |
-| **改完必过的闸门** | `node dev/_build/run-gate.mjs` → 期望：**构建 234243 B ｜ 等价性（构建可复现）✅ PASS ｜ 83/83 ｜ F 18/18 ｜ G 16/16 ｜ v7.11 H+I+X+P1+P2+P3 47/47 ｜ 开发态 18/18**（体积限制已解除 → 无体积断言）（一键自包含：自动起/收 headless 浏览器，无需人工干预） |
+| 出交付版 | `node dev/build.mjs` → 产物 `PHJ.html` **230492 B**（v7.13 = 230492 B〔R1 皮肤抽取：`editor/complete.js` 的领域语料抽到 `skin/corpus.js`，引擎零领域语义〕；v7.12 = 228947 B〔R0 清债：删 16 处 P2 死导出行〕；v7.11 = 234243 B〔P3 收口：Escape 统一分发 + 会话态收编 + 对外面收敛〕；v7.10 = 229609 B〔P2 收口〕；v7.9 = 222381 B〔P1：单 IIFE 外壳〕；v7.8.2 = 222359 B；v7.8.1 = 222400 B；v7.8 = 214433 B；v7.7 = 155315 B） |
+| **改完必过的闸门** | `node dev/_build/run-gate.mjs` → 期望：**构建 230492 B ｜ 等价性（构建可复现）✅ PASS ｜ 83/83 ｜ F 18/18 ｜ G 16/16 ｜ v7.13 H+I+X+P1+P2+P3+R0+R1 50/50 ｜ 开发态 18/18**（体积限制已解除 → 无体积断言）（一键自包含：自动起/收 headless 浏览器，无需人工干预） |
 | 对比分支 | `git branch -a`：`master`（含 v7.8）｜`feat/editor-blocks`（v7.8 来源分支，**已并入 master**）。切换后**记得重跑构建**（`PHJ.html` 是产物，随源码变） |
 | 开发态自检（已含在 run-gate 内；单独跑需某浏览器已监听 `PHJ_BROWSER_PORT`，**非自包含**） | `node dev/_build/diag/probe_dev_index.mjs` → 期望 **18/18**（调试端口经 `PHJ_BROWSER_PORT`，缺省 9222） |
 | 回退 | `git checkout master`（含 v7.8）｜彻底回退到重构前单文件：`git reset --hard c52a561` |
 | 试用满意后合并 | 已完成：`feat/editor-blocks`（v7.8）与 `refactor/src-tree`（架构重构）均已并入 master |
 
 > **一键闸门（推荐）**：`node dev/_build/run-gate.mjs` 一条命令跑完全部 **7 道闸门**——自动定位浏览器（Edge/Chrome；`PHJ_BROWSER` 为**硬覆盖**：设置后即以其为准、不可用则报错退出 10，绝不静默回落）、自动选空闲调试端口（`PHJ_BROWSER_PORT` 指定起始端口，占用自动顺延）、起 headless 浏览器 → 依次执行 构建 / 等价性（**构建可复现**） / verify_v7 / verify_v76 / verify_v77 / verify_v78（v7.8）/ probe_dev_index → **无论成败回收浏览器与临时 profile**。退出码语义化：`0` 全绿，非 `0` 指明失败闸门（`1` 构建 / `2` 等价性 / `3` verify_v7 / `4` verify_v76 / `5` verify_v77 / `6` verify_v78 / `7` probe_dev_index）。**无需人工先起浏览器、也无需手工杀进程。**
-> 等价性闸门语义（**Q6 校准** · v7.8.1）：`verify_build_equivalence.mjs` 默认比对「`node dev/build.mjs` 的产出」与「**当前交付快照** `snapshots/PHJ_v7.11_20260916.html`」**逐字节一致（含 banner，不做 stripBanner）**——即「构建可复现 + 源码与交付物一致」。**该语义全程有效**（P0–P4 与日常发布都适用），原「仅 P0–P1 有效 / P2 起退役」表述**作废**。v7.7 的「剥离 banner 后逐字节等价」仅适用于**无行为变更的重构**（前提是按行段保序切片）；v7.8 起是真实功能增量，字节必然改变，故闸门改义。历史基线 `PHJ_v7.7_baseline.html`、`PHJ_v7.8_20260913.html`、`PHJ_v7.8.1_20260915.html`、`PHJ_v7.8.2_20260915.html` 均保留，可用 argv 指定基线复跑旧语义（见 `verify_build_equivalence.mjs` 文件头，两处措辞已同步一致）。
+> 等价性闸门语义（**Q6 校准** · v7.8.1）：`verify_build_equivalence.mjs` 默认比对「`node dev/build.mjs` 的产出」与「**当前交付快照** `snapshots/PHJ_v7.13_20260917.html`」**逐字节一致（含 banner，不做 stripBanner）**——即「构建可复现 + 源码与交付物一致」。**该语义全程有效**（P0–P4 与日常发布都适用），原「仅 P0–P1 有效 / P2 起退役」表述**作废**。v7.7 的「剥离 banner 后逐字节等价」仅适用于**无行为变更的重构**（前提是按行段保序切片）；v7.8 起是真实功能增量，字节必然改变，故闸门改义。历史基线 `PHJ_v7.7_baseline.html`、`PHJ_v7.8_20260913.html`、`PHJ_v7.8.1_20260915.html`、`PHJ_v7.8.2_20260915.html`、`PHJ_v7.9_20260916.html`、`PHJ_v7.10_20260916.html`、`PHJ_v7.11_20260916.html`、`PHJ_v7.12_20260917.html` 均保留，可用 argv 指定基线复跑旧语义（见 `verify_build_equivalence.mjs` 文件头，两处措辞已同步一致）。
 > **体积政策（Q5）—— 已于 2026-09-16 解除**：原「产品硬上限 262144 B（256KB，P0 阻断）」与「工程临时护栏 229376 B（224KB，告警不阻断）」**两条阈值一并作废**；`verify_v7.mjs` 的 B10a/B10b/C8a/C8b 四条体积断言**已删除**（verify_v7 断言数 87 → 83）。体积仍**实测并打印**（B10/C8 两段日志）供人工评估增长是否合理，但**不再阻断、也不再告警**。沿革保留：
 > - ~~产品硬上限 `262144 B`（256KB，P0 阻断）~~ → **已解除**。
 > - ~~工程临时护栏 `229376 B`（224KB，告警不阻断）~~ → **同批解除**。
@@ -110,15 +110,17 @@
 > 开发态已知差异（P1 起**已消除**）：v7.9 起 `dev/src/index.html` 不再手写 19 个 `<script src>`，改引**由同一份代码生成**的 `dev/src/dev-bundle.js`（= 产物内联 JS 段逐字）→ 开发态与产物跑在**同一作用域、同一顺序、同一字节**的 JS 上；旧「只有第 1 片带 `'use strict'`、第 2~16 片非严格」的差异**不复存在**（产物自 v7.9 之前即为单 `<script>` 严格模式）。
 > 切分口径与自检：`dev/_build/diag/archive/split_phj_to_src.mjs` —— **P2 后已退役**（它只负责保序切分；现源文件按职责分层、顺序由 `dev/manifest.mjs` 的 `SLICES` 给出）。历史用法见其文件头。
 
-## 架构现状（P0–P3 收口后 · 2026-09-16）
+## 架构现状（R0+R1 收口后 · 2026-09-17）
 
-- **源码 = 17 个分层模块**（`dev/src/{shell,core,editor,view,interact}/`）；顺序由 `dev/manifest.mjs` 的 `SLICES`（**17 条 = 加载序**）**唯一给出**，`build.mjs` 只读 manifest、**不再扫 `index.html`**
+- **源码 = 17 个引擎模块 + 1 片皮肤**（`dev/src/{shell,core,editor,view,interact}/` = **引擎（零领域语义）**；`dev/src/skin/` = **域内容**）；顺序由 `dev/manifest.mjs` 的 `SLICES`（**18 条 = 加载序**）**唯一给出**，`build.mjs` 只读 manifest、**不再扫 `index.html`**
+- **★ 引擎 × 皮肤分层（R1 新增）**：方向单一 —— 引擎**不得**引用 `skin/`，`skin/` **不得**反向依赖引擎；由 `verify_v78.mjs` 的 **R1 皮肤边界** + **R1 语料归属** 两条断言守门。含义：**换领域只需替换 `skin/`，不动引擎**（长期「同一引擎 × 多套皮肤」路线的落点）。当前 `skin/` 仅 1 片 `corpus.js`（风格包 5 段 + 硬性要求 + 补全分组语料，3517+1668+91+159 B 逐字搬自 `editor/complete.js`）；`skin/` 不导出到 `PHJ` 对外面
 - **产物 = 单个 IIFE + 严格模式**；**开发态与产物跑同一份字节**（`dev/src/dev-bundle.js` = 产物内联 JS 段逐字）
 - **Escape 单点分发**：唯一 document 级 Esc = `interact/keys.js` 的 `closeTopLayer()`（最上层优先，只关一层）；元素级 4 处（输入焦点内、语义更细）保留
 - **会话态唯一来源 = `core/store.js`**（持久 `state` + 跨模块可见的瞬时态）；模块内部专用瞬时态留在各模块
-- **`PHJ.<module>` = 显式对外面**（客观统计"被他模块引用的顶层名"，共 **108** 个）：用于阅读真实耦合 + 闸门校验；**不是调用通道**（模块间仍走同一 IIFE 作用域——刻意如此，理由见 `BASELINE_v7.11.md`）
-- **闸门**：`node dev/_build/run-gate.mjs` 一条命令跑 7 道（**83 / 18 / 16 / 47 / 18**）；快照角色与维护约定见 `dev/_build/snapshots/INDEX.md`
-- **刻意不做**（已评估、收益低于代价）：模块调用点改走 `PHJ.x.y()`（涉及数百处）；让 `resolveOrder()` 接管顺序（`deps` 是运行期依赖，顺序由加载期副作用决定）
+- **`PHJ.<module>` = 显式对外面**（客观统计"被他模块引用的顶层名"，共 **108** 个）：用于阅读真实耦合 + 闸门校验；**不是调用通道**（模块间仍走同一 IIFE 作用域——刻意如此，理由见 `BASELINE_v7.11.md`）。**每个模块恰好一条导出行**（R0 删掉 16 处 P2 时代的死导出行；导出面内容由 **P2-B2** 逐名锁定）
+- **闸门**：`node dev/_build/run-gate.mjs` 一条命令跑 7 道（**83 / 18 / 16 / 50 / 18**）；快照角色与维护约定见 `dev/_build/snapshots/INDEX.md`
+- **刻意不做**（已评估、收益低于代价）：模块调用点改走 `PHJ.x.y()`（涉及数百处）；让 `resolveOrder()` 接管顺序（`deps` 是运行期依赖，顺序由加载期副作用决定）；`shell/boot.js` 拆分（Q10 决定**只改名不拆**——它是 273 行 / 50 处 `addEventListener` 的隐性上帝对象，拆分风险高于收益）
+- **目标架构与迁移路线**：见 `dev/11_架构设计_目标架构与长期规划_2026-09-17.md`（F1 单文件交付税 / F2 `boot.js` 隐性上帝对象 / F3 边界"写在注释里而非机制里"；路线 R0 清债 ✅ → R1 皮肤抽取 ✅ → R2 改名 → R3/R4 机制化）
 
 ## v7.8 功能现状（编辑器「结构层 + 候选气泡 + 槽位 + 复制全文」，分支 `feat/editor-blocks`）
 

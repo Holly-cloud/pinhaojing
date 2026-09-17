@@ -3,12 +3,14 @@
    触发：输入 `#` 后弹候选气泡（`#` 在 53 条语料中出现 0 次 → 零冲突；且中文输入法下不占键位——
         初版用 `\`，但中文态按 `\` 会出顿号「、」，已按 Holly 反馈改为 `#`）。
    键鼠双模：↑↓ 切换 / Enter·Tab 一键补全 / 数字 1..9 直取该条（输入法式跳位） / Esc 关闭 / 鼠标点选（mousedown+preventDefault 保住焦点与光标）。
-   结构感知：候选按「当前节」（51-struct.js）置顶——写风格包时风格段在前，写叙事时镜头句在前。
+   结构感知：候选按「当前节」（editor/struct.js）置顶——写风格包时风格段在前，写叙事时镜头句在前。
    槽位：片段里的 `${n}` 是占位标记（只在常量里存在，上屏时被吃掉）→ 上屏后 Tab 逐位跳。
-   数据来源（不照搬语料，全部来自规律；逐字引用的只有你的「风格包」——那是项目级资产，不是片段）：
-     · 风格包 5 段 + 硬性要求 —— 你的定型件原文（44/53 条共用，占这类 prompt 的 63%）
-     · 镜头句 —— 141 句镜头句的语法：{连接词}{运镜}{主体}{动作}{台词}
-     · 词表 —— 你的实际用词（9 运镜 / 3 连接 / 3 台词动词）+ **标注你从没用过的**（未用过徽章）
+
+   ★R1（2026-09-17）**本模块已零领域语义**：
+     内置语料（CMPL_STYLE / CMPL_TAIL / CMPL_GROUPS / cmplFullStyle）已**整体搬至 `skin/corpus.js`**
+     （逐字未改，由 H19「内置风格包逐字」守门）。本文件只留**机制**：触发 / 评分 / 两级气泡 /
+     槽位 / 生效表 / 资产导入导出。→ 换皮肤 = 换 skin/corpus.js 的内容，**本文件零改动**。
+     边界红线：本文件（editor/**）**不得**引用 skin/**；语料经加载序注入（见 manifest.SLICES）。
    ================================================================= */
 var CMPL_TRIGGER = '#';            /* 触发符：语料 53 条中 0 次出现；且中文输入法下不占键位（`\` 在中文态会出顿号「、」，故弃用） */
 var CMPL_MAX_QUERY = 14;           /* 触发符后最多跟多少字符算查询 */
@@ -17,70 +19,7 @@ var CMPL_DIGIT_JUMP = 9;           /* 候选前 N 条可用数字键 1..N 直接
 var CMPL_SEED_V = 1;               /* 内置表版本：日后往内置表加条目时 +1，迁移会把新条目并入用户表 */
 var CMPL_GROUP_HINT = { 风格包: 'style', 硬性要求: 'tail', 起手式: 'anchor', 结构件: 'mark', 镜头句: 'body', 景别: 'body', 运镜: 'body', 台词: 'body' };
 
-var CMPL_STYLE = [
-  { label: '光影逻辑', body: '【光影逻辑】 遵循「暖主体、冷环境、柔面光、轻轮廓」；侧前低位暖柔光铺脸，暗部弱补光，窗外暖光勾勒发丝；室外日戏侧前柔化日光或月光，半阴漫射提亮面部，背景保留建筑日照质感，杜绝硬光直打，人物面部干净柔和。' },
-  { label: 'CG 风格', body: '【CG 风格】 高质量写实 CG 古风甜宠质感，温柔克制，精致干净；色彩统一木棕、土黄、灰瓦、灰蓝、米白、雾青低饱和体系，' },
-  { label: '镜头构图', body: '【镜头构图】 电影级 CG 镜头，等效 50-85mm 中焦为主，无广角畸变；浅景深渲染，人物清晰锐利、背景虚化可辨不抢戏；适度前景遮挡。' },
-  { label: '渲染质感', body: '【渲染质感】 中低对比度，柔亮中间调，暗部保留细节，高光压控不过曝；统一色相秩序，木构土墙偏暖米棕、瓦面阴影偏冷灰；局部锐化集中于眉眼、发丝、衣褶，背景适度柔化；微添空气感、发丝高光与轻暗角，整体呈精修级古偶 CG 影像质感。' },
-  { label: '负面提示词', body: '【负面提示词】 低多边形、模型穿模、贴图拉伸模糊、卡通二次元画风、塑料材质感、渲染锯齿、过度磨皮塑料脸、脸部死白无血色、高饱和艳色、脏黄肤色、荧光蓝夜景、正午顶光硬影、广角畸变、现代元素穿帮、死黑死白过曝、强 HDR 感、五官过度锐化、廉价假古风布景、浓妆艳抹、韩式滤镜、强青橙调色、过硬轮廓光、色彩杂乱失控，真人感，真实感' }
-];
-var CMPL_TAIL = '硬性要求：无BMG，无字幕，禁止自行新增或删减台词。';
-/* 全套 = 单段按序拼（单一真源：改一段，全套跟着变） */
-function cmplFullStyle(){
-  var s = '风格：', i;
-  for(i = 0; i < CMPL_STYLE.length; i++) s += '\n' + CMPL_STYLE[i].body;
-  return s + '\n\n' + CMPL_TAIL;
-}
-
-var CMPL_GROUPS = [
-  { label: '风格包', note: '项目级定型件', items: [
-    { label: '风格包 · 全套', block: true, body: cmplFullStyle() },
-    { label: '光影逻辑', body: CMPL_STYLE[0].body },
-    { label: 'CG 风格', body: CMPL_STYLE[1].body },
-    { label: '镜头构图', body: CMPL_STYLE[2].body },
-    { label: '渲染质感', body: CMPL_STYLE[3].body },
-    { label: '负面提示词', body: CMPL_STYLE[4].body },
-    { label: '硬性要求', body: CMPL_TAIL }
-  ] },
-  { label: '起手式', note: '你语料里的三种锚定写法', items: [
-    { label: '事件发生在…室内', body: '事件发生在@室内。' },
-    { label: '镜头N·首帧画面·左右站位', body: '镜头1·@首帧画面·画面左侧是@${1} 画面右侧是@${2}。' },
-    { label: '俯视站位参考图', body: '@俯视站位参考图·${1}' },
-    { label: '场景照片', body: '@场景照片。' }
-  ] },
-  { label: '结构件', items: [
-    { label: '画面开始：', body: '画面开始：' },
-    { label: '画面结束。', body: '画面结束。' },
-    { label: '画面开始（全程固定镜头）：', body: '画面开始（全程固定镜头）：' }
-  ] },
-  { label: '镜头句', note: '141 句的语法槽位', items: [
-    { label: '摇镜·右→拍摄', body: '然后 摄像机往画面右方向摇 拍摄${1}' },
-    { label: '摇镜·左→拍摄', body: '然后 摄像机往画面左方向摇 拍摄${1}' },
-    { label: '切镜', body: '然后 切镜 拍摄${1}' },
-    { label: '过肩视角', body: '然后 过肩视角 拍摄${1}' },
-    { label: '固定镜头', body: '然后 固定镜头 拍摄${1}' },
-    { label: '推镜（你没用过）', note: '未用过', body: '然后 镜头缓慢推进 拍摄${1}' },
-    { label: '环绕（你没用过）', note: '未用过', body: '然后 镜头环绕${1}半圈' },
-    { label: '跟拍（你没用过）', note: '未用过', body: '然后 镜头平稳跟拍${1}' }
-  ] },
-  { label: '景别', note: '远近谱 · ✔ 用过 / ✘ 没用过', items: [
-    { label: '近景', body: '近景' }, { label: '特写', body: '特写' }, { label: '中景', body: '中景' }, { label: '半身', body: '半身' },
-    { label: '中近景', note: '未用过', body: '中近景' }, { label: '大特写', note: '未用过', body: '大特写' },
-    { label: '全景', note: '未用过', body: '全景' }, { label: '远景', note: '未用过', body: '远景' }
-  ] },
-  { label: '运镜', note: '动静谱 · ✔ 用过 / ✘ 没用过', items: [
-    { label: '摇', body: '摇' }, { label: '切镜', body: '切镜' }, { label: '固定镜头', body: '固定镜头' }, { label: '移镜', body: '移镜' },
-    { label: '过肩', body: '过肩' }, { label: '仰拍', body: '仰拍' }, { label: '俯拍', body: '俯拍' },
-    { label: '推镜头', note: '未用过', body: '推镜头（缓慢推进）' }, { label: '拉镜头', note: '未用过', body: '拉镜头（缓慢拉远）' },
-    { label: '环绕', note: '未用过', body: '环绕' }, { label: '升降', note: '未用过', body: '升降镜头' }, { label: '甩镜头', note: '未用过', body: '甩镜头' },
-    { label: '主观视角', note: '未用过', body: '主观视角' }
-  ] },
-  { label: '台词', items: [
-    { label: '说 + 音色引用', body: '说【@音色】：“${1}”' },
-    { label: '角色 + 说 + 音色引用', body: '${1}说【@音色】：“${2}”' },
-    { label: '角色 + 说道 + 音色引用', body: '${1}说道【@音色】：“${2}”' }
-  ] }
-];
+/* ---- 内置语料（CMPL_STYLE / CMPL_TAIL / cmplFullStyle / CMPL_GROUPS）★R1 见 skin/corpus.js ---- */
 
 /* ---- 运行态 ---- */
 var cmplItems = [], cmplSel = 0, cmplOpen = false, cmplSlots = null, cmplSlotIdx = 0, cmplComposing = false;
@@ -514,8 +453,6 @@ function cmplBind(){
   document.getElementById('blkCopy').addEventListener('click', blkCopyAll);
 }
 document.addEventListener('DOMContentLoaded', cmplBind);
-/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
-PHJ.complete = { CMPL_DIGIT_JUMP, CMPL_FONT, CMPL_GROUPS, CMPL_GROUP_HINT, CMPL_LH, CMPL_MAX_QUERY, CMPL_PAD_L, CMPL_PAD_T, CMPL_PER_GROUP, CMPL_SEED_V, CMPL_STYLE, CMPL_TAIL, CMPL_TRIGGER, _cmctx, _cmplCache, _cmplCacheSrc, blkCopyAll, cmplActive, cmplApplyAsset, cmplAssetGroups, cmplBind, cmplBuild, cmplBuildGroupItems, cmplBuildGroups, cmplClose, cmplCommit, cmplComposing, cmplEnterGroup, cmplExportAsset, cmplExportAssetData, cmplFullStyle, cmplGroup, cmplGroupOrder, cmplImportAsset, cmplInvalidate, cmplItems, cmplKeydown, cmplLeaveGroup, cmplMoveSel, cmplNewKey, cmplOnInput, cmplOpen, cmplPlace, cmplPop, cmplPrepare, cmplQueryAt, cmplRender, cmplReset, cmplScore, cmplSeedItems, cmplSel, cmplSetItems, cmplSlotIdx, cmplSlots, cmplTa, cmplWidth };
 
-/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+/* 本模块对外面 = 被他模块引用的顶层名（P3 客观统计口径） */
 PHJ.complete = { CMPL_SEED_V, cmplActive, cmplExportAsset, cmplGroupOrder, cmplImportAsset, cmplNewKey, cmplReset, cmplSeedItems, cmplSetItems };

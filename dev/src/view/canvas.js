@@ -177,8 +177,6 @@ function applyPan(){
   updateLinks();
   updatePeekDots();   /* v6.16：视角变化时光线/光点跟随 */
 }
-/* P2：本模块对外面（显式导出；当前 = 全部顶层符号，P3 收敛为最小面） */
-PHJ.canvas = { _mctx, applyPan, arrangeAll, autoResize, autoSizeAll, board, buildCard, canvas, fitBlock, opBtn, render, textWidth };
 
-/* P3：对外面 = **被他模块引用的顶层名**（客观统计；P2 时为全量导出） */
+/* 本模块对外面 = 被他模块引用的顶层名（P3 客观统计口径） */
 PHJ.canvas = { applyPan, arrangeAll, autoResize, board, canvas, fitBlock, render, textWidth };
