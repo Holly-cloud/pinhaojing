@@ -35,7 +35,7 @@ node dev/_qa/verify/verify_build_equivalence.mjs PHJ.html dev/_qa/snapshots/PHJ_
 
 | 文件 | 被谁引用 |
 |---|---|
-| `PHJ_v7.6.1_20260913_pre-v7.7.html` | `dev/04_发布说明_v6.0.md`、`dev/06_着色方案草案_2026-09-13.md` |
+| `PHJ_v7.6.1_20260913_pre-v7.7.html` | `dev/docs/releases/发布说明_v6系列_至v6.21.md`、`dev/docs/design/着色方案_v7.6-v7.7/方案_2026-09-13.md` |
 | `PHJ_v7.5_20260913_pre-v7.6.html` | 同上 |
 
 > 这两份是"改动前基线"（pre-v7.6 / pre-v7.7），只作档案。**若将来要移入 `archive/`，须同步改上面两份文档的引用**，否则文档里的路径会失效。
