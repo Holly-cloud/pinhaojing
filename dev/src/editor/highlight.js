@@ -145,7 +145,7 @@ function hlStatus(fam){
   document.getElementById('stCol').textContent = col;
   document.getElementById('stLen').textContent = v.length;
   document.getElementById('stErr').textContent = errs;
-  /* v7.8：结构提示——当前光标所处的「节」（由符号判定，标记表在 51-struct.js） */
+  /* v7.8：结构提示——当前光标所处的「节」（由符号判定，标记表在 editor/struct.js） */
   var _stEl = document.getElementById('stStruct');
   if(_stEl){
     var _lb = structAt(v, p).label;

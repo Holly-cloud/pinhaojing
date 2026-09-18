@@ -60,7 +60,7 @@ function cmplQueryAt(ta){
   }
   return null;
 }
-/* ---- 生效表（v7.8：内置表 / 用户表；配置界面见 53-library.js）----
+/* ---- 生效表（v7.8：内置表 / 用户表；配置界面见 editor/library.js）----
    数据：state.cmpl = { v, items: null | [{key, group, label, note, body, block, src}] }
         items === null → 用内置表；在配置界面动过即物化成用户表（空数组 = 用户清空）
    v7.8.1：条目 src ∈ {seed 内置表, asset 导入资产, user 自建/改写}（缺失 → user，**永不自动删**） */

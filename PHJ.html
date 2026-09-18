@@ -1109,7 +1109,7 @@ function hlStatus(fam){
   document.getElementById('stCol').textContent = col;
   document.getElementById('stLen').textContent = v.length;
   document.getElementById('stErr').textContent = errs;
-  /* v7.8：结构提示——当前光标所处的「节」（由符号判定，标记表在 51-struct.js） */
+  /* v7.8：结构提示——当前光标所处的「节」（由符号判定，标记表在 editor/struct.js） */
   var _stEl = document.getElementById('stStruct');
   if(_stEl){
     var _lb = structAt(v, p).label;
@@ -1163,7 +1163,7 @@ PHJ.blockEditor = { blkCb, closeBlockEditor, fitBlkWidth, openBlockEditor };
 /* ==================== v7.8 结构层（节解析） ====================
    用途：把编辑器文本按**符号**切成「节」，三处共用——① 状态栏结构提示；② 候选池按节置顶；③ 后续槽位/轮盘。
    口径分层（重要）：
-     · 着色引擎（50-editor.js）保持「零领域语义」不变——它不认识任何内容含义，只认符号；
+     · 着色引擎（editor/highlight.js）保持「零领域语义」不变——它不认识任何内容含义，只认符号；
      · 领域语义**只活在本文的 STRUCT_MARKS 标记表里**（一行一条，可增减）。
    规则：
      · 默认区 = 前置「起手式」（画面开始之前）→ 之后进「叙事正文」；
@@ -1390,7 +1390,7 @@ function cmplQueryAt(ta){
   }
   return null;
 }
-/* ---- 生效表（v7.8：内置表 / 用户表；配置界面见 53-library.js）----
+/* ---- 生效表（v7.8：内置表 / 用户表；配置界面见 editor/library.js）----
    数据：state.cmpl = { v, items: null | [{key, group, label, note, body, block, src}] }
         items === null → 用内置表；在配置界面动过即物化成用户表（空数组 = 用户清空）
    v7.8.1：条目 src ∈ {seed 内置表, asset 导入资产, user 自建/改写}（缺失 → user，**永不自动删**） */
@@ -1789,7 +1789,7 @@ PHJ.complete = { CMPL_SEED_V, cmplActive, cmplExportAsset, cmplGroupOrder, cmplI
 
 /* ==================== v7.8 补全配置界面（片段库：浏览 / 修改 / 新增） ====================
    入口：顶栏「补」。窗口形态沿用模板定制窗口（.tpl-win 体系）。
-   数据：生效表见 52-complete.js（state.cmpl）。首次打开即把内置表**物化**成用户表——之后一切改动都在用户表上，
+   数据：生效表见 editor/complete.js（state.cmpl）。首次打开即把内置表**物化**成用户表——之后一切改动都在用户表上，
         内置表只在「恢复内置默认」时回来。改完写 localStorage（随「导出 JSON」一起走）。
    片段内容可用：`${1}` `${2}` 槽位（上屏后 Tab 逐位跳）；素材绑定位照 Holly 的习惯手写 `@`。
    ================================================================= */
@@ -3115,7 +3115,7 @@ window.addEventListener('blur', function(){ closeCtxMenu(); });
    层序（自顶向下，与视觉叠放一致）：右键菜单 → 补全配置窗 → 编辑器窗 → 模板预览 → 模板窗 → 拼模式。
    元素级处理器**保留**（它们在元素上 `stopPropagation`，优先于本分发器，语义更细）：
      · complete.js 的行内编辑框：Esc 先退组/关候选/退槽位；
-     · boot.js 配置窗表单体 / 命名模态框体：Esc 退回列表 / 关模态框；
+     · wiring.js 配置窗表单体 / 命名模态框体：Esc 退回列表 / 关模态框；
      · modals.js 模板窗输入框：Esc 退出编辑态。
    —— 这三类都在"输入焦点"内，本分发器收不到（被 stopPropagation 截住）→ 无双重关闭。 */
 function closeTopLayer(){

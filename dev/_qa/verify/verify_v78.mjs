@@ -2,7 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildTestArtifact, auditArtifactDiff } from '../lib/test-artifact.mjs';
 import { CSS as MANIFEST_CSS, SLICES as MANIFEST_SLICES } from '../../manifest.mjs';
-import { harvestDomainTokens, harvestCorpusStrings, listEngineFiles, DOMAIN_HITS_GOLDEN } from '../lib/skin-guard.mjs';
+import { harvestDomainTokens, harvestCorpusStrings, harvestMarkerStrings, listEngineFiles, DOMAIN_HITS_GOLDEN } from '../lib/skin-guard.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEST_BUILD = buildTestArtifact();
 const TEST_ARTIFACT = TEST_BUILD.path;   /* A+：测试产物（= 产物 + 1 行访问器），4 套件对它执行；真实产物仅用于体积/P1-A/C/D 断言 */
@@ -927,13 +927,15 @@ t('R1 语料归属：领域语料（风格包）在 skin/ 内、且不在 core/e
   R1_SKIN_TXT.includes(R1_STYLE_TOKEN) && !R1_ENGINE_TXT.includes(R1_STYLE_TOKEN),
   'skin 命中=' + R1_SKIN_TXT.includes(R1_STYLE_TOKEN) + ' 引擎命中=' + R1_ENGINE_TXT.includes(R1_STYLE_TOKEN));
 
-/* ---------- R3-A/R3-B 引擎零领域语义**棘轮** + 皮肤语料**零泄漏**（★2026-09-17 新增） ----------
+/* ---------- R3-A/R3-B/R3-C 引擎零领域语义**棘轮** + 皮肤语料**零泄漏** + 守卫自检（★2026-09-17 新增；R3-B 口径 & R3-C 于收尾补齐） ----------
    把「引擎零领域语义」从 R1 的「一条边断言」升级为**可执行、可证伪**的棘轮（口径见 lib/skin-guard.mjs）。
    · R3-A：从皮肤源码字面量抽「领域词元」→ 命中**引擎代码（剥注释）**的去重数 **≤ DOMAIN_HITS_GOLDEN**。
      ≤ 而非 =0：现存 STRUCT_MARKS / CMPL_GROUP_HINT 等是**符号契约**，不是待清债；棘轮冻结水位、只堵新增。
      证伪：往 editor/ 写一行**未出现过的**皮肤词元（如 `暖主体`）→ 命中 +1 > golden → 必红。
-   · R3-B：皮肤**长语料字符串**（≥40 字）在**非皮肤源码原文**里**零命中**（硬零容忍）。
-     证伪：把一段长语料原样粘进 editor/ → 命中非空 → 必红。 */
+   · R3-B：皮肤**长语料字符串**（≥40 字）**∪ 全部 `【…】` 完整标记串** 在**非皮肤源码原文**里**零命中**（硬零容忍）。
+     证伪：把一段长语料 / 一个完整标记串（如 `【光影逻辑】`）原样粘进 editor/ → 命中非空 → 必红。
+   · R3-C：**守卫自检**——采集非空 + 数量下限（词元 ≥ 50 且 长语料 ≥ 3，保守值），
+     防止 skin/ 被清空 / 缩水后 R3-A/R3-B **真空通过**（假绿）。证伪：把下限抬到实测之上（如词元 ≥ 999）→ 必红。 */
 const R3_TOKENS = harvestDomainTokens(SKIN_FILES);
 const R3_ENGINE_FILES = listEngineFiles(SRC_ROOT);
 const R3_ENGINE_RAW = R3_ENGINE_FILES.map((f) => readIf(f) || '').join('\n');
@@ -944,11 +946,21 @@ t('R3-A 皮肤词元棘轮：皮肤领域词元命中「引擎代码（剥注释
   '词元 ' + R3_TOKENS.length + ' 个；命中 ' + R3_LEAK.length + ' ≤ golden ' + DOMAIN_HITS_GOLDEN +
     '；命中词元=' + JSON.stringify(R3_LEAK));
 const R3_CORPUS = harvestCorpusStrings(SKIN_FILES, 40);
-const R3_CORPUS_LEAK = R3_CORPUS.filter((s) => R3_ENGINE_RAW.includes(s));
-t('R3-B 皮肤语料零泄漏：皮肤长语料字符串（≥40 字）在「非皮肤源码原文」里零命中（硬零容忍）',
+const R3_MARKERS = harvestMarkerStrings(SKIN_FILES);                       /* 全部 `【…】` 完整标记串（含方括号） */
+const R3_B_SET = [...new Set([...R3_CORPUS, ...R3_MARKERS])];              /* R3-B 检查集 = 长语料 ∪ 完整标记串 */
+const R3_CORPUS_LEAK = R3_B_SET.filter((s) => R3_ENGINE_RAW.includes(s));
+t('R3-B 皮肤语料零泄漏：皮肤长语料字符串（≥40 字）∪ 全部「【…】」完整标记串 在「非皮肤源码原文」里零命中（硬零容忍）',
   R3_CORPUS_LEAK.length === 0,
-  '长语料 ' + R3_CORPUS.length + ' 条；非皮肤原文命中 ' + R3_CORPUS_LEAK.length +
+  '长语料 ' + R3_CORPUS.length + ' 条 + 完整标记串 ' + R3_MARKERS.length + ' 个（检查集 ' + R3_B_SET.length +
+    '）；非皮肤原文命中 ' + R3_CORPUS_LEAK.length +
     (R3_CORPUS_LEAK.length ? '；首段=' + JSON.stringify(R3_CORPUS_LEAK[0].slice(0, 40)) : ''));
+/* R3-C 守卫自检：采集非空 + 数量下限（防 skin/ 被清空 / 缩水后 R3-A/R3-B 真空通过）
+   下限取**保守值**（只用于抓「被清空 / 大幅缩水」，不贴实测卡边）：词元 ≥ 50、长语料 ≥ 3（实测 146 / 5）。 */
+const R3_TOKENS_FLOOR = 50, R3_CORPUS_FLOOR = 3;
+t('R3-C 守卫自检：皮肤采集非空 + 数量下限（词元 ≥ 50 且 长语料 ≥ 3；防皮肤清空后 R3-A/R3-B 真空通过）',
+  R3_TOKENS.length >= R3_TOKENS_FLOOR && R3_CORPUS.length >= R3_CORPUS_FLOOR,
+  '词元=' + R3_TOKENS.length + ' 长语料=' + R3_CORPUS.length +
+    '；下限 词元≥' + R3_TOKENS_FLOOR + ' 长语料≥' + R3_CORPUS_FLOOR);
 
 /* ---------- R4 皮肤可摘除（**真读产物** 的逐字节证明 + 合成皮肤替换演练）（★2026-09-17 新增） ----------
    命题：产物内联 JS 段 == 「各**非皮肤**片按构建规则拼接」+「**皮肤**片的贡献」，且皮肤片可**整段摘除**
@@ -985,6 +997,6 @@ t('R4 皮肤可摘除：产物 JS 段 = 非皮肤片拼接 + 皮肤片贡献；�
 const pass = R.filter(r => r.pass).length;
 console.log('=== v7.8 验收（真机 headless Edge + CDP）：H 组 候选/槽位/复制 + I 组 补全配置 + X 组 资产 导入/导出 ===');
 for (const r of R) console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.name}  ${r.detail}`);
-console.log(`\nH+I 组合计 ${pass}/${R.length}（含 X 组资产 导入/导出 2 条 + H0 夹具前置 + H19 内置风格包逐字 + P1 构建器 4 条 + P2 2 条 + P3 1 条 + R0 1 条 + R1 2 条 + **R3-A/R3-B 皮肤棘轮/零泄漏 2 条** + **R4 皮肤可摘除 1 条**；标签沿用「H+I」以兼容 run-gate 汇总解析）`);
+console.log(`\nH+I 组合计 ${pass}/${R.length}（含 X 组资产 导入/导出 2 条 + H0 夹具前置 + H19 内置风格包逐字 + P1 构建器 4 条 + P2 2 条 + P3 1 条 + R0 1 条 + R1 2 条 + **R3-A/R3-B/R3-C 皮肤棘轮/零泄漏/守卫自检 3 条** + **R4 皮肤可摘除 1 条**；标签沿用「H+I」以兼容 run-gate 汇总解析）`);
 ws.close();
 process.exit(pass === R.length ? 0 : 1);

@@ -49,7 +49,7 @@ window.addEventListener('blur', function(){ closeCtxMenu(); });
    层序（自顶向下，与视觉叠放一致）：右键菜单 → 补全配置窗 → 编辑器窗 → 模板预览 → 模板窗 → 拼模式。
    元素级处理器**保留**（它们在元素上 `stopPropagation`，优先于本分发器，语义更细）：
      · complete.js 的行内编辑框：Esc 先退组/关候选/退槽位；
-     · boot.js 配置窗表单体 / 命名模态框体：Esc 退回列表 / 关模态框；
+     · wiring.js 配置窗表单体 / 命名模态框体：Esc 退回列表 / 关模态框；
      · modals.js 模板窗输入框：Esc 退出编辑态。
    —— 这三类都在"输入焦点"内，本分发器收不到（被 stopPropagation 截住）→ 无双重关闭。 */
 function closeTopLayer(){
