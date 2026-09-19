@@ -15,7 +15,16 @@ function addImageBlock(dataUrl, w, h){
 }
 
 document.addEventListener('paste', function(e){
-  if(e.target && e.target.closest && (e.target.closest('.block-text') || e.target.closest('.modal-body') || e.target.closest('.sp-item'))) return;   /* 编辑/输入场景保留原生粘贴 */
+  /* ★v7.18 修复「编辑器内 Ctrl+V 被画布抢占」：原判断**只列举三个容器 class**，而两个真正的编辑器
+     ——「放大编辑」弹窗 #blkInput 与写作台 #wdInput —— 都落在 .blk-edit 内的 <textarea class="blk-input">，
+     不在清单里 ⇒ 在编辑器里按 Ctrl+V 会落到本监听末尾 preventDefault() 并在画布新建块（内容没进编辑器）。
+     改为「判断目标是否可编辑」（与 keys.js 的输入态口径一致）；因宿主/类名会随版本增删（v7.15 新增的
+     #wdInput 就是这么漏掉的），故**不再依赖 class 名**，但与原三容器判断**取并集**：后者兜底非 textarea
+     的输入/只读区（如 .sp-item 内的分区），二者互补、缺一不可。 */
+  var t = e.target;
+  var editable = !!(t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.isContentEditable));
+  var inLegacyHost = !!(t && t.closest && (t.closest('.block-text') || t.closest('.modal-body') || t.closest('.sp-item')));
+  if(editable || inLegacyHost) return;   /* 编辑/输入场景保留原生粘贴 */
   var cd = e.clipboardData;
   if(cd && cd.items){
     var imgItem = null;

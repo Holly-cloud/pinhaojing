@@ -3,7 +3,7 @@
          node dev/_qa/verify/verify_build_equivalence.mjs
          node dev/_qa/verify/verify_build_equivalence.mjs <产物> <基线>
    默认判定：断言「node dev/build.mjs 的产出」（= 根目录 PHJ.html）与「当前交付快照
-         dev/_qa/snapshots/PHJ_v7.14_20260917.html」**逐字节一致（含 banner，不做 stripBanner）**。
+         dev/_qa/snapshots/PHJ_v7.18_2026-09-19.html」**逐字节一致（含 banner，不做 stripBanner）**。
          即：源码能如实、逐字节地构建出已交付的产物 → 构建可复现 + src 与交付物一致。
 
    —— 为什么把 v7.7 的语义换掉（改义理由，务必保留本段）——
@@ -32,7 +32,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../../..');
 const NEW  = process.argv[2] || path.join(ROOT, 'PHJ.html');
-const OLD  = process.argv[3] || path.join(ROOT, 'dev', '_qa', 'snapshots', 'PHJ_v7.14_20260917.html');
+const OLD  = process.argv[3] || path.join(ROOT, 'dev', '_qa', 'snapshots', 'PHJ_v7.18_2026-09-19.html');
 
 /* 仅在「历史比对」退一步时使用：剥离构建 banner（按第 2 行、多行模式） */
 const stripBanner = s => s.replace(/^<!--\s*构建生成[\s\S]*?-->\r?\n/m, '');

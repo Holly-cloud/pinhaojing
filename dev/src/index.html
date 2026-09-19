@@ -12,12 +12,21 @@
 <link rel="stylesheet" href="./styles/50-editor.css">
 <link rel="stylesheet" href="./styles/51-complete.css">
 <link rel="stylesheet" href="./styles/52-library.css">
+<link rel="stylesheet" href="./styles/55-write.css">
 <link rel="stylesheet" href="./styles/90-effects.css">
 </head>
 <body>
 <div class="topbar">
+  <!-- v7.15：视图切换（胶囊分段控件）——「写作」为默认视图，「画布」保留原样 -->
+  <div class="view-switch" id="viewSwitch" role="tablist" aria-label="视图切换">
+    <button class="vs-seg" type="button" role="tab" data-view="write">写作</button>
+    <button class="vs-seg" type="button" role="tab" data-view="canvas">画布</button>
+  </div>
+  <span class="view-count" id="viewCount">分镜 0 条</span>
   <button class="btn primary" id="btnArrange" title="一键整理：所有块自上而下左对齐">整</button>
   <button class="btn" id="btnMenu" title="导入 / 导出">导</button>
+  <!-- v7.18：多项目容器入口（切换 / 新建 / 重命名 / 删除）；置于「导」之后，两视图均可见 -->
+  <button class="btn" id="btnProj" title="项目：切换 / 新建 / 重命名 / 删除">项目</button>
   <!-- v7.8：补全配置入口（片段库：浏览 / 修改 / 新增） -->
   <button class="btn" id="btnCmpl" title="补全配置：浏览 / 修改 / 新增候选片段（编辑器里输入 # 触发）">补</button>
   <button class="btn" id="btnZoom" title="画布缩放：Ctrl+滚轮缩放 ｜ 点击恢复 100%">100%</button>
@@ -104,6 +113,8 @@
     </div>
     <div class="modal-actions">
       <button class="btn" id="blkStrip" title="删除所有空行（每行文字紧挨）">移除空行</button>
+      <!-- v7.17：中文逗号 → 半角空格（台词“…”里的逗号不动；判定复用 highlight 的 hlDialogueMask） -->
+      <button class="btn" id="blkComma" title="把编辑器里全文的中文逗号「，」换成空格（台词“…”里的逗号不动）">逗号转空格</button>
       <button class="btn" id="blkCopy" title="把编辑器里的整段文本复制到剪贴板（Ctrl+Shift+C）">⧉ 复制全文</button>
       <div style="flex:1"></div>
       <button class="btn" id="blkCancel">取消</button>
@@ -124,6 +135,7 @@
     <datalist id="cmplCfgGroupList"></datalist>
     <div class="tpl-foot cmpl-cfg-foot">
       <div class="cmpl-cfg-foot-l">
+        <button class="btn" id="cmplCfgCheck" title="语料体检：从你的写作里发现规律（重复句 / 风格包漂移）">语料体检</button>
         <button class="btn" id="cmplCfgReset" title="丢弃在内置片段上的改动并重注内置片段库；保留你导入的资产与自建片段（先确认）">恢复内置默认</button>
       </div>
       <div class="cmpl-cfg-foot-r">
@@ -136,6 +148,42 @@
   </div>
   <!-- v7.8：拖动分组时，窗口左侧浮现的顺序小窗（拖到对应行即就位；放 mask 层避免窗口动画的 transform 影响 fixed 定位） -->
   <div class="cmpl-order-pop hide" id="cmplOrderPop"></div>
+</div>
+
+<!-- v7.15：写作台视图（左大纲 + 右大编辑器）；右侧复用 coding 编辑器内核（宿主 = hostDesk）。
+     ★ 必须置于 #blkMask 之后（等价于 DOM 末位）：写作台复用 .blk-edit/.blk-hl/.blk-input 等排版类，
+       若置于其前，套件的全局 document.querySelector('.blk-edit')/'.blk-hl' 会命中**隐藏的**写作台（取第一个），
+       导致 F6/H3 等坐标类断言假红。置于末位后，单值全局查询仍命中弹窗（第一个）→ 判定式零改动。 -->
+<div class="write-desk hide" id="writeDesk">
+  <div class="wd-outline" id="wdOutline">
+    <div class="wd-head">
+      <div class="wd-head-title">大纲 · <b id="wdCount">0</b> 条</div>
+      <div class="wd-head-hint">拖 ⠿ 调整顺序（不影响画布位置）</div>
+    </div>
+    <div class="wd-list" id="wdList"></div>
+    <button class="btn primary wd-add" id="wdAdd" type="button">＋ 新建分镜</button>
+  </div>
+  <div class="wd-pane" id="wdPane">
+    <div class="wd-panehead">
+      <span class="wd-pos" id="wdPos">第 0 条 / 共 0 条</span>
+      <span class="wd-sp"></span>
+      <button class="btn wd-mini" id="wdStrip" type="button" title="删除所有空行（每行文字紧挨）">移除空行</button>
+      <button class="btn wd-mini" id="wdCopy" type="button" title="把编辑器里的整段文本复制到剪贴板（Ctrl+Shift+C）">⧉ 复制全文</button>
+    </div>
+    <div class="blk-edit wd-edit">
+      <pre class="blk-hl wd-hl" aria-hidden="true"><code id="wdHl"></code></pre>
+      <textarea class="blk-input wd-input" id="wdInput" spellcheck="false" placeholder="新建后在此写作"></textarea>
+      <div class="cmpl-pop hide" id="wdPop"></div>
+    </div>
+    <div class="blk-status wd-status">
+      <span class="grp struct" title="当前所在结构（由符号判定）">节 <b id="wdStruct">—</b></span>
+      <span class="grp">行 <b id="wdLine">1</b>，列 <b id="wdCol">1</b></span>
+      <span class="grp">字符 <b id="wdLen">0</b></span>
+      <span class="grp err"><b id="wdErr">0</b> 处错误符号</span>
+      <span class="sp"></span>
+      <span class="grp">UTF-8 · LF</span>
+    </div>
+  </div>
 </div>
 
 <script src="./dev-bundle.js"></script>

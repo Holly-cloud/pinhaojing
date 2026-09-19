@@ -91,6 +91,11 @@ await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, mo
 await send('Page.reload');
 for (let i = 0; i < 40; i++) { if (await evalJS('document.readyState === "complete"')) break; await sleep(200); }
 await sleep(500);
+/* v7.15：默认视图已从「画布」改为「写作」——本探针要真实点击画布块内按钮。
+   ★ dev 页加载的是 IIFE 产物，setView **不是全局**（与控制台探针 leaked 断言互为印证），
+     故优先走**真实 UI**：点顶栏「画布」段（wiring DCL 已接线；幂等）。仅当 setView 恰为全局时直接调用。 */
+await evalJS("(function(){if(typeof setView==='function'){setView('canvas');return;}var b=document.querySelector('#viewSwitch [data-view=\"canvas\"]');if(b)b.click();})()");
+await sleep(300);
 
 const R = []; const t = (name, cond, info) => { R.push([name, !!cond]); console.log((cond ? '  ✅ ' : '  ❌ ') + name + (info ? '  ' + info : '')); };
 

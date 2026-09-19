@@ -47,3 +47,22 @@
 /* v7.8.1：资产 导入/导出 入口（窗口 foot 左右分组；复用既有 .btn，零新增按钮样式） */
 .cmpl-cfg-foot-l,.cmpl-cfg-foot-r{display:flex;align-items:center;gap:8px}
 .cmpl-cfg-foot-r{margin-left:auto}
+
+/* v7.16（H 条）：语料体检视图（同一窗口内的视图切换；复用 .btn / .cmpl-cfg-* 视觉，仅补少量 .cmpl-check-*） */
+.cmpl-check-cap{margin:0 0 8px;font-size:12px;color:var(--muted);line-height:1.6;letter-spacing:-.1px}
+.cmpl-check-cap b{color:var(--accent);font-weight:600}
+.cmpl-check-sec{margin-top:10px;font-size:11.5px;color:var(--muted);letter-spacing:.02em;padding:6px 2px 2px}
+.cmpl-check-card{background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.75);border-radius:12px;padding:8px 10px;margin-bottom:7px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 2px 8px rgba(0,0,0,.04)}
+.cmpl-check-row{display:flex;align-items:baseline;gap:8px}
+.cmpl-check-tx{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-size:12.5px;letter-spacing:-.1px}
+.cmpl-check-cnt{flex:0 0 auto;font-size:10px;padding:0 5px;border-radius:5px;background:rgba(0,113,227,.12);color:var(--accent);font-variant-numeric:tabular-nums}
+.cmpl-check-ops{display:flex;align-items:center;gap:8px;margin-top:7px}
+.cmpl-check-sel{flex:1 1 auto;min-width:0;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.9);border-radius:8px;padding:4px 8px;
+  font-size:12px;color:var(--text);outline:none;letter-spacing:-.1px}
+.cmpl-check-sel:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12)}
+.cmpl-check-ops .btn{min-height:28px;padding:0 12px;font-size:12.5px;border-radius:11px}
+.cmpl-check-diff{margin-top:6px;font-size:11px;color:var(--muted);line-height:1.6;letter-spacing:-.1px;word-break:break-all}
+.cmpl-check-diff .miss{color:#c0392b}
+.cmpl-check-diff .extra{color:#0b64b8}
+.cmpl-check-ok{font-size:12px;color:var(--muted);padding:4px 2px}

@@ -2,7 +2,7 @@
 
 > 本目录 = **冻结的历史记录**：每份文档记录一个**已完成的**决策 / 方案 / 发布，**写完后不再改**（只在必要时加「⚠️ 已撤销」标注，不删史实）。
 > 与 `dev/` 顶层「**活文件**」（`README.md` / `CHANGELOG.md` / `manifest.mjs` / `build.mjs` / `src/`）的分工：**活文件每次改动都在变；本目录只增不改**。
-> **当前现状**一律以 `dev/_qa/snapshots/BASELINE_v7.14.md` 与根 `README.md` 为准。
+> **当前现状**一律以 `dev/_qa/snapshots/BASELINE_v7.17.md` 与根 `README.md` 为准。
 
 ## 一、四个分类，各一句存在理由
 

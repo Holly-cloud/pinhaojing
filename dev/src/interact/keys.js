@@ -19,6 +19,17 @@ function keyPanLoop(t){
   requestAnimationFrame(keyPanLoop);
 }
 document.addEventListener('keydown', function(e){
+  /* ★v7.15 写作台分支（位于原「输入态豁免」之前，仅在本监听体内加分支、**不新增监听**）：
+     ① Alt 家族优先（Alt+↑/↓ 切条、Alt+Shift+↑/↓ 上下移、Alt+Enter 新建、Alt+Backspace 删除）；
+     ② 焦点不在输入态时 ↑/↓ = 左栏列表导航；
+     ③ 写作台内**一律不动画布**（方向键不平移）。 */
+  if(activeView === 'write'){
+    if(e.altKey && wdKeydown(e)){ e.preventDefault(); return; }
+    var ae0 = document.activeElement;
+    var inInput0 = ae0 && (ae0.tagName === 'TEXTAREA' || ae0.tagName === 'INPUT' || ae0.isContentEditable);
+    if(!inInput0 && (e.key === 'ArrowUp' || e.key === 'ArrowDown')){ wdMove(e.key === 'ArrowUp' ? -1 : 1); e.preventDefault(); return; }
+    return;
+  }
   var ae = document.activeElement;
   if(ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT' || ae.isContentEditable)) return;   /* 输入场景豁免 */
   if(document.querySelector('.modal-mask:not(.hide)')) return;   /* v6.19：任何独立窗口打开时方向键不动画布（焦点兜底） */

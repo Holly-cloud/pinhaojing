@@ -1,4 +1,7 @@
 var blkCb = null;
+/* v7.15：本模块（弹窗编辑器接线）**固定弹窗宿主 hostPopup**——openBlockEditor/closeBlockEditor/fitBlkWidth
+   全部走既有 DOM（#blkMask/#blkInput/.blk-win）与缺省宿主（highlight/complete 的 host 参数缺省 = hostPopup）。
+   写作台右栏不经过本模块（由 view/write.js 直接驱动 hostDesk）。故本次**仅补注释，语句一行未改**。 */
 function openBlockEditor(initial, cb){
   document.getElementById('blkInput').value = initial || '';
   blkCb = cb;

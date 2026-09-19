@@ -1,0 +1,162 @@
+%% 界面切换 + 写作台 · 数据结构与接口（v7.15）
+%% 配套设计：dev/docs/design/界面切换与写作台_设计_2026-09-18.md
+%% 说明：本项目为单文件经典脚本 IIFE，无 ES class；此处用 classDiagram 表达
+%%      「模块(顶层 var 单例) + 数据模型 + 宿主抽象」的静态关系。★ = 本次新增/变更。
+
+classDiagram
+    direction LR
+
+    %% ── 数据模型 ─────────────────────────────────────────────
+    class State {
+        +number version
+        +Block[] blocks
+        +object pan
+        +number zoom
+        +Splice splice
+        +Template[] templates
+        +Cmpl cmpl
+        +object collapsed
+        +string title
+    }
+    class Block {
+        +string id
+        +string text
+        +number x
+        +number y
+        +number order
+        +string type
+    }
+    class Splice {
+        +string[] items
+    }
+
+    %% ── core 层 ─────────────────────────────────────────────
+    class store {
+        <<module PHJ.store>>
+        +State state
+        +string activeView
+        +defaultState() State
+        +normalizeOrder() bool
+        +scheduleSave()
+        +saveNow()
+        +flush()
+    }
+    class persist {
+        <<module PHJ.persist>>
+        +string LS_KEY
+        +load() State
+        +migrate(d) State
+        +sanitizeState(s) State
+    }
+
+    %% ── editor 层（内核宿主化 · 难点一）─────────────────────
+    class Host {
+        +string id
+        +string rootId
+        +root() Element
+        +el(name) Element
+        +inval()
+    }
+    class hostPopup {
+        <<Host_root_blkMask>>
+    }
+    class hostDesk {
+        <<Host_root_writeDesk>>
+    }
+    class highlight {
+        <<module PHJ.highlight>>
+        +hlRefresh(host)
+        +hlSyncBox(host)
+        +hlStatus(host, fam)
+    }
+    class complete {
+        <<module PHJ.complete>>
+        +cmplTa(host)
+        +cmplPop(host)
+        +cmplOnInput(host)
+        +cmplKeydown(e, host)
+        +cmplBind(host)
+        +blkCopyAll(host)
+        +cmplReset(host)
+    }
+    class blockEditor {
+        <<module PHJ.blockEditor>>
+        +openBlockEditor()
+        +closeBlockEditor()
+        +fitBlkWidth()
+    }
+
+    %% ── view 层 ─────────────────────────────────────────────
+    class write {
+        <<module PHJ.write>>
+        +setView(v)
+        +applyView()
+        +renderWrite()
+        +wdNew()
+        +wdDel(idx)
+        +wdMove(idx, target)
+        +wdSelect(idx)
+        +wdKeydown(e) bool
+        +wdContext(e)
+        +focusDeskEditor()
+    }
+    class canvas {
+        <<module PHJ.canvas>>
+        +render()
+        +buildCard(b)
+    }
+    class modals {
+        <<module PHJ.modals>>
+        +openCtxMenu()
+        +closeTopLayer()
+        +ctxClick(e)
+    }
+
+    %% ── interact / shell 层（门控 · 难点二）─────────────────
+    class keys {
+        <<module PHJ.keys>>
+        +keydownHandler(e)
+    }
+    class pointer {
+        <<module PHJ.pointer>>
+        +spaceKeydown(e)
+        +onMouseDown(e)
+    }
+    class wiring {
+        <<module PHJ.shell.wiring>>
+        +init()
+        +dblclickHandler(e)
+        +wheelHandler(e)
+    }
+
+    %% ── 关系 ─────────────────────────────────────────────────
+    State "1" *-- "many" Block : blocks
+    State "1" *-- "1" Splice : splice
+    Block "1" -- "0..1" Block : order
+
+    store --> State : holds
+    persist --> State : read_write_migrate
+
+    hostPopup --|> Host
+    hostDesk --|> Host
+    highlight ..> Host : el_name
+    complete ..> Host : el_name
+    blockEditor ..> Host : fixed_hostPopup
+
+    write ..> store : state_activeView_normalizeOrder
+    write ..> canvas : render_on_switch
+    write ..> highlight : hlRefresh_hostDesk
+    write ..> complete : cmplBind_cmplReset_hostDesk
+    write ..> modals : openCtxMenu
+
+    keys ..> store : read_activeView
+    pointer ..> store : read_activeView_gate
+    wiring ..> store : read_activeView_guard
+    wiring ..> write : setView_on_switch
+
+    %% 关键约定（非图元注释）：
+    %% ★ State.version = 15（14→15）；Block.order 整数≥0，仅文本块，显示序=升序，兜底(y,x,i)
+    %% ★ store.activeView = 'write'|'canvas'，默认 'write'，不持久
+    %% ★ highlight/complete 的 host 参数缺省 = hostPopup（零参调用行为逐字不变）
+    %% ★ keys/pointer/wiring 一律「加分支/加门控，不新增 document|window 级 key 监听」
+    %% ★ LS_KEY 不变；migrate 只加 order，不减字段；图片块不落盘、不入大纲

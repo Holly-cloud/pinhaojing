@@ -97,8 +97,12 @@ function opBtn(label, act, danger){
 }
 /* textarea 随内容自动长高：全文展开，无内部滚动 */
 function autoResize(ta){
+  /* ★v7.18（T03 需求②·方案B 加固）：隐藏态（display:none）下 scrollHeight 恒为 0，此时若写 height:0px
+     会把块塌成 min-height —— 「隐藏态测量无意义」。故仅在可见（scrollHeight>0）时写 px；
+     隐藏时保留 auto，待元素可见后由 autoSizeAll 重算（进入画布已保证可见，见 setView 的 applyView 先行）。
+     这是**防御性**加固（防未来又在隐藏态渲染），不替代方案 A。 */
   ta.style.height = 'auto';
-  ta.style.height = ta.scrollHeight + 'px';
+  if(ta.scrollHeight > 0){ ta.style.height = ta.scrollHeight + 'px'; }
 }
 /* v6：块宽自适应最长行（文本不自动换行，整行完整显示） */
 var _mctx = null;

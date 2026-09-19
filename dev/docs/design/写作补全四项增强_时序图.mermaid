@@ -1,0 +1,23 @@
+%% 拼好镜 · 写作补全四项增强（A/B/D/H）· 时序图
+%% 来源：dev/docs/design/写作补全四项增强_设计_2026-09-18.md §9
+%% 说明：独立成套（不覆盖 v7.15《界面切换与写作台》的 sequence-diagram.mermaid）
+
+%% ① A · 错误计数路径（着色与计数同源，掩码来自结构层）
+sequenceDiagram
+    autonumber
+    participant U as 用户(输入/移动光标)
+    participant HL as highlight.hlRefresh(host)
+    participant ST as struct.structExemptMask(v)
+    participant CL as highlight.hlClassify(v, exempt)
+    participant OUT as hlToHTML / hlStatus(host, fam)
+    U->>HL: 输入 / 点击 / 移动光标（既有监听体内）
+    HL->>ST: structExemptMask(ta.value)
+    ST->>ST: structMap(v) → 逐行 region ∈{style,tail} → 字符置 1
+    ST-->>HL: Uint8Array(长度 = v.length)
+    HL->>CL: hlClassify(v, exempt)
+    CL->>CL: dlg = hlDialogueMask(v)  ← v7.7 台词区（符号层）
+    CL->>CL: R0: if(HL_ERR[ch] && !dlg[i] && !exempt[i]) fam='err'
+    CL-->>HL: fam（风格区逗号不再是 'err'）
+    HL->>OUT: hlToHTML(v, match, fam)：风格区逗号随层级族色；该行不 has-err
+    HL->>OUT: hlStatus(host, fam)：errors = Σfam[i]==='err'（与着色同源）
+    Note over ST,CL: 领域判定只在 struct；highlight 零领域语义

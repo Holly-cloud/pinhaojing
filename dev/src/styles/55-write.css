@@ -1,0 +1,73 @@
+/* ==================== 55-write · 写作台（v7.15） ====================
+   双栏布局（左大纲 + 右大编辑器）；两栏各自独立滚动；右栏编辑器**填满**。
+   本片必须位于 50-editor / 51-complete / 52-library 之后 —— 才能覆盖弹窗尺寸约束（.blk-input{height:80vh} 等）；
+   又必须在 90-effects 之前 —— 使 reduced-motion 降级位于最末。
+   注意：不新增/不改动皮肤（skin/**）；类前缀一律 .wd-* / .vs-*，绝不复用 .block。
+   ================================================================= */
+
+/* ---- 顶栏：胶囊分段控件 + 条目计数 ---- */
+.view-switch{display:inline-flex;align-items:center;gap:2px;background:rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.05);border-radius:13px;padding:3px}
+.vs-seg{border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;line-height:1;padding:6px 15px;border-radius:10px;cursor:pointer;letter-spacing:-.12px;transition:background .15s,color .15s,box-shadow .15s}
+.vs-seg:hover{color:var(--text)}
+.vs-seg.active{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.9)}
+.view-count{font-size:12.5px;color:var(--muted);margin-left:4px;letter-spacing:-.12px;white-space:nowrap}
+
+/* ---- 视图显隐 ---- */
+.write-desk.hide{display:none}
+body.view-canvas .write-desk{display:none}
+body.view-write #viewCount{display:none}
+body.view-write .canvas,
+body.view-write #splicePanel,
+body.view-write #peekLayer,
+body.view-write #linkLayer{display:none}
+/* 「整」与「100%」只对画布有效 → 仅画布视图可见 */
+body.view-write #btnArrange,
+body.view-write #btnZoom{display:none}
+
+/* ---- 写作台容器（双栏） ---- */
+.write-desk{position:fixed;top:70px;left:16px;right:16px;bottom:16px;display:flex;align-items:stretch;background:rgba(255,255,255,.42);-webkit-backdrop-filter:saturate(160%) blur(32px);backdrop-filter:saturate(160%) blur(32px);border:1px solid rgba(255,255,255,.6);border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 32px rgba(0,0,0,.06)}
+
+/* ---- 左栏：大纲（固定宽 + 独立滚动） ---- */
+.wd-outline{flex:0 0 320px;width:320px;display:flex;flex-direction:column;min-height:0;border-right:1px solid rgba(0,0,0,.07);background:rgba(255,255,255,.22)}
+.wd-head{padding:12px 14px 6px}
+.wd-head-title{font-size:12.5px;font-weight:600;color:var(--text);letter-spacing:-.12px}
+.wd-head-hint{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.5;letter-spacing:-.12px}
+.wd-list{flex:1;min-height:0;overflow-y:auto;padding:6px 8px}
+.wd-empty{color:var(--muted);font-size:12.5px;line-height:1.8;padding:32px 16px;text-align:center;letter-spacing:-.12px}
+.wd-add{margin:8px 12px 12px;flex:0 0 auto}
+
+/* ---- 大纲条目行 ---- */
+.wd-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;cursor:pointer;position:relative;transition:background .15s,box-shadow .15s}
+.wd-item:hover{background:rgba(0,0,0,.045)}
+.wd-item.active{background:rgba(0,113,227,.09)}
+.wd-item.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:2px;background:var(--accent)}
+.wd-item.dragging{opacity:.45}
+.wd-item.drag-over{box-shadow:inset 0 2px 0 var(--accent)}
+.wd-grip{cursor:grab;color:var(--muted);font-size:14px;line-height:1;user-select:none;flex:0 0 auto}
+.wd-grip:active{cursor:grabbing}
+.wd-no{flex:0 0 auto;min-width:18px;text-align:right;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.wd-sum{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--text)}
+.wd-sum.wd-muted{color:var(--muted)}
+.wd-cnt{flex:0 0 auto;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.wd-x{flex:0 0 auto;opacity:0;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 5px;border-radius:6px;transition:opacity .15s,color .15s,background .15s}
+.wd-item:hover .wd-x,.wd-item.active .wd-x{opacity:1}
+.wd-x:hover{color:#d64545;background:#fdeeee}
+
+/* ---- 右栏：大编辑器（自适应 + 填满） ---- */
+.wd-pane{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
+.wd-panehead{display:flex;align-items:center;gap:8px;padding:12px 16px 8px}
+.wd-pos{font-size:12.5px;color:var(--muted);letter-spacing:-.12px}
+.wd-sp{flex:1}
+.wd-mini{min-height:28px;padding:0 11px;font-size:12px;border-radius:11px}
+.wd-edit{margin:0 16px;flex:1;min-height:0}                 /* 复用 .blk-edit 的边框/底色/相对定位 */
+#wdPane .wd-input{height:100%;min-height:140px;resize:none} /* 覆盖 .blk-input 的 height:80vh（弹窗尺寸约束） */
+#wdPane .wd-hl{height:100%}
+.wd-status{margin:8px 16px 14px;padding:6px 4px}
+
+/* ---- 动效（轻微淡入；reduced-motion 下无动画） ---- */
+@keyframes wdFadeIn{from{opacity:0}to{opacity:1}}
+body.view-write .write-desk:not(.hide){animation:wdFadeIn .18s ease-out}
+@media (prefers-reduced-motion:reduce){
+  .write-desk,.wd-item,.wd-x,.vs-seg,.wd-grip,.wd-add{transition:none!important;animation:none!important}
+  body.view-write .write-desk:not(.hide){animation:none!important}
+}

@@ -1,0 +1,129 @@
+%% 需求③「新建项目」多项目容器 · 类图（v7.18 / state.version=17）
+%% State 的顶层 live 字段 = 活动 Project 槽的镜像（同一引用）。
+
+classDiagram
+    direction LR
+
+    class State {
+        +string app
+        +int version
+        +string activeProject
+        +Project[] projects
+        +Template[] templates
+        +Cmpl cmpl
+        +Block[] blocks
+        +Point pan
+        +number zoom
+        +Splice splice
+        +bool collapsed
+        +string title
+    }
+
+    class Project {
+        +string id
+        +string title
+        +Block[] blocks
+        +Point pan
+        +number zoom
+        +Splice splice
+        +bool collapsed
+    }
+
+    class Block {
+        +string id
+        +string text
+        +number x
+        +number y
+        +int order
+        +string type
+    }
+
+    class Splice {
+        +SpliceItem[] items
+        +string activeUnitId
+    }
+
+    class SpliceItem {
+        +string type
+        +string id
+        +string name
+        +string[] prefixes
+        +string[] suffixes
+        +string[] blockIds
+    }
+
+    class Template {
+        +string id
+        +Unit[] units
+    }
+
+    class Cmpl {
+        +int v
+        +Item[] items
+        +string[] gorder
+        +Map use
+    }
+
+    class Store {
+        +defaultState()
+        +newProjectSlot(title)
+        +projectAt(id)
+        +syncActiveProject()
+        +loadProjectInto(id)
+        +normalizeOrder()
+        +uid()
+    }
+
+    class Persist {
+        +migrate(d)
+        +load()
+        +saveNow()
+        +sanitizeState()
+        +flush()
+    }
+
+    class CanvasView {
+        +render()
+        +autoSizeAll()
+        +autoResize(ta)
+        +fitBlock(ta)
+        +arrangeAll()
+    }
+
+    class WriteView {
+        +setView(v)
+        +applyView()
+        +renderWrite()
+        +wdTextBlocks()
+    }
+
+    class Modals {
+        +openProjectMenu(x,y)
+        +switchProject(id)
+        +newProject()
+        +renameActiveProject()
+        +deleteProject()
+        +openCtxMenu(items,x,y)
+        +openModal(title,fields,cb,message)
+    }
+
+    State "1" *-- "1..*" Project
+    State "1" o-- "1" Project
+    Project "1" *-- "0..*" Block
+    Project "1" o-- "1" Splice
+    Splice "1" *-- "0..*" SpliceItem
+    SpliceItem ..> Block
+    State "1" o-- "0..*" Template
+    State "1" o-- "1" Cmpl
+    Store ..> State
+    Persist ..> State
+    Modals ..> Store
+    Modals ..> CanvasView
+    Modals ..> WriteView
+    CanvasView ..> State
+    WriteView ..> State
+
+    note for State "顶层 blocks/pan/zoom/splice/collapsed/title = projects[active] 的镜像；templates/cmpl 全局共享"
+    note for Project "blocks/pan/zoom/splice/collapsed/title 按项目隔离；order 是 Block 字段随块走"
+    note for SpliceItem "blockIds/id 仅在本项目内有效 -> splice 必须按项目隔离"
+    note for Cmpl "items/gorder/use 全局共享；use.hkey 为内容 hash，跨项目累计"

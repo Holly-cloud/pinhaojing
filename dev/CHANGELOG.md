@@ -1,9 +1,94 @@
 # 拼好镜 · 版本沿革（倒序）
 
-> 本文件是**版本沿革（倒序）**——从最新版本往回排（v7.14 → v6.1）。
+> 本文件是**版本沿革（倒序）**——从最新版本往回排（v7.17 → v6.1）。
 > **v6 系列的详细发布说明与验收记录**见 `dev/docs/releases/`。
-> **当前现状**以 `dev/_qa/snapshots/BASELINE_v7.14.md` 为准（本文件是历史，不是现状）。
+> **当前现状**以 `dev/_qa/snapshots/BASELINE_v7.18.md` 为准（本文件是历史，不是现状）。
 > 来源说明：以下逐版小节自仓库根 `README.md` **原样搬入**（2026-09-17 结构整理），**正文一字未改**，仅位置搬移。
+> 补记（2026-09-18）：v7.15 一轮**漏记**本表，本次随 v7.16 一并**补记**（见下两节）。
+
+## v7.18 · 多项目容器 + 需求②「间距不均」渲染时机修复（结构增量 + 缺陷修复）
+
+> 需求③（多项目）设计 `dev/docs/design/多项目_设计_2026-09-19.md`；需求②根因调查 `排布错位_调查`；
+> 逐项证据与基线见 `dev/_qa/snapshots/BASELINE_v7.18.md`。
+
+| 项 | 内容 |
+|---|---|
+| **多项目容器** | `state.projects[]` + `activeProject`；顶层 live 字段（`blocks/pan/zoom/splice/title/collapsed`）为**活动槽同引用镜像** → 既有消费者（canvas/write/splice/pointer/paste/keys/overlay）**零改动**；新增 `newProjectSlot/projectAt/syncActiveProject/loadProjectInto`（`core/store.js`） |
+| **项目 UI** | 顶栏 `#btnProj`（固定文案「项目」）复用 `#ctxMenu`：逐项 `●/○ 名` + 新建/重命名/删除（`view/modals.js`）；`openModal` +可选 `message`；删除唯一项目被拒、删活动项先切邻居、删除可**撤销** |
+| **迁移 v16→v17** | `migrate` 拆 `migrateTemplates/Cmpl/Blocks/Splice/OneProject`；老数据**恰合成 1 个项目**、`blocks/pan/zoom/splice/title/collapsed` **逐字保留**（单项目路径字节等价）；`load()` 阈值 `<17`；`sanitizeState` 逐项目剔图；`saveNow` 先 `syncActiveProject`（`core/persist.js`） |
+| **需求② 渲染时机** | `setView` **先 `applyView()` 再 render**（方案A：画布在**可见态**被测量）+ `autoResize` 隐藏态 `scrollHeight===0` **不写 `height:0px`**（方案B 加固）（`view/write.js` / `view/canvas.js`） |
+| **paste 修复（并入）** | `interact/paste.js`：由「列举 3 个容器 class」改为**判断目标是否可编辑**（`TEXTAREA`/`INPUT`/`isContentEditable`）∪ 保留旧三容器 → 编辑器内 Ctrl+V 不再被画布抢占 |
+| **新建项目默认名** | `nextProjectName()`：现存名里 `^项目 (\d+)$` 的最大号 **+1**（无则从 1）→ 不跳号、**删项目后不重名** |
+| **数据契约** | `state.version` **16 → 17**；`LS_KEY` 不变；`templates`/`cmpl` **全局共享**、`splice` **逐项目** |
+| **对外面 +9 名** | `PHJ.store` +4（`loadProjectInto/newProjectSlot/projectAt/syncActiveProject`）、`PHJ.modals` +5（`deleteProject/newProject/openProjectMenu/renameActiveProject/switchProject`）→ `P2-B2` 126 → **135** 名（`P2_MODULES` 仍 18） |
+| **纪律** | `skin/corpus.js` **一字未改**（仍 `SLICES` 第 9 位）；**不新增任何 `keydown/keyup/blur` 监听**（`#btnProj` 仅 1 个 `click`）→ `P2-A`/`P3-A` 逐字不变；不改 `LS_KEY`、无外部依赖 |
+| **产物** | 288444 → **304151 B**（+15707）；sha256 `df22b5903fdcbe39cc6eae873b40689b6ed9fc37a7de46eb2609f2f848f91e71` |
+| **闸门** | `node dev/_qa/run-gate.mjs` = **13/13**（83/18/16/**54**/18/**21**/**31**/**16**/**4**/**9**/**4**）；断言**条数不变**，仅期望值/快照同步；`skin-guard` 仍 **R3-A=15 / R3-B=0** |
+| **基线** | 新 `dev/_qa/snapshots/BASELINE_v7.18.md`；新快照 `PHJ_v7.18_2026-09-19.html`；等价性 `OLD` → `PHJ_v7.18_2026-09-19.html` |
+
+## v7.17 · 放大编辑「逗号转空格（台词除外）」（编辑器文本工具）
+
+> 增量需求（口径由主理人与 Holly 逐条锁定）；逐项证伪见 `dev/_qa/snapshots/BASELINE_v7.17.md`。
+> 一句话：在「放大编辑」弹窗（`#blkMask`）底部动作区新增一个按钮，把**编辑器内全文**的**中文逗号 `，`**换成**半角空格**，
+> **中文双引号“ ”成对包住的台词区内的逗号保持不动**。
+
+| 项 | 内容 |
+|---|---|
+| **入口** | `#blkMask` 的 `.modal-actions` 内新增 `<button class="btn" id="blkComma" title="…">逗号转空格</button>`，位于 `#blkStrip`（移除空行）与 `#blkCopy`（复制全文）之间（`src/index.html`） |
+| **处理对象** | **仅中文逗号 `，`（U+FF0C）** → **半角空格 ` `（U+0020）**。**半角逗号 `,`（U+002C）与顿号 `、` 不处理** |
+| **台词区豁免** | ★**直接复用 v7.7 已有的 `hlDialogueMask(text)`**（`editor/highlight.js`）：**一行内成对中文双引号“ ”包住范围**内的逗号一律不动；**换行重置 / 未闭合不生效 / 半角 `"` 不算**（随既有口径）。**不另写判定** → 与着色层同源、不脱钩 |
+| **作用范围** | 编辑器内的**全部文本**（非选区） |
+| **只改一个编辑器** | ★只改「放大编辑」弹窗；**写作台右栏（`#writeDesk`）不动**（Holly 明确只在此弹窗） |
+| **核心函数** | 新增**纯函数** `hlCommaToSpace(text)`（`editor/highlight.js`，返回 `{ text, n }`，`n` = 实际替换处数）——句内复用 `hlDialogueMask`（**不导出**，仅模块内） |
+| **接线** | `shell/wiring.js` 既有 `DOMContentLoaded` 块内给 `#blkComma` 加 **`click`**：`hlCommaToSpace(ta.value)` → `ta.value = r.text` → `fitBlkWidth()` → `hlRefresh()` → `cmplReset()`（清候选/槽位临时态）→ toast |
+| **取消语义** | 弹窗为「确定/取消」语义：**只改 `textarea`**，**不直接改 `state.blocks`**（避免破坏取消；点「确定」才写回块） |
+| **撤销** | 闭包捕获旧 `value`，`toast('已转换 N 处逗号', {label:'撤销', fn: restore})`；撤销恢复 `ta.value` 并重渲染。**`n === 0` 时** → `toast('没有可转换的逗号')`，**不给撤销** |
+| **对外面 +1 名** | `PHJ.highlight` `+ hlCommaToSpace`（`wiring.js` 跨模块引）→ `P2-B2` 由 125 → **126** 名（`P2_MODULES` 仍 18 不变） |
+| **纪律** | `skin/corpus.js` **一字未改**（仍 `SLICES` 第 9 位）；**不新增任何 `keydown/keyup/blur` 监听**（只加 1 个 `click`）→ `P2-A`/`P3-A` 逐字不变；**`state.version` 保持 16**（不改持久结构，不升版本）；不改 `state.blocks`、不改 `LS_KEY`、无外部依赖 |
+| **产物** | 285848 → **288444 B**（+2596）；sha256 `d943d616672f5a2ef79528b61f175804fa6b75a5fb66c9a26601015d902fd4b8`（首个构建 288249 B → 就地补丁 +195 B，见文末补记） |
+| **闸门** | `node dev/_qa/run-gate.mjs` = **10/10**（83/18/16/**54**/18/**21**/**31**/**16**；E 组为 QA 另立的**第 10 道**）；既有 9 道判定式与条数零改动；`skin-guard` 仍 **R3-A=15 / R3-B=0** |
+| **基线** | 新 `dev/_qa/snapshots/BASELINE_v7.17.md`；新快照 `PHJ_v7.17_20260918.html`；等价性 `OLD` → `PHJ_v7.17_20260918.html` |
+
+> **补记（2026-09-18 · **并入 v7.17，就地更新，不新开 v7.17.1**）**：
+> QA 复核发现一处**真缺陷**——本按钮的 toast 反馈（含「撤销」）在「放大编辑」弹窗打开时被弹窗遮挡
+> （`.toast` `z-index:99` < `.modal-mask` `z-index:11000`；弹窗高约 94vh，底心 toast 落于其内），视口高偏小时**真实鼠标点不到「撤销」**。
+> **修法（就地补丁，只此 1 处 CSS）**：`styles/10-canvas.css` 的 `.toast` `z-index: 99 → 13000`（> `modal-mask` 11000、> `cmpl-order-pop` 12050，**全域置顶**）——不避让、不重定位。
+> 同时 QA 为该工具另立**常驻断言组** `verify_e.mjs`（**E 组 = 16 条**，run-gate 挂为**第 10 道闸门**，退出码 13）。
+> 产物 **288249 → 288444 B**（+195，仅 1 行 CSS 注释 + z-index 位数），sha256 更新为 `d943d616…fd4b8`；
+> `state.version` 仍 **16**、`skin/corpus.js` **一字未改**、`skin-guard` 仍 **R3-A=15 / R3-B=0**。
+
+## v7.16 · 写作补全四项增强（A/B/D/H）（候选引擎「越用越顺」）
+
+> 需求定义 `写作补全_初衷复盘与改进建议_2026-09-18.md` §3；架构设计 `写作补全四项增强_设计_2026-09-18.md`；
+> 逐项证伪与口径见 `dev/_qa/snapshots/BASELINE_v7.16.md`。
+
+| 项 | 内容 |
+|---|---|
+| **A · 状态栏假错误** | 把「行级结构区」落到「**字符级豁免掩码**」：新增 `struct.structExemptMask(text)`（**领域策略**，只活 `struct.js`），`highlight.hlClassify(text, exempt)` 增**可选**掩码参、R0 错误分支加 `&& !(exempt && exempt[i])`。**风格区（`风格：`）/硬性要求区（`硬性要求：`）的逗号**不再计入错误数、不标红、随层级族色；**正文/起手式（`anchor`/`body`）照旧计数**（核心对照组）。着色层保持**零领域语义**（只吃不透明掩码），与 v7.7 台词区豁免**同层同构** |
+| **B ·「未用过」变活的** | 候选渲染时**动态判定**条目是否已在用户文本出现：`cmplNeedle`（去 `${n}` → 最长连续 CJK 串）+ `cmplUsedText`（全部非图片块 ∪ 当前编辑器文本）+ `cmplIsUsed`（`needle.length≥2 && indexOf≥0`）+ `cmplNoteFor(it)`（唯一取值入口）。仅 `note==='未用过'`（实测 13 处）走动态；其它 note **永远静态**。`note` 字段**永不改写**；缓存经 `cmplUseInvalidate()` 在 **10 处**枚举失效 |
+| **D ·「最近使用」加权** | 只在 `cmplCommit` **真正上屏**时记一次（`cmplUseTouch`）；**内容稳定 hkey** = `'h'+FNV1a32hex(group\0label\0body)`（免疫重排/换皮肤/未物化）；`useW = ln(1+n)·0.5^(ageDays/14)`（半衰期 14 天）作 `score` 相等时的**次级排序键**，**仅查询视图**（`cmplBuild`）；`cmplBuildGroupItems`/`cmplBuildGroups` **不改**（守 `H7` 语义） |
+| **H · 语料体检（MVP）** | 配置窗 foot 新增 `#cmplCfgCheck`；**同窗视图切换**（`cmplCfgView ∈ {'lib','check'}`，不新开窗）：**重复句**（跨块、`len≥8`、`count≥2`、不在片段库）+ **风格包漂移**（vs 定型件 `cmplStyleRef()`）；唯一动作 = 重复句「**收进片段库**」。定型件经 `complete.cmplStyleRef()` **单一接缝**访问（不新增 skin 读者） |
+| **数据契约** | `state.cmpl` 新增 `use: {}`；`state.version` **15 → 16**；`persist.migrate` 重建 `cmpl` 时**逐键保留 `use`**（跳 `__proto__`、只留 `n>0`、`t` 非数字回落 0）→ **零丢失**；`load()` 阈值 `< 16` |
+| **对外面 +3 名** | `PHJ.struct` `+ structExemptMask`；`PHJ.complete` `+ cmplStyleRef` `+ cmplUseInvalidate` → `P2-B2` 由 122 → **125** 名（`P2_MODULES` 仍 18 不变） |
+| **纪律** | `skin/corpus.js` **一字未改**（仍 `SLICES` 第 9 位）；**不新增任何 `keydown/keyup/blur` 监听**（H 只加 `click`；B/D 失效只在既有监听体内加行）→ `P2-A`/`P3-A` 逐字不变；`LS_KEY` 不变；无外部依赖 |
+| **产物** | 264162 → **285848 B**（+21686）；sha256 `4e4803c7649240ff9926ace7a0b012e0c8ac7c3a244b79f0bc4b4099bc7d40c5`（含本轮把源码注释里误标的旧版本号统一为 v7.16，18 处、每处 −1 B） |
+| **闸门** | `node dev/_qa/run-gate.mjs` = **8/8**（83/18/16/**54**/18/**21**）；**条数全部不变**（A/B/D/H 行为断言由 QA 另行落地）；`skin-guard` 仍 **R3-A=15 / R3-B=0**；顺带修正 `run-gate` 中间步骤行标 5 处 `[N/7]`→`[N/8]` |
+| **基线** | 新 `dev/_qa/snapshots/BASELINE_v7.16.md`；新快照 `PHJ_v7.16_20260918.html`；等价性 `OLD` → `PHJ_v7.16_20260918.html` |
+
+## v7.15 · 界面切换 + 写作台（胶囊分段控件 + 写作台视图 + 宿主解析层）
+
+> 增量需求 `增量需求_界面切换与写作台_2026-09-18.md`；增量设计 `界面切换与写作台_设计_2026-09-18.md`；证伪见 `dev/_qa/snapshots/BASELINE_v7.15.md`。
+
+| 项 | 内容 |
+|---|---|
+| **界面切换** | 顶栏新增**胶囊分段控件「写作｜画布」**，把「当前视图」提升为**会话态**（默认 **写作**，`state.activeView`）；画布视图原样保留 |
+| **写作台视图** | 新增 `view/write.js` + `styles/55-write.css`：左大纲（拖手/序号/摘要/字数/高亮）+ 右大编辑器，两视图**同源**（同一份 `state.blocks`）；快捷键 `Alt+Enter/Backspace/↑↓/Shift+↑↓`、拖拽排序、`#wdStrip` 去空行、`#wdCopy` 复制全文、实时写回 |
+| **宿主解析层** | 新增 `editor/host.js`（`makeHost`）：编辑器内核**宿主化**，`hostPopup`（`#blkMask`）/`hostDesk`（`#writeDesk`）复用同一 `highlight.js`/`complete.js` 内核 |
+| **线性顺序** | 新增字段 `block.order`（`state.version` **14 → 15**，`migrate` 零丢失补齐；`normalizeOrder` 惰性归一 `0..N-1`） |
+| **输入路由门控** | `keys.js`/`pointer.js`/`wiring.js` 加「写作视图分支」（**不新增任何 key 监听**）：方向键/空格/Ctrl+滚轮/双击空白在写作台内不动画布 |
+| **产物** | 230515 → **264162 B**；sha256 `cc383db0d07c9f7e91f49093c2e1e1b6e40b9787dcb4c4cc4e55908d7e804087` |
+| **闸门** | 新增 **W 组** `verify_w.mjs`（21 条）；`run-gate` **7 → 8** 道；`verify_v78` 仍 54/54 |
+| **基线** | 新 `dev/_qa/snapshots/BASELINE_v7.15.md`；新快照 `PHJ_v7.15_20260918.html`；等价性 `OLD` → `PHJ_v7.15_20260918.html` |
 
 ## v7.14 · R2/R3/R4 + F1/F2/F3 收尾（架构收口，无产品行为变化）
 

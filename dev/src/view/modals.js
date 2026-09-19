@@ -324,13 +324,20 @@ function deleteTemplate(id){
   }});
 }
 
-/* ---- 命名模态框（v6：替代原生 prompt，headless/嵌入环境不可靠；v6.4 多字段通用版） ---- */
+/* ---- 命名模态框（v6：替代原生 prompt，headless/嵌入环境不可靠；v6.4 多字段通用版）
+   v7.18：+ 可选 message（在表单顶部渲一句说明文字；供「删除项目」等确认框复用，避免原生 confirm） ---- */
 var modalCb = null;
-function openModal(title, fields, cb){
+function openModal(title, fields, cb, message){
   document.getElementById('modalTitle').textContent = title;
   var body = document.getElementById('modalBody');
   body.innerHTML = '';
-  fields.forEach(function(f){
+  if(message){
+    var msg = document.createElement('div');
+    msg.className = 'modal-msg';
+    msg.textContent = message;
+    body.appendChild(msg);
+  }
+  (fields || []).forEach(function(f){
     var row = document.createElement('div');
     row.className = 'modal-row';
     var lab = document.createElement('div');
@@ -360,6 +367,115 @@ function toggleCollapsed(){
   saveNow();
 }
 /* copySpliced 见拼接操作区（v6.6 条目结构） */
+
+/* ==================== v7.18：多项目（项目菜单 / 切换 / 新建 / 重命名 / 删除） ====================
+   复用 #ctxMenu（与「导」下拉同型）与 #modalMask（确认 / 命名）；**不新增窗骨架、不新增监听**。
+   切换只渲染**当前活动视图**（单向，不成环）；绝不在隐藏态渲染画布（守需求② —— 设计 §5.2）。 */
+
+/* 顶栏「项目」入口：列出全部项目（● = 当前，disabled）+ 新建 / 重命名 / 删除。 */
+function openProjectMenu(x, y){
+  var items = [], i;
+  for(i = 0; i < state.projects.length; i++){
+    var p = state.projects[i];
+    var cur = (p.id === state.activeProject);
+    items.push({ label: (cur ? '● ' : '○ ') + (p.title || '未命名项目'), act: 'proj-switch', projId: p.id, disabled: cur });
+  }
+  items.push('sep');
+  items.push({ label: '＋ 新建项目', act: 'proj-new' });
+  items.push({ label: '重命名当前项目', act: 'proj-rename' });
+  items.push({ label: '删除当前项目', act: 'proj-del', danger: true });
+  openCtxMenu(items, x, y);
+}
+
+/* 切到目标项目：写回当前槽（引用）→ 载入目标槽 → 只重渲染当前视图。 */
+function switchProject(targetId){
+  if(!state || !Array.isArray(state.projects)) return;
+  if(targetId === state.activeProject) return;      /* 0 幂等 */
+  if(!projectAt(targetId)) return;
+  flush();                                           /* ① 立即落盘（清防抖，不丢字） */
+  cmplUseInvalidate();                               /* ② 「未用过」缓存失效（编辑器文本将整体更换） */
+  if(activeView === 'write'){ cmplReset(hostDesk); } /* ③ 收当前视图的临时层 */
+  else{ closeBlockEditor(); }
+  closeCtxMenu();
+  syncActiveProject();                               /* ④ 写回当前项目槽（live → projects[active]） */
+  loadProjectInto(targetId);                         /*    载入目标项目槽（activeProject=id; live ← 槽） */
+  selected = [];                                     /* ⑤ 会话选中态跨项目无效 → 复位 */
+  wdSelId = null;
+  if(activeView === 'canvas'){ render(); }           /* ⑥ 只重渲染当前视图（隐藏的画布不渲染） */
+  else{ renderWrite(); }
+  applyView();                                       /* ⑦ 计数 / 高亮 / 显隐 */
+  scheduleSave();                                    /* ⑧ 落盘 */
+  toast('已切到项目「' + state.title + '」');
+}
+
+/* 新建项目默认名：扫描**现存**项目名里匹配 /^项目 (\d+)$/ 的最大号 + 1（无匹配则从 1）。
+   用「现存最大号 +1」而非「项目数 +1」：既不跳号（已有「未命名分镜」→ 首次新建 =「项目 1」），
+   也**绝不与现存重名**（删掉「项目 1」后若只剩「项目 2」→ 新号 = 3，不复用出与现存同名者）。 */
+function nextProjectName(){
+  var max = 0;
+  for(var i = 0; i < state.projects.length; i++){
+    var m = /^项目 (\d+)$/.exec(state.projects[i].title || '');
+    if(m){ var n = parseInt(m[1], 10); if(n > max) max = n; }
+  }
+  return '项目 ' + (max + 1);
+}
+
+/* 新建项目：槽 + 顶层镜像（零块 → 真正「从零」；两视图各自显示空态引导）。 */
+function newProject(){
+  var def = nextProjectName();
+  openModal('新建项目', [{ label: '项目名称', value: def }], function(vals){
+    var name = (vals && vals[0] ? String(vals[0]).trim() : '') || def;
+    var slot = newProjectSlot(name);
+    flush();                                         /* 写回当前项目槽 */
+    syncActiveProject();
+    state.projects.push(slot);
+    loadProjectInto(slot.id);                        /* 新项目为活动项目（空块） */
+    selected = [];
+    wdSelId = null;
+    if(activeView === 'canvas'){ render(); } else{ renderWrite(); }
+    applyView();
+    scheduleSave();
+    toast('已新建项目「' + state.title + '」');
+  });
+}
+
+/* 重命名当前项目（空名回落「未命名项目」）。 */
+function renameActiveProject(){
+  var slot = projectAt(state.activeProject);
+  if(!slot) return;
+  openModal('重命名项目', [{ label: '项目名称', value: state.title }], function(vals){
+    var name = (vals && vals[0] ? String(vals[0]).trim() : '');
+    if(!name) name = '未命名项目';
+    slot.title = name;
+    state.title = name;
+    saveNow();
+    toast('已重命名项目「' + name + '」');
+  });
+}
+
+/* 删除**当前**项目：唯一项目禁删；先确认 → 先切走再删 → toast 可撤销（插回原下标，**不自动激活**）。 */
+function deleteProject(){
+  if(!state || !Array.isArray(state.projects)) return;
+  if(state.projects.length <= 1){ toast('至少保留一个项目'); return; }
+  var slot = projectAt(state.activeProject);
+  if(!slot) return;
+  var idx = state.projects.indexOf(slot);
+  openModal('删除项目', [], function(){
+    var others = state.projects.filter(function(p){ return p.id !== slot.id; });
+    if(!others.length) return;                       /* 双保险 */
+    var next = others[Math.min(idx, others.length - 1)];
+    switchProject(next.id);                          /* ★先切走（写回 + 载入），再删活动项目 */
+    var at = state.projects.indexOf(slot);
+    if(at < 0) return;
+    state.projects.splice(at, 1);
+    saveNow();
+    toast('已删除项目「' + (slot.title || '未命名项目') + '」', { label: '撤销', fn: function(){
+      state.projects.splice(idx, 0, slot);           /* 插回原下标；不自动激活（防视图跳变） */
+      saveNow();
+      toast('已恢复项目「' + (slot.title || '未命名项目') + '」');
+    }});
+  }, '该项目及其全部内容将从本机移除；可点提示上的「撤销」恢复。');
+}
 
 /* ---- 画布右键菜单（v5.2） ---- */
 function addBlockHere(cx, cy){
@@ -394,6 +510,7 @@ function openCtxMenu(items, x, y){
     b.className = 'ctx-item' + (it.danger ? ' danger' : '') + (it.disabled ? ' disabled' : '');
     b.textContent = it.label;
     b.dataset.act = it.act;
+    if(it.projId) b.dataset.projId = it.projId;   /* v7.18：项目菜单项携带项目 id */
     m.appendChild(b);
   });
   m.classList.add('open');
@@ -452,6 +569,7 @@ document.addEventListener('click', function(e){
   if(!item){ closeCtxMenu(); return; }   /* 点菜单外关闭 */
   var act = item.dataset.act;
   var bi = __ctxBlock;   /* 先取块索引（closeCtxMenu 会重置） */
+  var pid = item.dataset.projId;   /* v7.18：项目菜单项携带的项目 id（同样须在 close 前取） */
   closeCtxMenu();
   if(act === 'add-here'){ addBlockHere(__ctxX, __ctxY); }
   else if(act === 'copy-spliced'){ copySpliced(); }
@@ -463,8 +581,17 @@ document.addEventListener('click', function(e){
   else if(act === 'clone-block'){ bulkAction('clone', actIds(bi)); }
   else if(act === 'strip-blank'){ bulkAction('strip-blank', actIds(bi)); }
   else if(act === 'del-block'){ bulkAction('del', actIds(bi)); }
+  /* v7.15：写作台条目右键菜单动作（复用同一 #ctxMenu；closeCtxMenu 已在上面调用） */
+  else if(act === 'wd-del'){ wdDel(); }
+  else if(act === 'wd-up'){ wdMove('up'); }
+  else if(act === 'wd-down'){ wdMove('down'); }
+  /* v7.18：项目菜单动作（复用同一 #ctxMenu） */
+  else if(act === 'proj-switch'){ if(pid) switchProject(pid); }
+  else if(act === 'proj-new'){ newProject(); }
+  else if(act === 'proj-rename'){ renameActiveProject(); }
+  else if(act === 'proj-del'){ deleteProject(); }
   __ctxBlock = -1;
 });
 
 /* 本模块对外面 = 被他模块引用的顶层名（P3 客观统计口径） */
-PHJ.modals = { addBlockHere, closeCtxMenu, closeModal, closeTplWin, modalCb, newTemplate, newUnit, openCtxMenu, openTplWin, renderTplList, renderTplWin, toggleCollapsed };
+PHJ.modals = { addBlockHere, closeCtxMenu, closeModal, closeTplWin, deleteProject, modalCb, newProject, newTemplate, newUnit, openCtxMenu, openProjectMenu, openTplWin, renameActiveProject, renderTplList, renderTplWin, switchProject, toggleCollapsed };

@@ -16,7 +16,7 @@
 
    不变式（team-lead 定，A+）：
      ① 产品 `PHJ.html` **新增全局名 = 0**（由 verify_v78 的 P1-D 纯度断言在真实浏览器核验）；
-     ② 4 个套件**判定式与条数不变**（v7 87 / v76 18 / v77 16 / v78 42+）；
+     ② 各在用套件的**判定式与条数保持不变**（清单见 `_qa/run-gate.mjs`）；
      ③ 测试产物与产品的差异**可被断言审计**（verify_v78 的 P1-C 断言：逐行 diff 恰为插入的 1 行）。
 
    本模块**纯 node、零依赖**；可被套件 import（自动重建，始终与当前产物一致），也可直接 `node` 运行（CLI）。
@@ -113,7 +113,15 @@ export function buildTestArtifact() {
   /* 插入「访问器 1 行」：…\r\n + accessor + \r\n + })(); …
      ——保持 CRLF，且**逐行 diff 恰为 +1 行**（供 P1-C 审计）。 */
   const seg2 = seg.slice(0, idx) + accessor + '\r\n' + seg.slice(idx);
-  const artifact = product.replace(seg, seg2);
+  /* ★加固（2026-09-19）：**禁止**再用 `product.replace(seg, seg2)` 拼接。
+     `String.replace` 的第二参数是**替换模式**，其中 `$` +（反引号） / `$` + ' / `$&` / `$n` / `$$`
+     都是特殊序列：只要源码里**碰巧写下**这些字符组合（一段注释、一个正则锚、一个 `$$` 标识符），
+     产物就会被**静默拼坏**——`$`+反引号 会插入「匹配点之前的整段产品」→ `<head>/<style>/<script>`
+     被复制 → 内联脚本非法 → 各套件报 `state is not defined`，且**不指向根因**（2026-09-19 已实战踩中）。
+     改用**下标切片**：纯字符串拼接，零模式解释，产物只在我们选定的锚点处被切开一次。 */
+  const at = product.indexOf(seg);
+  if (at < 0) throw new Error('内联 JS 段未能在产品中定位（extractSegment 结果与 product 不一致）');
+  const artifact = product.slice(0, at) + seg2 + product.slice(at + seg.length);
   fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
   fs.writeFileSync(ARTIFACT_PATH, artifact, 'utf8');
   return { path: ARTIFACT_PATH, product, artifact, seg, seg2, names, accessor, nameCount: names.length };

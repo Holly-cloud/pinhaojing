@@ -2,7 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildTestArtifact } from '../lib/test-artifact.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const TEST_ARTIFACT = buildTestArtifact().path;   /* A+：测试产物（= 产物 + 1 行访问器），4 套件对它执行；真实产物仅用于体积/P1-A/C/D 断言 */
+const TEST_ARTIFACT = buildTestArtifact().path;   /* A+：测试产物（= 产物 + 1 行访问器），各在用套件对它执行；真实产物仅用于体积/P1-A/C/D 断言 */
 /* v7.6 验收 · F 组：coding 编辑器（着色/行号/状态栏/配对/错误标红）+ 画布块「放大」入口
    用法：headless Edge --remote-debugging-port=9222 起好后： node verify_v76.mjs [截图输出.png]
    真机口径：全部走真实 DOM 事件与真实鼠标点击（Input.dispatchMouseEvent），不做内部函数直调取巧。 */
@@ -39,6 +39,9 @@ await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, mo
 await send('Page.reload');
 for (let i = 0; i < 40; i++) { if (await evalJS('document.readyState === "complete"')) break; await sleep(200); }
 await sleep(500);
+/* v7.15：默认视图已从「画布」改为「写作」——本套件针对画布，进断言前先切回 canvas（幂等）。 */
+await evalJS("if (typeof setView === 'function') setView('canvas');");
+await sleep(300);
 
 const R = [];
 const t = (name, pass, detail) => R.push({ name, pass: !!pass, detail });

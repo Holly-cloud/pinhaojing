@@ -13,9 +13,31 @@ document.addEventListener('DOMContentLoaded', function(){
       { label: '导入 JSON', act: 'import' }
     ], r.left, r.bottom + 6);
   });
+  /* v7.18：多项目入口 —— 与「导」同型（stopPropagation 防菜单刚开就被关；复用 #ctxMenu） */
+  var btnProj = document.getElementById('btnProj');
+  if(btnProj){
+    btnProj.addEventListener('click', function(e){
+      e.stopPropagation();
+      var cm = document.getElementById('ctxMenu');
+      if(cm.classList.contains('open')){ closeCtxMenu(); return; }
+      var r = this.getBoundingClientRect();
+      openProjectMenu(r.left, r.bottom + 6);
+    });
+  }
+
+  /* v7.15：视图切换（胶囊分段控件）→ setView（不新增任何 document/window 级 key 监听） */
+  var viewSwitch = document.getElementById('viewSwitch');
+  if(viewSwitch){
+    viewSwitch.addEventListener('click', function(e){
+      var seg = e.target.closest ? e.target.closest('.vs-seg') : null;
+      if(!seg) return;
+      setView(seg.dataset.view);
+    });
+  }
 
   /* v6：左键双击画布空白处新增块（复用右键「在此处新增块」逻辑） */
   canvas.addEventListener('dblclick', function(e){
+    if(activeView === 'write') return;   /* ★v7.15 G4：写作台内双击不新增块（防御：写作台中画布已隐藏） */
     if(e.target.closest('.block')) return;        /* 块内双击 = 文本选择/编辑 */
     if(e.target.closest('.splice-panel')) return; /* 侧边栏内不响应 */
     if(e.target.closest('.topbar')) return;
@@ -24,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   /* v6：滚轮上下滑动画布（纵向平移视角）；v6.9：Ctrl+滚轮 = 缩放（以光标为基准） */
   canvas.addEventListener('wheel', function(e){
+    if(activeView === 'write') return;   /* ★v7.15 G5：写作台内 Ctrl+滚轮不缩放画布（防御） */
     e.preventDefault();
     if(e.ctrlKey){
       zoomAt(e.clientX, e.clientY, Math.pow(1.1, -e.deltaY / 120));
@@ -48,11 +71,13 @@ document.addEventListener('DOMContentLoaded', function(){
     reader.onload = function(){
       try{
         var d = JSON.parse(reader.result);
-        if(!d || d.app !== 'storyboard-prompt-panel' || !Array.isArray(d.blocks)) throw new Error('bad');
+        if(!d || d.app !== 'storyboard-prompt-panel' || !(Array.isArray(d.blocks) || Array.isArray(d.projects))) throw new Error('bad');
         try{ localStorage.setItem(BACKUP_KEY, JSON.stringify(state)); }catch(e){}
         state = migrate(d);
+        cmplUseInvalidate();   /* B：JSON 导入 → 整体换 state，用户文本全变，失效 */
         document.title = '拼好镜';
-        render();
+        if(activeView === 'canvas'){ render(); } else{ renderWrite(); }   /* v7.18：按活动视图刷新（不渲染隐藏视图） */
+        applyView();
         saveNow();
         toast('导入成功 · 原数据已备份', {label:'撤销', fn: undoImport});
       }catch(e2){
@@ -66,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function(){
   function undoImport(){
     try{
       var bk = localStorage.getItem(BACKUP_KEY);
-      if(bk){ state = JSON.parse(bk); render(); saveNow(); toast('已恢复导入前的数据'); }
+      if(bk){ state = JSON.parse(bk); if(activeView === 'canvas'){ render(); } else{ renderWrite(); } applyView(); saveNow(); toast('已恢复导入前的数据'); }
     }catch(e){}
   }
 
@@ -123,6 +148,19 @@ document.addEventListener('DOMContentLoaded', function(){
     var v = kept.join('\n');
     if(v !== ta.value){ ta.value = v; fitBlkWidth(); hlRefresh(); toast('已移除空行'); }   /* v7.6：改值后重渲染 */
     else{ toast('没有空行可移除'); }
+  });
+  /* v7.17：编辑窗内一键「中文逗号 → 半角空格」（台词区内的逗号不动；判定复用 highlight.hlCommaToSpace）
+     —— 弹窗为「确定/取消」语义：此处**只改 textarea**，不直接改 state.blocks（守住取消语义）。
+     改值后与「移除空行」同样重渲染；顺带清候选/槽位临时态（文本变长，旧槽位位置已失效）；带「撤销」（批量替换影响面大）。 */
+  document.getElementById('blkComma').addEventListener('click', function(){
+    var ta = document.getElementById('blkInput');
+    var before = ta.value;
+    var r = hlCommaToSpace(before);
+    if(r.n > 0){
+      ta.value = r.text;
+      fitBlkWidth(); hlRefresh(); cmplReset();
+      toast('已转换 ' + r.n + ' 处逗号', {label:'撤销', fn: function(){ ta.value = before; fitBlkWidth(); hlRefresh(); cmplReset(); }});
+    }else{ toast('没有可转换的逗号'); }
   });
   document.getElementById('blkCancel').addEventListener('click', closeBlockEditor);
   /* v7.8：补全配置窗口（片段库：浏览 / 修改 / 新增） */
@@ -203,6 +241,7 @@ document.addEventListener('DOMContentLoaded', function(){
       var b = findBlock(card.dataset.id);
       if(!b) return;
       b.text = e.target.value;
+      cmplUseInvalidate();               /* B：画布块内联编辑 → 用户文本变，失效（既有监听体内加行） */
       autoResize(e.target);
       fitBlock(e.target);
       syncSpliceText(card.dataset.id);   /* v7.5：拼接栏同一条目文本即时同步 */

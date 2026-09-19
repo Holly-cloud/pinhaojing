@@ -17,7 +17,7 @@
    ★ = v7.8 新增片（51-struct/52-complete/53-library）。
    ✅ 2026-09-15 更新：本清单描述**已按 v7.8.2 现状校准**——风格包位于**内置**（Q7「资产分离 /
       降为中性示例」已由 v7.8.2 撤销；Holly 认定风格包即语料的一部分），52-complete 的 resp 已改写
-      为事实陈述。当前现状以 dev/_qa/snapshots/BASELINE_v7.10.md 为准。
+      为事实陈述。当前现状以 dev/_qa/snapshots/BASELINE_v7.17.md 为准。
    ── 变更记录 ──────────────────────────────────────────────────────────────
    · v0.6-p3-2026-09-16（相对 v0.5-p2）：**P3 收口**——
      (1) **Escape 统一分发**：原 8 处 document 级 Esc 处理器（各自 if、互不阻断 → 一次 Esc 可能关多层）
@@ -105,11 +105,13 @@ export const SLICES = [
   { id: 'blockEditor', module: 'blockEditor', layer: 'editor',   file: 'editor/block-editor.js' },
   { id: 'struct',      module: 'struct',      layer: 'editor',   file: 'editor/struct.js' },
   { id: 'corpus',      module: 'corpus',      layer: 'skin',     file: 'skin/corpus.js' },
+  { id: 'host',        module: 'host',        layer: 'editor',   file: 'editor/host.js' },   /* ★v7.15：宿主解析层（插在 corpus 之后：corpus 仍是第 9 位；host 无加载期副作用、只在运行期被引用） */
   { id: 'complete',    module: 'complete',    layer: 'editor',   file: 'editor/complete.js' },
   { id: 'library',     module: 'library',     layer: 'editor',   file: 'editor/library.js' },
   { id: 'canvas',      module: 'canvas',      layer: 'view',     file: 'view/canvas.js' },
   { id: 'splice',      module: 'splice',      layer: 'view',     file: 'view/splice.js' },
   { id: 'modals',      module: 'modals',      layer: 'view',     file: 'view/modals.js' },
+  { id: 'write',       module: 'write',       layer: 'view',     file: 'view/write.js' },    /* ★v7.15：写作台视图（插在 modals 之后：view 层聚拢；DCL 在 complete 的 DCL 之后） */
   { id: 'keys',        module: 'keys',        layer: 'interact', file: 'interact/keys.js' },
   { id: 'paste',       module: 'paste',       layer: 'interact', file: 'interact/paste.js' },
   { id: 'pointer',     module: 'pointer',     layer: 'interact', file: 'interact/pointer.js' },
@@ -126,6 +128,7 @@ export const CSS = [
   { id: 'editor',   file: 'styles/50-editor.css' },
   { id: 'complete', file: 'styles/51-complete.css' },
   { id: 'library',  file: 'styles/52-library.css' },
+  { id: 'write',    file: 'styles/55-write.css' },   /* ★v7.15：写作台样式（在 library 之后覆盖弹窗尺寸、让编辑器填满右栏；在 effects 之前使 reduced-motion 位于最末） */
   { id: 'effects',  file: 'styles/90-effects.css' },
 ];
 
@@ -179,6 +182,9 @@ export const MODULES = [
   { id: 'blockEditor', path: 'src/editor/block-editor.js', layer: 'editor', exports: ['PHJ.blockEditor'],
     deps: ['highlight', 'struct', 'complete'],
     resp: '编辑器窗口接线（openBlockEditor/closeBlockEditor/fitBlkWidth）' },
+  /* ★v7.15：宿主解析层——把「编辑器节点」抽象为宿主对象，内核按宿主寻址（缺省 = 弹窗宿主） */
+  { id: 'host', path: 'src/editor/host.js', layer: 'editor', exports: ['PHJ.host'], deps: [],
+    resp: '宿主解析层：hostPopup（#blkMask）/ hostDesk（#writeDesk）；el(name) 惰性解析并缓存宿主内节点' },
 
   /* ── view ── */
   { id: 'canvas', path: 'src/view/canvas.js', layer: 'view', exports: ['PHJ.canvas'], deps: ['store', 'persist'],
@@ -190,6 +196,10 @@ export const MODULES = [
   { id: 'modals', path: 'src/view/modals.js', layer: 'view', exports: ['PHJ.modals'],
     deps: ['store', 'library', 'blockEditor'],
     resp: '通用 modal / 模板窗 / 预览窗 / 补全配置窗 / 右键菜单（P2 合并 40-template + 55-menu）' },
+  /* ★v7.15：写作台视图（左大纲 + 右大编辑器；两视图同源、切视图按需拉取） */
+  { id: 'write', path: 'src/view/write.js', layer: 'view', exports: ['PHJ.write'],
+    deps: ['store', 'canvas', 'splice', 'modals', 'highlight', 'complete', 'host'],
+    resp: '写作台视图：setView/applyView/renderWrite + 大纲增删移/拖序/切条/实时写回/门控键处理' },
 
   /* ── interact ── */
   { id: 'pointer', path: 'src/interact/pointer.js', layer: 'interact', exports: ['PHJ.pointer'],

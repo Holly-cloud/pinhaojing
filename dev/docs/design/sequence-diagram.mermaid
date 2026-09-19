@@ -1,0 +1,97 @@
+%% 界面切换 + 写作台 · 关键时序（v7.15）
+%% 配套设计：dev/docs/design/界面切换与写作台_设计_2026-09-18.md
+
+%% ── ① 启动进写作台 ─────────────────────────────────────────────
+sequenceDiagram
+    autonumber
+    participant U as 用户
+    participant B as 浏览器(file://)
+    participant IIFE as 单 IIFE(SLICES 顺序执行)
+    participant ST as store(activeView/state)
+    participant W as write(写作台)
+    participant K as keys/pointer
+    participant C as canvas
+    U->>B: 双击 PHJ.html
+    B->>IIFE: 解析内联脚本（head→store→…→host→…→write→keys→paste→pointer→wiring）
+    IIFE->>W: 定义 setView/renderWrite…（顶层，无副作用）
+    IIFE->>K: keys/pointer 注册 document keydown/keyup/blur（顺序不变）
+    IIFE->>C: wiring 顶层末尾调用 load()
+    C->>ST: state = migrate/defaultState()（version 15，块带 order）
+    C->>C: render() 建画布 DOM（此时画布隐藏，但块已就位）
+    B->>IIFE: DOMContentLoaded
+    IIFE->>W: write DCL 初始化（解析 hostDesk、绑定 #wdList/#wdInput…）
+    W->>ST: 读 activeView（= 'write'）
+    W->>W: applyView() → body.view-write；renderWrite()（左大纲 + 右编辑器填满，选中第一条文本块）
+    IIFE->>IIFE: wiring DCL 绑定 #viewSwitch 两段点击
+    U->>B: 看到「写作台」（左大纲 1..N + 右大编辑器）
+
+%% ── ② 点胶囊切到画布 ───────────────────────────────────────────
+sequenceDiagram
+    autonumber
+    participant U as 用户
+    participant SW as #viewSwitch
+    participant W as write
+    participant ST as store
+    participant C as canvas
+    participant SP as splice/overlay
+    U->>SW: 点击「画布」
+    SW->>W: setView('canvas')
+    W->>W: flush()（清防抖立即落盘）
+    W->>W: cmplReset(hostDesk)（收候选/槽位）
+    W->>ST: activeView = 'canvas'
+    W->>C: render()（读最新 state.blocks → 重建块）
+    C->>SP: renderSplice() → refreshSel() → refreshOverlays()
+    C->>C: applyPan()/updateZoomBtn()（pan/zoom 原样保留，视角不重置）
+    W->>W: applyView() → body.view-canvas；显示 #btnArrange/#btnZoom，隐藏 .write-desk
+    W->>ST: scheduleSave()
+
+%% ── ③ 写作台改字 → 切画布 → 看到最新 ───────────────────────────
+sequenceDiagram
+    autonumber
+    participant U as 用户
+    participant W as write(右栏编辑器)
+    participant CU as complete/highlight(hostDesk)
+    participant ST as store(state.blocks)
+    participant SW as #viewSwitch
+    participant C as canvas
+    U->>W: 在 #wdInput 输入文字
+    W->>ST: 当前块.text = #wdInput.value（实时写回，无确定/取消）
+    W->>W: 更新左栏该行摘要 + 字数
+    W->>CU: hlRefresh(hostDesk) → 着色/行号/状态栏随之更新
+    W->>ST: scheduleSave()（防抖 400ms）
+    U->>SW: 点击「画布」
+    SW->>W: setView('canvas')
+    W->>W: flush()（立即落盘）
+    W->>C: render() → buildCard 用最新 text 重建该块
+    U->>C: 看到该块文本 = 写作台最新值（同源）
+
+%% ── ④ 写作台拖序 ──────────────────────────────────────────────
+sequenceDiagram
+    autonumber
+    participant U as 用户
+    participant IT as 左栏条目(.wd-item)
+    participant W as write
+    participant ST as store
+    U->>IT: 按住拖手 ⠿ 拖动第 5 条到第 2 位
+    IT->>W: wdMove(idx, target)（HTML5 DnD / 指针拖拽）
+    W->>ST: 重排 state.blocks 的 order（normalizeOrder() → 0..N-1 紧致）
+    W->>W: renderWrite()（序号 1..N 即时重排）
+    W->>ST: saveNow()
+    W->>U: toast「已调整顺序（不影响画布位置）」
+    Note over ST,C: 画布 x/y 完全未变；重开浏览器仍是新顺序（order 已落盘）
+
+%% ── ⑤ 点条目切条 ──────────────────────────────────────────────
+sequenceDiagram
+    autonumber
+    participant U as 用户
+    participant IT as 左栏条目
+    participant W as write
+    participant ST as store
+    participant CU as complete/highlight(hostDesk)
+    U->>IT: 点击第 3 条（或按 Alt+↑/↓）
+    IT->>W: wdSelect(3)（Alt 路径：wdKeydown→wdMove(±1)）
+    W->>W: 记录当前选中块 id（会话态）
+    W->>CU: cmplReset(hostDesk)（收上一轮候选/槽位）
+    W->>W: #wdInput.value = 该块.text；左栏当前项加高亮（滚动 scrollIntoView）
+    W->>CU: hlRefresh(hostDesk) → 行号/高亮/状态栏「节」随之刷新
+    W->>W: focusDeskEditor()（光标落文末，可直接开写）

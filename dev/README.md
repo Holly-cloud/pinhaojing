@@ -2,9 +2,9 @@
 
 > **用户用品在仓库根**：`PHJ.html`（双击即用的单文件交付物）+ `README.md`（交接入口）。
 > 本目录是开发侧：源码、构建、验收、文档。
-> **一条命令复现全部验收**：`node dev/_qa/run-gate.mjs`（7 道闸门，自起自收 headless 浏览器）。
+> **一条命令复现全部验收**：`node dev/_qa/run-gate.mjs`（13 道闸门，自起自收 headless 浏览器）。
 
-## 一、本目录 5 个区域（先看这张表）
+## 一、本目录 3 个区域（先看这张表）
 
 | 区域 | 性质 | 一句话是什么 |
 |---|---|---|
@@ -16,9 +16,9 @@
 
 | 位置 | 内容 |
 |---|---|
-| `src/index.html` | 骨架：引**单一** `./dev-bundle.js` + 9 条 CSS 链（顺序须与 `manifest.mjs` 的 `CSS` 一致，构建会校验） |
-| `src/styles/` | 9 片 CSS |
-| `src/shell/` `src/core/` `src/editor/` `src/view/` `src/interact/` | **引擎：17 个职责模块**（head/**wiring**；store/persist/clipboard；highlight/struct/complete/library/block-editor；canvas/splice/overlay/modals；pointer/keys/paste） |
+| `src/index.html` | 骨架：引**单一** `./dev-bundle.js` + 10 条 CSS 链（顺序须与 `manifest.mjs` 的 `CSS` 一致，构建会校验） |
+| `src/styles/` | 10 片 CSS |
+| `src/shell/` `src/core/` `src/editor/` `src/view/` `src/interact/` | **引擎：19 个职责模块**（head/**wiring**；store/persist/clipboard；highlight/struct/complete/library/block-editor/**host**；canvas/splice/overlay/modals/**write**；pointer/keys/paste） |
 | **`src/skin/`** | ★ **皮肤层（R1）**：领域语料/术语/默认值。当前 1 片 `corpus.js`（风格包 5 段 + 硬性要求 + 补全分组语料） |
 
 > **引擎 × 皮肤分层（R1）+ 边界机制化（R3/R4，2026-09-17）**：`core/` + `editor/` = **引擎（零领域语义）**；`skin/` = **域内容**。
@@ -26,7 +26,7 @@
 > 另有 **R3-A 棘轮**（皮肤词元命中引擎代码 ≤ 冻结尾数 15，只堵新增）/ **R3-B 零泄漏**（皮肤长语料 **∪ 全部 `【…】` 完整标记串** 在非皮肤原文零命中）/ **R3-C 守卫自检**（皮肤采集非空 + 数量下限，防 `skin/` 清空后 R3-A/R3-B 真空通过）/ **R4 皮肤可摘除**（真读产物证明）。口径见 `_qa/lib/skin-guard.mjs`。
 > 含义：换领域只需替换 `skin/`，**不动引擎**。`skin/` 不导出到 `PHJ` 对外面。
 
-- **顺序唯一来源 = `manifest.mjs` 的 `SLICES`（18 条 = 加载序，含 1 片皮肤）**；顺序对「加载期副作用注册序」敏感，**改顺序要跑 P2-A 断言**（见 `_qa/snapshots/BASELINE_v7.14.md` 的说明）。
+- **顺序唯一来源 = `manifest.mjs` 的 `SLICES`（20 条 = 加载序，含 1 片皮肤）**；顺序对「加载期副作用注册序」敏感，**改顺序要跑 P2-A 断言**（见 `_qa/snapshots/BASELINE_v7.17.md` 的说明）。
 - ★ **R2（2026-09-17）**：末片由 `shell/boot.js` **改名** `shell/wiring.js`（`git mv`，只改名不拆；导出键 `PHJ.boot` → `PHJ.wiring`）。三处同步：文件 + `manifest`（`SLICES`/`MODULES`）+ `verify_v78`（`P2_MODULES`/`P2_EXPORTS_GOLDEN`）。
 - ⚠️ **`skin/corpus` 的加载位置（`struct` 之后 / `complete` 之前）勿随手改**：它提供的是顶层 `var`，被 `complete.js` 的顶层 `var` 消费，必须**先声明后消费**。
 - 改完跑：`node dev/build.mjs`（产出根目录 `PHJ.html` + `dev/src/dev-bundle.js`）。
@@ -38,7 +38,7 @@
 |---|---|
 | `build.mjs` | 纯 node、**零依赖**：按 manifest 顺序内联 → `PHJ.html`；同一份字节写入 `src/dev-bundle.js`（**dev≡prod**） |
 | `manifest.mjs` | 模块清单：`SLICES`（顺序源）/ `CSS` / `MODULES`+`deps`（文档性质）/ `PENDING`（已全部判定关闭） |
-| `_qa/run-gate.mjs` | ★ **一键闸门**（构建 / 等价性 / verify_v7 / F / G / H+I / 开发态），期望 **7/7**（83/18/16/**54**/18） |
+| `_qa/run-gate.mjs` | ★ **一键闸门**（构建 / 等价性 / verify_v7 / F / G / H+I / 开发态 / W / C / E），期望 **13/13**（83/18/16/**54**/18/**21**/**31**/**16**/**4**/**9**/**4**） |
 | `_qa/lib/skin-guard.mjs` | ★ **皮肤边界护栏（R3）**：抽皮肤词元 / 长语料 / `【…】` 完整标记串，列引擎文件，`DOMAIN_HITS_GOLDEN`（**棘轮 + 零泄漏 + 防真空自检**三件事的公用采集层）；可 CLI 单跑 |
 | `_qa/README.md` | `_qa/` 分区导览（在用 / 历史 / 留档 / 生成物一眼分清） |
 | `_qa/snapshots/INDEX.md` | 快照角色表（当前基准 / 历史 argv 基准 / 不可动清单） |

@@ -6,6 +6,7 @@
    片段内容可用：`${1}` `${2}` 槽位（上屏后 Tab 逐位跳）；素材绑定位照 Holly 的习惯手写 `@`。
    ================================================================= */
 var cmplCfgQ = '', cmplCfgEditing = null, cmplCfgAdding = false;
+var cmplCfgView = 'lib';   /* v7.16（H 条）：同一窗口内的视图开关 ∈ {'lib','check'}；不新开窗口 */
 
 function cmplCfgMaterialize(){
   if(!state.cmpl || !Array.isArray(state.cmpl.items)){
@@ -16,6 +17,7 @@ function cmplCfgMaterialize(){
 function openCmplCfg(){
   cmplCfgMaterialize();
   cmplCfgQ = ''; cmplCfgEditing = null; cmplCfgAdding = false;
+  cmplCfgView = 'lib';   /* v7.16：每次打开复位回片段库视图（保住 I1/I2 口径） */
   var s = document.getElementById('cmplCfgSearch');
   if(s) s.value = '';
   renderCmplCfg();
@@ -199,6 +201,9 @@ function cmplCfgDnd(el, type, val){
 function renderCmplCfg(){
   var body = document.getElementById('cmplCfgBody');
   if(!body) return;
+  var chk = document.getElementById('cmplCfgCheck');
+  if(chk) chk.textContent = (cmplCfgView === 'check') ? '返回片段库' : '语料体检';   /* 按钮文案随视图切换 */
+  if(cmplCfgView === 'check'){ cmplCheckRender(); return; }
   body.innerHTML = '';
   var all = cmplActive(), q = cmplCfgQ.toLowerCase(), shown = 0, gi, ii, g, gitems, it;
   /* 分组候选（编辑表单的 datalist） */
@@ -381,6 +386,185 @@ function cmplCfgReset(){
   saveNow(); renderCmplCfg();
   toast('已恢复内置片段（保留你导入/自建的 ' + kept.length + ' 条）');
 }
+
+/* ==================== v7.16（H 条）· 语料体检（MVP） ====================
+   初衷 ② 的原话：「不应该直接照搬数据，要从数据里研究规律」——体检把「从数据里学」变成**持续**的：
+     · 检测 1 · 重复句：统计你反复手打的句子（跨块），提示「要不要收进片段库」；
+     · 检测 2 · 风格包漂移：你的风格包又被手改出第几个变体了？提示与定型件对齐。
+   ★入口形态：同一窗口内的视图切换（cmplCfgView ∈ {'lib','check'}），**不新开窗口**、不新增 keydown/blur。
+   ★唯一动作：把重复句「收进片段库」（cmplSetItems + saveNow）。
+   ★R1 接缝：定型件经 editor/complete.js 的 cmplStyleRef()（方案 i：单一皮肤读取缝）取得，本文件不直读 skin。 */
+var CMPL_CHECK_MINLEN = 8;   /* 重复句判据：非空行 trim 后长度下限 */
+var CMPL_CHECK_MINCNT = 2;   /* 重复句判据：跨块出现次数下限 */
+function cmplCheckToggle(){
+  cmplCfgView = (cmplCfgView === 'check') ? 'lib' : 'check';
+  cmplCfgQ = ''; cmplCfgEditing = null; cmplCfgAdding = false;
+  var s = document.getElementById('cmplCfgSearch'); if(s) s.value = '';
+  renderCmplCfg();
+}
+/* 检测 1：遍历非图片块 → 逐行 trim → 频次 ≥2 且 ∉ 当前片段库 body 集合 */
+function cmplCheckDup(){
+  var blocks = (state && Array.isArray(state.blocks)) ? state.blocks : [];
+  var counts = {}, order = [], bi, li, lines, t, act = cmplActive(), ai, activeSet = {};
+  for(ai = 0; ai < act.length; ai++) activeSet[String(act[ai].body == null ? '' : act[ai].body).trim()] = 1;
+  for(bi = 0; bi < blocks.length; bi++){
+    var b = blocks[bi]; if(!b || b.type === 'image') continue;
+    lines = String(b.text == null ? '' : b.text).split('\n');
+    for(li = 0; li < lines.length; li++){
+      t = lines[li].trim();
+      if(t.length < CMPL_CHECK_MINLEN) continue;
+      if(!Object.prototype.hasOwnProperty.call(counts, t)){ counts[t] = 0; order.push(t); }
+      counts[t]++;
+    }
+  }
+  var out = [], oi;
+  for(oi = 0; oi < order.length; oi++){
+    if(counts[order[oi]] >= CMPL_CHECK_MINCNT && !activeSet[order[oi]]) out.push({ text: order[oi], count: counts[order[oi]] });
+  }
+  out.sort(function(a, b){
+    if(b.count !== a.count) return b.count - a.count;
+    if(b.text.length !== a.text.length) return b.text.length - a.text.length;
+    return a.text < b.text ? -1 : (a.text > b.text ? 1 : 0);
+  });
+  return out;
+}
+/* 检测 2 辅助：取某块的「风格段」（从 风格: 行起，到 硬性要求: 行含 或 块尾） */
+function cmplStyleSegment(text){
+  var lines = String(text == null ? '' : text).split('\n'), start = -1, end = lines.length, i;
+  for(i = 0; i < lines.length; i++){ if(/^风格[:：]/.test(lines[i].trim())){ start = i; break; } }
+  if(start < 0) return '';
+  for(i = start + 1; i < lines.length; i++){ if(/^硬性要求[:：]/.test(lines[i].trim())){ end = i + 1; break; } }
+  return lines.slice(start, end).join('\n');
+}
+function cmplStyleNormLines(s){ return String(s == null ? '' : s).replace(/\r\n/g, '\n').split('\n'); }
+function cmplStyleTrimBlank(lines){
+  var a = 0, b = lines.length - 1;
+  while(a <= b && lines[a].trim() === '') a++;
+  while(b >= a && lines[b].trim() === '') b--;
+  return lines.slice(a, b + 1);
+}
+function cmplStyleSame(a, b){
+  return cmplStyleTrimBlank(cmplStyleNormLines(a)).join('\n') === cmplStyleTrimBlank(cmplStyleNormLines(b)).join('\n');
+}
+function cmplStyleDiff(st, ref){
+  var A = cmplStyleTrimBlank(cmplStyleNormLines(ref)).filter(function(l){ return l.trim() !== ''; });
+  var B = cmplStyleTrimBlank(cmplStyleNormLines(st)).filter(function(l){ return l.trim() !== ''; });
+  var missing = [], extra = [], i;
+  for(i = 0; i < A.length; i++) if(B.indexOf(A[i]) < 0) missing.push(A[i]);
+  for(i = 0; i < B.length; i++) if(A.indexOf(B[i]) < 0) extra.push(B[i]);
+  return { missing: missing, extra: extra };
+}
+/* 检测 2：遍历含 风格: 行的块 → 风格段与定型件逐字比对 → 报告不一致 + 差异摘要 */
+function cmplCheckStyleDrift(){
+  var blocks = (state && Array.isArray(state.blocks)) ? state.blocks : [];
+  var ref = cmplStyleRef();
+  var res = { total: 0, bad: 0, items: [] }, bi, b, text, st, sum;
+  for(bi = 0; bi < blocks.length; bi++){
+    b = blocks[bi]; if(!b || b.type === 'image') continue;
+    text = String(b.text == null ? '' : b.text);
+    if(!/^风格[:：]/m.test(text)) continue;
+    res.total++;
+    st = cmplStyleSegment(text);
+    if(!cmplStyleSame(st, ref)){
+      res.bad++;
+      sum = '';
+      var ls = text.split('\n'), j;
+      for(j = 0; j < ls.length; j++){ if(ls[j].trim() !== ''){ sum = ls[j].trim(); break; } }
+      res.items.push({ text: text, summary: sum.slice(0, 40), diff: cmplStyleDiff(st, ref) });
+    }
+  }
+  return res;
+}
+function cmplCheckDupRow(item, groups){
+  var card = document.createElement('div'); card.className = 'cmpl-check-card';
+  var row = document.createElement('div'); row.className = 'cmpl-check-row';
+  var tx = document.createElement('span'); tx.className = 'cmpl-check-tx'; tx.textContent = item.text; tx.title = item.text;
+  var cn = document.createElement('span'); cn.className = 'cmpl-check-cnt'; cn.textContent = '×' + item.count;
+  row.appendChild(tx); row.appendChild(cn); card.appendChild(row);
+  var ops = document.createElement('div'); ops.className = 'cmpl-check-ops';
+  var sel = document.createElement('select'); sel.className = 'cmpl-check-sel';
+  for(var gi = 0; gi < groups.length; gi++){
+    var op = document.createElement('option'); op.value = groups[gi]; op.textContent = groups[gi]; sel.appendChild(op);
+  }
+  var btn = document.createElement('button'); btn.className = 'btn primary'; btn.textContent = '收进片段库';
+  btn.addEventListener('click', function(){ cmplCheckCollect(item.text, sel.value); });
+  ops.appendChild(sel); ops.appendChild(btn); card.appendChild(ops);
+  return card;
+}
+function cmplCheckDriftRow(entry, idx){
+  var card = document.createElement('div'); card.className = 'cmpl-check-card';
+  var row = document.createElement('div'); row.className = 'cmpl-check-row';
+  var tx = document.createElement('span'); tx.className = 'cmpl-check-tx';
+  tx.textContent = '第 ' + (idx + 1) + ' 条：' + (entry.summary || '');
+  tx.title = entry.text;
+  row.appendChild(tx); card.appendChild(row);
+  var d = entry.diff, dEl = document.createElement('div'); dEl.className = 'cmpl-check-diff';
+  if(d.missing.length){
+    var m = document.createElement('div'); m.className = 'miss';
+    m.textContent = '缺 ' + d.missing.length + ' 段：' + d.missing.map(function(s){ return s.slice(0, 12); }).join(' / ');
+    dEl.appendChild(m);
+  }
+  if(d.extra.length){
+    var x = document.createElement('div'); x.className = 'extra';
+    x.textContent = '多 ' + d.extra.length + ' 段：' + d.extra.map(function(s){ return s.slice(0, 12); }).join(' / ');
+    dEl.appendChild(x);
+  }
+  if(!d.missing.length && !d.extra.length){
+    var z = document.createElement('div'); z.textContent = '行集合一致（仅顺序 / 空白差异）'; dEl.appendChild(z);
+  }
+  card.appendChild(dEl);
+  return card;
+}
+function cmplCheckRender(){
+  var body = document.getElementById('cmplCfgBody');
+  if(!body) return;
+  body.innerHTML = '';
+  var dup = cmplCheckDup(), drift = cmplCheckStyleDrift(), i;
+  var cap = document.createElement('div'); cap.className = 'cmpl-cfg-hint';
+  cap.textContent = '从你的写作里发现规律：把反复手打的句子收进片段库；把走样的风格包对齐定型件（不改你的正文）。';
+  body.appendChild(cap);
+  /* 检测 1 · 重复句 */
+  var h1 = document.createElement('div'); h1.className = 'cmpl-check-sec';
+  h1.textContent = '重复句（跨块统计 · 频次 ≥ 2 · 未在片段库）';
+  body.appendChild(h1);
+  if(!dup.length){
+    var e1 = document.createElement('div'); e1.className = 'cmpl-check-ok'; e1.textContent = '没有发现重复句';
+    body.appendChild(e1);
+  }else{
+    var groups = cmplGroupOrder();
+    for(i = 0; i < dup.length; i++) body.appendChild(cmplCheckDupRow(dup[i], groups));
+  }
+  /* 检测 2 · 风格包漂移 */
+  var h2 = document.createElement('div'); h2.className = 'cmpl-check-sec';
+  h2.textContent = '风格包漂移（与定型件逐字比对）';
+  body.appendChild(h2);
+  var st = document.createElement('div'); st.className = 'cmpl-check-cap';
+  st.textContent = '共 ' + drift.total + ' 条含风格包，' + drift.bad + ' 条与定型件不一致。';
+  body.appendChild(st);
+  if(!drift.total){
+    var e2 = document.createElement('div'); e2.className = 'cmpl-check-ok'; e2.textContent = '当前写作里没有风格包';
+    body.appendChild(e2);
+  }else{
+    for(i = 0; i < drift.items.length; i++) body.appendChild(cmplCheckDriftRow(drift.items[i], i));
+  }
+}
+/* 唯一动作：把重复句收进片段库（进所选组；落盘；同步失效 needle 缓存；重渲染体检视图） */
+function cmplCheckCollect(text, group){
+  var t = String(text == null ? '' : text).trim();
+  if(!t) return;
+  var g = group || (cmplGroupOrder()[0] || '未分组');
+  var arr = cmplActive().slice();
+  arr.push({ key: cmplNewKey(), group: g, label: t.slice(0, 12), note: '', body: t, block: false, src: 'user' });
+  cmplSetItems(arr);   /* 内部 cmplInvalidate + cmplUseInvalidate */
+  saveNow();
+  renderCmplCfg();
+  toast('已收进片段库：' + g);
+}
+/* 入口接线：DCL 只注册一次 #cmplCfgCheck 的 click（不新增 keydown/keyup/blur → 不影响 P2-A/P3-A） */
+document.addEventListener('DOMContentLoaded', function(){
+  var chk = document.getElementById('cmplCfgCheck');
+  if(chk) chk.addEventListener('click', function(){ cmplCheckToggle(); });
+});
 
 /* 本模块对外面 = 被他模块引用的顶层名（P3 客观统计口径） */
 PHJ.library = { closeCmplCfg, cmplCfgAdding, cmplCfgDel, cmplCfgEditing, cmplCfgQ, cmplCfgReset, cmplCfgResetAsk, cmplCfgSave, openCmplCfg, renderCmplCfg };

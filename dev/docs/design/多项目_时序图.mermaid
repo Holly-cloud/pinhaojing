@@ -1,0 +1,88 @@
+%% 需求③「新建项目」多项目容器 · 时序图（v7.18）
+%% 含三张：① 新建项目 ② 切换项目 ③ 重开工具（load -> migrate -> 渲染）
+
+%% ============ ① 新建项目 ============
+sequenceDiagram
+    autonumber
+    participant U as 用户
+    participant W as wiring
+    participant M as modals
+    participant S as store
+    participant P as persist
+    participant V as canvas/write
+
+    U->>W: 点顶栏「项目」再点「＋ 新建项目」
+    W->>M: openProjectMenu -> act=proj-new
+    M->>M: openModal 新建项目 输入名称
+    U->>M: 确定
+    M->>P: flush()
+    M->>S: syncActiveProject() 写回旧项目槽
+    M->>S: newProjectSlot(name) 空槽 blocks=[] pan=0,0 zoom=1
+    S-->>M: slot
+    M->>S: state.projects.push(slot)
+    M->>S: loadProjectInto(slot.id) activeProject=slot.id
+    M->>S: selected=[] wdSelId=null
+    alt activeView 为 write
+        M->>V: renderWrite() 空态引导
+    else activeView 为 canvas
+        M->>V: render() 画布 .empty 提示
+    end
+    M->>V: applyView()
+    M->>P: scheduleSave()
+    M-->>U: toast 已新建项目
+
+%% ============ ② 切换项目 ============
+sequenceDiagram
+    autonumber
+    participant U as 用户
+    participant M as modals
+    participant S as store
+    participant P as persist
+    participant V as canvas/write
+
+    U->>M: 项目菜单 点「项目 B」act=proj-switch
+    M->>P: flush() 清防抖不丢字
+    M->>M: cmplUseInvalidate()
+    alt activeView 为 write
+        M->>M: cmplReset(hostDesk)
+    else activeView 为 canvas
+        M->>M: closeBlockEditor()
+    end
+    M->>M: closeCtxMenu()
+    M->>S: syncActiveProject() 写回当前项目槽
+    M->>S: loadProjectInto('B') 替换引用载入目标槽
+    M->>S: selected=[] wdSelId=null
+    alt activeView 为 canvas
+        M->>V: render() 可见态渲染 块高正确
+    else activeView 为 write
+        M->>V: renderWrite() 不渲染隐藏的画布
+    end
+    M->>V: applyView()
+    M->>P: scheduleSave()
+    M-->>U: toast 已切到项目
+
+%% ============ ③ 重开工具 ============
+sequenceDiagram
+    autonumber
+    participant B as 浏览器reload
+    participant W as wiring顶层load
+    participant P as persist
+    participant S as store
+    participant V as canvas/write
+
+    B->>W: 脚本执行 在 DOMContentLoaded 之前
+    W->>P: load()
+    P->>P: localStorage.getItem(LS_KEY)
+    alt 有数据
+        P->>P: migrate(d) v16 到 v17 老数据落单项目
+        P->>S: state = migrate(d) 顶层镜像等于活动项目
+        P->>P: if d.version<17 then saveNow()
+    else 无数据
+        P->>S: state = defaultState() v17 单项目加示例块
+        P->>P: saveNow()
+    end
+    Note over P,V: 此刻 body 无 view 类 画布可见 高度测量正确
+    P->>V: render()
+    P->>V: renderTplList()
+    Note over V: DCL 触发 applyView 加 view-write 默认落写作台
+    V->>V: renderWrite()

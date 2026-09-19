@@ -217,6 +217,7 @@ function focusCaretEnd(el){
 /* ---- 交互：块拖拽 + 画布平移 ---- */
 /* v7.5：按住空格 + 左键拖动 = 平移画布（等价中键；文字编辑/独立窗口场景豁免，UI 区域不接管） */
 document.addEventListener('keydown', function(e){
+  if(activeView === 'write') return;   /* ★v7.15 G2：写作台内空格不触发画布平移 */
   if(e.key !== ' ' && e.code !== 'Space') return;
   var ae = document.activeElement;
   if(ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT' || ae.isContentEditable)) return;   /* 文字编辑状态：空格就是空格 */
@@ -231,6 +232,7 @@ document.addEventListener('keyup', function(e){
 
 window.addEventListener('blur', function(){ if(spacePan){ spacePan = false; document.body.classList.remove('space-pan'); } });
 function onMouseDown(e){
+  if(activeView === 'write') return;   /* ★v7.15 G3：写作台内禁用画布指针交互（平移 / Ctrl 多选 / 点块置顶 / 点空白清焦点） */
   /* v6.17：鼠标中键按下 = 全局平移视角（不论鼠标在哪里） */
   if(e.button === 1){
     e.preventDefault();   /* 阻止浏览器 autoscroll */

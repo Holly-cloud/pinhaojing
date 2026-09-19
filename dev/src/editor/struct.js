@@ -82,5 +82,22 @@ function structSummary(text){
   return order;
 }
 
+/* v7.16（A 条）：结构区豁免掩码——风格区(style)/硬性要求区(tail) 的字符 → 1，其余 → 0。
+   ★领域判定**只在本文件**：着色层（editor/highlight.js）只消费这个**不透明布尔掩码**，不认识任何区名含义。
+   行级 → 字符级的映射：与 hlToHTML 同源的索引推进法（idx += 行长 + 1，+1 为该行末尾 '\n'，归 body 段 → 不置 1）。
+   anchor（起手式）与 body（正文/分镜）**不豁免**（对照组，逗号照旧计入错误）。 */
+function structExemptMask(text){
+  var m = new Uint8Array(String(text).length), lines = String(text).split('\n'), map = structMap(text);
+  var idx = 0, li, reg, k;
+  for(li = 0; li < lines.length; li++){
+    reg = map[li] ? map[li].region : '';
+    if(reg === 'style' || reg === 'tail'){
+      for(k = 0; k < lines[li].length; k++) m[idx + k] = 1;
+    }
+    idx += lines[li].length + 1;     /* +1 = 该行末尾的 '\n'（'body' 段，不置 1） */
+  }
+  return m;
+}
+
 /* 本模块对外面 = 被他模块引用的顶层名（P3 客观统计口径） */
-PHJ.struct = { structAt };
+PHJ.struct = { structAt, structExemptMask };

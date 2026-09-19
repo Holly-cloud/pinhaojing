@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { buildTestArtifact } from '../lib/test-artifact.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const TEST_ARTIFACT = buildTestArtifact().path;   /* A+：测试产物（= 产物 + 1 行访问器），4 套件对它执行；真实产物仅用于体积/P1-A/C/D 断言 */
+const TEST_ARTIFACT = buildTestArtifact().path;   /* A+：测试产物（= 产物 + 1 行访问器），各在用套件对它执行；真实产物仅用于体积/P1-A/C/D 断言 */
 /* 拼好镜 v7.0 headless 验收：
    功能回归（v6.21 十项全量）+ 动效专项（P0 九项：块创建弹入/删除收拢/一键整理 FLIP/拼入吸入+条目弹入+光线生长/光点淡入/窗口弹开/菜单弹入/toast 滑入滑出/reduce-motion 降级）
 
@@ -51,6 +51,9 @@ await send('Page.addScriptToEvaluateOnNewDocument', { source: 'try{ localStorage
 await send('Page.navigate', { url: TARGET });
 for (let i = 0; i < 30; i++) { if (await evalJS('document.readyState === "complete"')) break; await sleep(200); }
 await sleep(400);
+/* v7.15：默认视图已从「画布」改为「写作」——本套件全部针对画布，进断言前先切回 canvas（无副作用幂等）。 */
+await evalJS("if (typeof setView === 'function') setView('canvas');");
+await sleep(300);
 console.log('  媒体特性回读: prefers-reduced-motion:reduce = ' + await evalJS("matchMedia('(prefers-reduced-motion: reduce)').matches") + '（期望 false，钉桩已生效）');
 console.log('  视口回读: ' + await evalJS('innerWidth + "x" + innerHeight') + '（deviceMetricsOverride 在 headless 下可能不生效——坐标类断言需按实际视口选点）');
 

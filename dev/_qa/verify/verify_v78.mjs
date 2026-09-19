@@ -5,7 +5,7 @@ import { CSS as MANIFEST_CSS, SLICES as MANIFEST_SLICES } from '../../manifest.m
 import { harvestDomainTokens, harvestCorpusStrings, harvestMarkerStrings, listEngineFiles, DOMAIN_HITS_GOLDEN } from '../lib/skin-guard.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEST_BUILD = buildTestArtifact();
-const TEST_ARTIFACT = TEST_BUILD.path;   /* A+：测试产物（= 产物 + 1 行访问器），4 套件对它执行；真实产物仅用于体积/P1-A/C/D 断言 */
+const TEST_ARTIFACT = TEST_BUILD.path;   /* A+：测试产物（= 产物 + 1 行访问器），各在用套件对它执行；真实产物仅用于体积/P1-A/C/D 断言 */
 /* v7.8 验收 · H 组：编辑器结构层 + 结构感知候选气泡 + 槽位 + 复制全文；I 组：补全配置窗口
    —— v7.8.2 收敛：风格包**已放回内置**（v7.8.1「内置降为中性示例」的决定被 Holly 撤销）；
       H 组断言仍**键于「导入后的用户表」**（导入/导出能力本身未变，v7.8.1 成果保留）；
@@ -102,6 +102,9 @@ await send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, mo
 await send('Page.reload');
 for (let i = 0; i < 40; i++) { if (await evalJS('document.readyState === "complete"')) break; await sleep(200); }
 await sleep(500);
+/* v7.15：默认视图已从「画布」改为「写作」——本套件针对画布，进断言前先切回 canvas（幂等）。 */
+await evalJS("if (typeof setView === 'function') setView('canvas');");
+await sleep(300);
 
 const R = [];
 function t(name, pass, detail) { R.push({ name, pass: !!pass, detail: detail === undefined ? '' : String(detail) }); }
@@ -150,6 +153,9 @@ t('H19 冷启动（未物化）→ 内置 seed「风格包」组 labels+bodies+�
 await send('Page.reload');
 for (let i = 0; i < 40; i++) { if (await evalJS('document.readyState === "complete"')) break; await sleep(200); }
 await sleep(400);
+/* v7.15：reload 后默认视图回到「写作」——H 组钥匙于画布，先切回 canvas（幂等）。 */
+await evalJS("if (typeof setView === 'function') setView('canvas');");
+await sleep(300);
 
 /* ── H0 夹具前置：走**真实导入路径**（FileReader + cmplImportAsset）载入 v7.8 风格包资产
    —— 之后 H 组断言全部键于「导入后的用户表」，逐字等于 v7.8，原意（风格包能力仍在且可被引用）完整保住。 */
@@ -547,7 +553,7 @@ const i7 = await evalJS(`(() => {
   cmplSetItems(arr); saveNow();
   var back = migrate(JSON.parse(localStorage.getItem(LS_KEY)));
   var old = migrate({ app: 'storyboard-prompt-panel', version: 12, blocks: [] });
-  /* v13 ⇒ v14 零丢失：带已物化 cmpl.items 的 v13 数据 → 逐字保留 + version=14 + 补默认 src */
+  /* v13 ⇒ v17 零丢失：带已物化 cmpl.items 的 v13 数据 → 逐字保留 + version=17 + 补默认 src */
   var m13 = migrate({ app: 'storyboard-prompt-panel', version: 13, blocks: [], cmpl: { v: 1, items: [
     { key: 'k1', group: '风格包', label: 'L1', note: '', body: '用户资产甲', block: false },
     { key: 'k2', group: '我的', label: 'L2', note: 'n', body: '用户资产乙', block: true }
@@ -555,11 +561,11 @@ const i7 = await evalJS(`(() => {
   return { roundTrip: back.cmpl.items[0].label, version: back.version, oldHidden: old.cmpl.items, oldV: old.version, oldBlocks: old.blocks.length,
            m13v: m13.version, m13len: m13.cmpl.items.length, m13b0: m13.cmpl.items[0].body, m13b1: m13.cmpl.items[1].body, m13s0: m13.cmpl.items[0].src };
 })()`);
-t('I7 存储往返（state → localStorage → migrate 后仍在）+ 旧数据（无 cmpl / v12）迁移后回落内置、version=14',
-  i7.roundTrip === '往返测试' && i7.version === 14 && i7.oldHidden === null && i7.oldV === 14 && i7.oldBlocks === 0,
+t('I7 存储往返（state → localStorage → migrate 后仍在）+ 旧数据（无 cmpl / v12）迁移后回落内置、version=17',
+  i7.roundTrip === '往返测试' && i7.version === 17 && i7.oldHidden === null && i7.oldV === 17 && i7.oldBlocks === 0,
   `往返=${i7.roundTrip}｜version=${i7.version}｜旧数据 cmpl.items=${JSON.stringify(i7.oldHidden)}（null=用内置）`);
-t('I7b v13 ⇒ v14 迁移**零丢失**：已物化的 cmpl.items 逐字保留（仅补默认 src），version 落 14',
-  i7.m13v === 14 && i7.m13len === 2 && i7.m13b0 === '用户资产甲' && i7.m13b1 === '用户资产乙' && i7.m13s0 === 'user',
+t('I7b v13 ⇒ v17 迁移**零丢失**：已物化的 cmpl.items 逐字保留（仅补默认 src），version 落 17',
+  i7.m13v === 17 && i7.m13len === 2 && i7.m13b0 === '用户资产甲' && i7.m13b1 === '用户资产乙' && i7.m13s0 === 'user',
   `v13→${i7.m13v}；items ${i7.m13len} 条：body0=「${i7.m13b0}」body1=「${i7.m13b1}」src0=${i7.m13s0}`);
 
 /* ---------- I8 Esc 关窗 + 回到干净状态 ----------
@@ -758,6 +764,9 @@ await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: clearScript
 await send('Page.reload');
 for (let i = 0; i < 40; i++) { if (await evalJS('document.readyState === "complete"')) break; await sleep(200); }
 await sleep(500);
+/* v7.15：reload 后默认视图回到「写作」——先切回 canvas（幂等）；本断言读 data 层，切视图不改数据。 */
+await evalJS("if (typeof setView === 'function') setView('canvas');");
+await sleep(300);
 const x4 = await evalJS(`(() => {
   var all = cmplActive();
   var style = all.filter(function(x){ return (x.group || '') === '风格包'; });
@@ -765,7 +774,7 @@ const x4 = await evalJS(`(() => {
   return { v: state.version, hasAsset: all.some(function(x){ return x.src === 'asset'; }), styleLen: style.length, fullOk: !!(full && full.body === ${JSON.stringify(FIX_FULL)}) };
 })()`);
 t('X4 真实导入路径可用：导入 → **reload 后仍在**（localStorage 持久；风格包全套逐字等于夹具）',
-  x4.v === 14 && x4.hasAsset && x4.styleLen === 7 && x4.fullOk,
+  x4.v === 17 && x4.hasAsset && x4.styleLen === 7 && x4.fullOk,
   `version=${x4.v}；含 asset=${x4.hasAsset}；风格包 ${x4.styleLen} 条；全套逐字=${x4.fullOk}`);
 
 /* ---------- P1 新增（构建器止血，**非产品行为**）：dev≡prod 逐字 + CSS 链顺序 ----------
@@ -842,13 +851,14 @@ t('P3-A Escape 统一分发：document 级 keydown 处理器共 3 处、其中�
   P3_CHUNKS.length === 3 && P3_WITH_ESC === 1,
   'doc-keydown=' + P3_CHUNKS.length + ' 含 Esc=' + P3_WITH_ESC);
 
-/* ---------- P2-B 显式导出面：PHJ 恰含 16 个模块键（真读页面内的 PHJ，非静态文本） ----------
+/* ---------- P2-B 显式导出面：PHJ 恰含 18 个模块键（真读页面内的 PHJ，非静态文本） ----------
    ★2026-09-17 加固（R0 证伪发现）：原断言【只查 16 个模块键存在】，把某个模块的导出面清空为
    `PHJ.x = {}` 仍会 PASS —— 即"键在、内容空"这一整类腐化抓不到。现补一条内容断言，
-   要求每个模块的导出面 == 契约清单（逐名精确），任一模块被清空/缩水即红。 */
-const P2_MODULES = ['blockEditor', 'canvas', 'clipboard', 'complete', 'highlight', 'keys', 'library', 'modals', 'overlay', 'paste', 'persist', 'pointer', 'splice', 'store', 'struct', 'wiring'];
+   要求每个模块的导出面 == 契约清单（逐名精确），任一模块被清空/缩水即红。
+   ★v7.15：+`host`（宿主解析层）、+`write`（写作台视图）→ 16 → 18 个模块键。 */
+const P2_MODULES = ['blockEditor', 'canvas', 'clipboard', 'complete', 'highlight', 'host', 'keys', 'library', 'modals', 'overlay', 'paste', 'persist', 'pointer', 'splice', 'store', 'struct', 'wiring', 'write'];
 const P2_KEYS = JSON.parse(await evalJS('JSON.stringify(Object.keys(PHJ).sort())'));
-t('P2-B 显式导出面：PHJ 恰含 16 个模块键（PHJ.<module> = {…}，读页面实例）',
+t('P2-B 显式导出面：PHJ 恰含 18 个模块键（PHJ.<module> = {…}，读页面实例）',
   Array.isArray(P2_KEYS) && P2_KEYS.join(',') === P2_MODULES.join(','), 'keys=' + JSON.stringify(P2_KEYS));
 
 /* P2-B2 导出面【内容】契约：每模块导出名逐名精确匹配（键存在 ≠ 面正确） */
@@ -856,19 +866,21 @@ const P2_EXPORTS_GOLDEN = {
   blockEditor: ['blkCb', 'closeBlockEditor', 'fitBlkWidth', 'openBlockEditor'],
   canvas: ['applyPan', 'arrangeAll', 'autoResize', 'board', 'canvas', 'fitBlock', 'render', 'textWidth'],
   clipboard: ['copyText', 'toast'],
-  complete: ['CMPL_SEED_V', 'cmplActive', 'cmplExportAsset', 'cmplGroupOrder', 'cmplImportAsset', 'cmplNewKey', 'cmplReset', 'cmplSeedItems', 'cmplSetItems'],
-  highlight: ['hlRefresh', 'hlSyncBox'],
+  complete: ['CMPL_SEED_V', 'cmplActive', 'cmplExportAsset', 'cmplGroupOrder', 'cmplImportAsset', 'cmplNewKey', 'cmplReset', 'cmplSeedItems', 'cmplSetItems', 'cmplStyleRef', 'cmplUseInvalidate'],
+  highlight: ['hlCommaToSpace', 'hlRefresh', 'hlSyncBox'],
+  host: ['hostDesk', 'hostPopup'],
   keys: [],
   library: ['closeCmplCfg', 'cmplCfgAdding', 'cmplCfgDel', 'cmplCfgEditing', 'cmplCfgQ', 'cmplCfgReset', 'cmplCfgResetAsk', 'cmplCfgSave', 'openCmplCfg', 'renderCmplCfg'],
-  modals: ['addBlockHere', 'closeCtxMenu', 'closeModal', 'closeTplWin', 'modalCb', 'newTemplate', 'newUnit', 'openCtxMenu', 'openTplWin', 'renderTplList', 'renderTplWin', 'toggleCollapsed'],
+  modals: ['addBlockHere', 'closeCtxMenu', 'closeModal', 'closeTplWin', 'deleteProject', 'modalCb', 'newProject', 'newTemplate', 'newUnit', 'openCtxMenu', 'openProjectMenu', 'openTplWin', 'renameActiveProject', 'renderTplList', 'renderTplWin', 'switchProject', 'toggleCollapsed'],
   overlay: ['activeId', 'bringToFront', 'peekBlock', 'refreshOverlays', 'updateLinks', 'updatePeekDots'],
   paste: [],
   persist: ['BACKUP_KEY', 'flush', 'load', 'migrate', 'sanitizeState', 'saveNow', 'scheduleSave', 'toastTimer'],
   pointer: ['actIds', 'blurActive', 'bulkAction', 'findBlockById', 'focusCaretEnd', 'ghostEl', 'ghostSrcId', 'isSel', 'refreshSel', 'resetZoom', 'syncSpliceText', 'toggleSpliceMode', 'updateDragTransform', 'updateZoomBtn', 'zoomAt'],
   splice: ['copySpliced', 'countSpliced', 'popCard', 'popSpliceEntry', 'renderSplice', 'spliceAdd', 'spliceClear', 'spliceRemoveIds', 'suckBlock'],
-  store: ['MIN_BLOCK_W', 'defaultState', 'drag', 'gridPos', 'keyDir', 'keyLastT', 'keyLoop', 'keyState', 'keyVel', 'panEndX', 'panEndY', 'panLooping', 'panVel', 'panning', 'selected', 'spacePan', 'spliceMode', 'state', 'tplCur', 'tplOpen', 'uid'],
-  struct: ['structAt'],
+  store: ['MIN_BLOCK_W', 'activeView', 'defaultState', 'drag', 'gridPos', 'keyDir', 'keyLastT', 'keyLoop', 'keyState', 'keyVel', 'loadProjectInto', 'newProjectSlot', 'normalizeOrder', 'panEndX', 'panEndY', 'panLooping', 'panVel', 'panning', 'projectAt', 'selected', 'spacePan', 'spliceMode', 'state', 'syncActiveProject', 'tplCur', 'tplOpen', 'uid'],
+  struct: ['structAt', 'structExemptMask'],
   wiring: ['exportJSON'],
+  write: ['applyView', 'focusDeskEditor', 'renderWrite', 'setView', 'wdContext', 'wdDel', 'wdKeydown', 'wdMove', 'wdNew', 'wdSelect'],
 };
 const P2_EXPORTS_ACTUAL = JSON.parse(await evalJS(
   'JSON.stringify(Object.fromEntries(Object.keys(PHJ).sort().map(k => [k, Object.keys(PHJ[k]).sort()])))'));
@@ -877,7 +889,7 @@ const P2_EXPORT_MISMATCH = P2_MODULES.filter(m =>
 t('P2-B2 导出面内容契约：每模块的导出名逐名精确（清空/缩水即红，护 R0 后的对外面）',
   P2_EXPORT_MISMATCH.length === 0,
   P2_EXPORT_MISMATCH.length ? '不符模块=' + JSON.stringify(P2_EXPORT_MISMATCH.map(m => [m, P2_EXPORTS_ACTUAL[m]])) :
-    '16 个模块导出面一致，合计 ' + Object.values(P2_EXPORTS_GOLDEN).reduce((a, v) => a + v.length, 0) + ' 名');
+    '18 个模块导出面一致，合计 ' + Object.values(P2_EXPORTS_GOLDEN).reduce((a, v) => a + v.length, 0) + ' 名');
 
 /* ---------- P1-D 产品纯度：pristine PHJ.html 加载后 window 自有键增量 ⊆ 白名单（预期空集） ---------- */
 const W0_ID = (await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.__W0 = Object.getOwnPropertyNames(window).slice();' })).identifier;

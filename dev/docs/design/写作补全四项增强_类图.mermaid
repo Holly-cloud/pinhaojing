@@ -1,0 +1,64 @@
+%% 拼好镜 · 写作补全四项增强（A/B/D/H）· 类图（导出面）
+%% 来源：dev/docs/design/写作补全四项增强_设计_2026-09-18.md §7 / §9
+%% 说明：独立成套（不覆盖 v7.15《界面切换与写作台》的 class-diagram.mermaid）
+
+classDiagram
+    class struct {
+      +structAt(text, caret) {region,label}
+      +structExemptMask(text) Uint8Array
+      -structMap(text) [{region,label}]
+      -STRUCT_MARKS
+    }
+    class highlight {
+      +hlRefresh(host)
+      +hlSyncBox(host)
+      -hlClassify(text, exempt) fam
+      -hlDialogueMask(text) mask
+      -hlToHTML(text, match, fam)
+      -hlStatus(host, fam)
+    }
+    class complete {
+      +CMPL_SEED_V
+      +cmplActive()
+      +cmplSeedItems()
+      +cmplSetItems(arr)
+      +cmplGroupOrder()
+      +cmplNewKey()
+      +cmplExportAsset() / cmplImportAsset()
+      +cmplReset(host)
+      +cmplStyleRef()
+      +cmplUseInvalidate()
+      -CMPL_UNUSED_NOTE
+      -cmplNeedle(body) / cmplUsedText() / cmplIsUsed / cmplNoteFor(it)
+      -cmplUseKey/Get/W/Touch(it)
+      -cmplBuild / cmplBuildGroupItems / cmplBuildGroups / cmplScore / cmplRender / cmplCommit
+    }
+    class library {
+      +openCmplCfg() / closeCmplCfg() / renderCmplCfg()
+      +cmplCfgSave/Del/Reset/ResetAsk
+      +cmplCfgAdding / cmplCfgEditing / cmplCfgQ
+      -cmplCfgView
+      -cmplCheckToggle/Dup/StyleDrift/Render/Collect
+    }
+    class store {
+      +state
+      +defaultState()
+      +normalizeOrder()
+    }
+    class persist {
+      +migrate(d)
+      +load() / saveNow() / scheduleSave() / sanitizeState()
+    }
+    class write {
+      +setView(v) / renderWrite() / wdOnInput()
+    }
+    class wiring {
+      +exportJSON()
+    }
+    highlight ..> struct : structExemptMask(text)
+    write ..> complete : cmplUseInvalidate()
+    wiring ..> complete : cmplUseInvalidate()
+    library ..> complete : cmplStyleRef() / cmplActive()
+    complete ..> store : state.cmpl.use
+    persist ..> store : 保留 use
+    struct ..> struct : structMap

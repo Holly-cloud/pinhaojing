@@ -6,13 +6,24 @@
           → 无论成败回收浏览器与临时 profile → 汇总各闸门通过数 → 语义化退出码。
 
    闸门顺序（与 README「改完必过的闸门」一致）：
-     [1] 构建           dev/build.mjs                       期望 230515 B（v7.14；F1/F2/F3 收尾后）
-     [2] 等价性校验     verify/verify_build_equivalence.mjs 期望 PASS（构建可复现：对 snapshots/PHJ_v7.14_20260917.html 含 banner 逐字节一致）
+     [1] 构建           dev/build.mjs                       期望 304151 B（sha256 df22b5903fdcbe39cc6eae873b40689b6ed9fc37a7de46eb2609f2f848f91e71；v7.18 多项目容器 + 需求②「间距不均」渲染时机修复）
+     [2] 等价性校验     verify/verify_build_equivalence.mjs 期望 PASS（构建可复现：对 snapshots/PHJ_v7.18_2026-09-19.html 含 banner 逐字节一致）
      [3] 回归 verify_v7 verify/verify_v7.mjs                期望 83/83（**体积限制已解除** → B10a/B10b/C8a/C8b 四条体积断言已删除）
      [4] F 组 verify_v76 verify/verify_v76.mjs              期望 18/18
      [5] G 组 verify_v77 verify/verify_v77.mjs              期望 16/16
      [6] v7.8 verify_v78 verify/verify_v78.mjs              期望 H+I+X+P1+P2+P3+R1+R3+R4 54/54（v7.8.2 的 40 + P1 构建器 4 + P2 收口 2 + P3 1 + R0 导出面内容契约 1 + R1 皮肤边界/语料归属 2 + **R3-A/R3-B/R3-C 皮肤棘轮/零泄漏/守卫自检 3** + **R4 皮肤可摘除 1**）；标签仍沿用「H+I」以兼容本脚本的汇总解析
      [7] 开发态         diag/probe_dev_index.mjs             期望 18/18
+     [8] W 组           verify/verify_w.mjs                  期望 W 21/21（v7.15 新增·界面切换 + 写作台；**独立成套**，
+                                                              既有 7 道判定式与条数零改动）
+     [9] C 组           verify/verify_c.mjs                  期望 C 31/31（v7.16 新增·写作补全四项增强 A/B/D/H；
+                                                              **独立成套**，既有 8 道判定式与条数零改动）
+     [10] E 组          verify/verify_e.mjs                  期望 E 16/16（v7.17 新增·放大编辑「逗号转空格（台词除外）」；
+                                                              **独立成套**，既有 9 道判定式与条数零改动）
+     [11] P 组          verify/verify_paste.mjs              期望 4/4（v7.18 新增·编辑器内 Ctrl+V 不被画布抢占；
+                                                              **含 S4 反面对照**：焦点非输入态时仍应建块）
+     [12] M 组          verify/verify_qa_v718.mjs            期望 9/9（v7.18 新增·多项目容器：解链专项 / 切项目数据隔离 /
+                                                              导出导入全项目 / 危险操作兜底 / 需求②间距稳定）
+     [13] V 组          verify/verify_qa_migrate_visual.mjs  期望 4/4（v7.18 新增·老数据 v16→v17 观感逐像素不变）
 
    环境变量：
      PHJ_BROWSER      浏览器 exe 绝对路径（**硬覆盖**：设置后即以其为准；不可用则报错退出 10，绝不静默回落到自动探测）
@@ -23,6 +34,10 @@
      1  = 构建失败         2 = 等价性失败      3 = verify_v7 失败
      4  = verify_v76 失败  5 = verify_v77 失败 6 = verify_v78 失败
      7  = probe_dev_index 失败
+     8  = verify_w 失败
+     9  = verify_c 失败
+     13 = verify_e 失败
+     14 = verify_paste 失败  15 = verify_qa_v718 失败  16 = verify_qa_migrate_visual 失败
      10 = 未找到浏览器     11 = 未找到空闲端口 12 = CDP 就绪超时
 
    为什么本 runner 必须自己「起浏览器 → 跑断言 → 杀进程」：
@@ -51,6 +66,12 @@ const SCRIPTS = {
   v77:    path.join(HERE, 'verify', 'verify_v77.mjs'),
   v78:    path.join(HERE, 'verify', 'verify_v78.mjs'),
   devidx: path.join(HERE, 'diag', 'probe_dev_index.mjs'),
+  w:      path.join(HERE, 'verify', 'verify_w.mjs'),
+  c:      path.join(HERE, 'verify', 'verify_c.mjs'),
+  e:      path.join(HERE, 'verify', 'verify_e.mjs'),
+  paste:  path.join(HERE, 'verify', 'verify_paste.mjs'),
+  q718:   path.join(HERE, 'verify', 'verify_qa_v718.mjs'),
+  migv:   path.join(HERE, 'verify', 'verify_qa_migrate_visual.mjs'),
 };
 
 const GATE_META = {
@@ -61,7 +82,17 @@ const GATE_META = {
   v77:    { no: 5, label: 'G 组 verify_v77',        code: 5 },
   v78:    { no: 6, label: 'v7.8 verify_v78',        code: 6 },
   devidx: { no: 7, label: '开发态 probe_dev_index', code: 7 },
+  w:      { no: 8, label: 'W 组 verify_w',          code: 8 },
+  c:      { no: 9, label: 'C 组 verify_c',          code: 9 },
+  e:      { no: 10, label: 'E 组 verify_e',         code: 13 },
+  paste:  { no: 11, label: 'P 组 verify_paste',     code: 14 },
+  q718:   { no: 12, label: 'M 组 verify_qa_v718',   code: 15 },
+  migv:   { no: 13, label: 'V 组 migrate_visual',   code: 16 },
 };
+
+/* ★闸门总数：由 GATE_META 推导——禁止在汇总里硬编码「N/N 全绿」
+   （v7.16 教训：曾出现「步骤头写 /8，却硬编码打印 9/9 全绿」的假闸门） */
+const GATE_TOTAL = Object.keys(GATE_META).length;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -220,7 +251,7 @@ async function main() {
     console.log('▶ CDP 就绪：' + (ver['Browser'] || 'headless') + '\n');
 
     /* ---- [1] 构建 ---- */
-    console.log('\n━━━ [1/7] 构建：dev/build.mjs ━━━');
+    console.log('\n━━━ [1/13] 构建：dev/build.mjs ━━━');
     {
       const r = runNode(SCRIPTS.build, port); emit(r);
       let size = null;
@@ -231,7 +262,7 @@ async function main() {
     }
 
     /* ---- [2] 等价性 ---- */
-    console.log('\n━━━ [2/7] 等价性：verify_build_equivalence.mjs ━━━');
+    console.log('\n━━━ [2/13] 等价性：verify_build_equivalence.mjs ━━━');
     {
       const r = runNode(SCRIPTS.equiv, port); emit(r);
       const detail = r.status === 0 ? 'PASS（构建可复现）' : r.status === 2 ? '历史语义/仅格式差异（非严格）' : 'FAIL';
@@ -241,7 +272,7 @@ async function main() {
     }
 
     /* ---- [3] verify_v7 ---- */
-    console.log('\n━━━ [3/7] 回归：verify_v7.mjs ━━━');
+    console.log('\n━━━ [3/13] 回归：verify_v7.mjs ━━━');
     {
       const r = runNode(SCRIPTS.v7, port); emit(r);
       const n = num(r.stdout, /结果：(\d+)\s*通过\s*\/\s*(\d+)\s*失败/);
@@ -251,7 +282,7 @@ async function main() {
     }
 
     /* ---- [4] verify_v76 ---- */
-    console.log('\n━━━ [4/7] F 组：verify_v76.mjs ━━━');
+    console.log('\n━━━ [4/13] F 组：verify_v76.mjs ━━━');
     {
       const r = runNode(SCRIPTS.v76, port); emit(r);
       const n = num(r.stdout, /F 组合计\s*(\d+)\/(\d+)/);
@@ -261,7 +292,7 @@ async function main() {
     }
 
     /* ---- [5] verify_v77 ---- */
-    console.log('\n━━━ [5/7] G 组：verify_v77.mjs ━━━');
+    console.log('\n━━━ [5/13] G 组：verify_v77.mjs ━━━');
     {
       const r = runNode(SCRIPTS.v77, port); emit(r);
       const n = num(r.stdout, /G 组合计\s*(\d+)\/(\d+)/);
@@ -271,7 +302,7 @@ async function main() {
     }
 
     /* ---- [6] verify_v78 ---- */
-    console.log('\n━━━ [6/7] v7.8：verify_v78.mjs ━━━');
+    console.log('\n━━━ [6/13] v7.8：verify_v78.mjs ━━━');
     {
       const r = runNode(SCRIPTS.v78, port); emit(r);
       const n = num(r.stdout, /H\+I 组合计\s*(\d+)\/(\d+)/);
@@ -281,13 +312,73 @@ async function main() {
     }
 
     /* ---- [7] probe_dev_index ---- */
-    console.log('\n━━━ [7/7] 开发态：probe_dev_index.mjs ━━━');
+    console.log('\n━━━ [7/13] 开发态：probe_dev_index.mjs ━━━');
     {
       const r = runNode(SCRIPTS.devidx, port); emit(r);
       const n = num(r.stdout, /开发态合计\s*(\d+)\/(\d+)/);
       const ok = r.status === 0;
       results.push({ key: 'devidx', ok, detail: n ? n[0] + '/' + n[1] : '未取到汇总（exit ' + r.status + '）' });
       if (!ok) { exitCode = 7; return exitCode; }
+    }
+
+    /* ---- [8] verify_w（v7.15 写作台 · 独立成套） ---- */
+    console.log('\n━━━ [8/13] W 组：verify_w.mjs ━━━');
+    {
+      const r = runNode(SCRIPTS.w, port); emit(r);
+      const n = num(r.stdout, /W 组合计\s*(\d+)\/(\d+)/);
+      const ok = r.status === 0;
+      results.push({ key: 'w', ok, detail: n ? 'W ' + n[0] + '/' + n[1] : '未取到汇总（exit ' + r.status + '）' });
+      if (!ok) { exitCode = 8; return exitCode; }
+    }
+
+    /* ---- [9] verify_c（v7.16 写作补全四项增强 A/B/D/H · 独立成套） ---- */
+    console.log('\n━━━ [9/13] C 组：verify_c.mjs ━━━');
+    {
+      const r = runNode(SCRIPTS.c, port); emit(r);
+      const n = num(r.stdout, /C 组合计\s*(\d+)\/(\d+)/);
+      const ok = r.status === 0;
+      results.push({ key: 'c', ok, detail: n ? 'C ' + n[0] + '/' + n[1] : '未取到汇总（exit ' + r.status + '）' });
+      if (!ok) { exitCode = 9; return exitCode; }
+    }
+
+    /* ---- [10] verify_e（v7.17 放大编辑「逗号转空格（台词除外）」· 独立成套） ---- */
+    console.log('\n━━━ [10/13] E 组：verify_e.mjs ━━━');
+    {
+      const r = runNode(SCRIPTS.e, port); emit(r);
+      const n = num(r.stdout, /E 组合计\s*(\d+)\/(\d+)/);
+      const ok = r.status === 0;
+      results.push({ key: 'e', ok, detail: n ? 'E ' + n[0] + '/' + n[1] : '未取到汇总（exit ' + r.status + '）' });
+      if (!ok) { exitCode = 13; return exitCode; }
+    }
+
+    /* ---- [11] verify_paste（v7.18 编辑器内 Ctrl+V 不被画布抢占 · 含 S4 反面对照） ---- */
+    console.log('\n━━━ [11/13] P 组：verify_paste.mjs ━━━');
+    {
+      const r = runNode(SCRIPTS.paste, port); emit(r);
+      const n = num(r.stdout, /合计\s*(\d+)\/(\d+)/);
+      const ok = r.status === 0;
+      results.push({ key: 'paste', ok, detail: n ? 'P ' + n[0] + '/' + n[1] : '未取到汇总（exit ' + r.status + '）' });
+      if (!ok) { exitCode = 14; return exitCode; }
+    }
+
+    /* ---- [12] verify_qa_v718（v7.18 多项目容器 + 需求② · 独立成套） ---- */
+    console.log('\n━━━ [12/13] M 组：verify_qa_v718.mjs ━━━');
+    {
+      const r = runNode(SCRIPTS.q718, port); emit(r);
+      const n = num(r.stdout, /合计\s*(\d+)\/(\d+)/);
+      const ok = r.status === 0;
+      results.push({ key: 'q718', ok, detail: n ? 'M ' + n[0] + '/' + n[1] : '未取到汇总（exit ' + r.status + '）' });
+      if (!ok) { exitCode = 15; return exitCode; }
+    }
+
+    /* ---- [13] verify_qa_migrate_visual（v7.18 老数据 v16→v17 观感逐像素不变） ---- */
+    console.log('\n━━━ [13/13] V 组：verify_qa_migrate_visual.mjs ━━━');
+    {
+      const r = runNode(SCRIPTS.migv, port); emit(r);
+      const n = num(r.stdout, /合计\s*(\d+)\/(\d+)/);
+      const ok = r.status === 0;
+      results.push({ key: 'migv', ok, detail: n ? 'V ' + n[0] + '/' + n[1] : '未取到汇总（exit ' + r.status + '）' });
+      if (!ok) { exitCode = 16; return exitCode; }
     }
 
     exitCode = 0;
@@ -311,7 +402,7 @@ const padW = (s, n) => s + ' '.repeat(Math.max(0, n - dispWidth(s)));
 function renderSummary(results, exitCode, elapsedMs) {
   const by = new Map(results.map((r) => [r.key, r]));
   console.log('\n╔════════════════════ 闸门汇总 ════════════════════╗');
-  for (const key of ['build', 'equiv', 'v7', 'v76', 'v77', 'v78', 'devidx']) {
+  for (const key of ['build', 'equiv', 'v7', 'v76', 'v77', 'v78', 'devidx', 'w', 'c', 'e', 'paste', 'q718', 'migv']) {
     const meta = GATE_META[key];
     const r = by.get(key);
     const mark = r && r.ok ? '✅' : (r ? '❌' : '⏭️');
@@ -322,7 +413,8 @@ function renderSummary(results, exitCode, elapsedMs) {
   const passed = results.filter((r) => r.ok).length;
   console.log('╚══════════════════════════════════════════════════╝');
   if (exitCode === 0) {
-    console.log('  结果：7/7 全绿 ✅   （耗时 ' + (elapsedMs / 1000).toFixed(1) + 's）');
+    /* ★分母取 GATE_TOTAL（由 GATE_META 推导）、分子取实跑通过数 —— 杜绝硬编码「N/N 全绿」 */
+    console.log('  结果：' + passed + '/' + GATE_TOTAL + ' 全绿 ✅   （耗时 ' + (elapsedMs / 1000).toFixed(1) + 's）');
   } else {
     const failed = GATE_META[results.find((r) => !r.ok)?.key];
     console.log('  结果：' + passed + '/' + ran + ' 通过 ❌ —— ' +
