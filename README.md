@@ -55,7 +55,8 @@
 
 | 想了解 | 去看 |
 |---|---|
-| ★ **AI agent 接手本项目（30 秒上手 + 接手 5 步）** | `AGENTS.md`（`CLAUDE.md` 同指针） |
+| ★ **项目铁律（P 产品红线 / E 工程不变式 / C 协作 / T 测试 · 最高约束）** | [`IRON_RULES.md`](IRON_RULES.md) |
+| ★ **AI agent 接手本项目（30 秒上手 + 接手 6 步）** | `AGENTS.md`（`CLAUDE.md` 同指针） |
 | ★ **当前交接状态（版本/指纹/在途/待裁决）** | `HANDOVER.md`（活文件） |
 | ★ **项目记忆唯一事实源（红线/不变式/工具坑/测试铁律）** | `dev/docs/ops/PROJECT_MEMORY.md` |
 | 开发侧总导览（改动入口 / 构建验收 / 档案原则） | `dev/README.md` |

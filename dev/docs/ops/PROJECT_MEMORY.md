@@ -11,13 +11,10 @@
 
 **当前基线（v7.20，2026-09-20）**：`PHJ.html` = **324783 B** ｜ sha256 `8ca1925156e28d0494f56d74a51a9e71b254d92da03379977d62b36d3425ae8a` ｜ 闸门 **15/15** ｜ `state.version` = **17** ｜ 本地 HEAD `b00e788` + tag `v7.20`（**远端 `origin/master` 仍 `63e0671`（v7.14 期），v7.18/v7.19/v7.20 三个提交与 tag 未推送**——推送需 PAT：写 `~/.git-credentials` → `git -c credential.helper= -c credential.helper=store push origin master --tags` → **用完删**；`GIT_ASKPASS`+msys 路径会 spawn 失败）。
 
-## 产品红线（不可违背）
+## 产品红线
 
-1. 交付物 = 根目录**单个 `PHJ.html`**，`file://` 双击即用；零安装/零进程/零系统残留
-2. 经典脚本（禁 `type=module` / 动态 `import()`，`file://` 被 CORS 挡）；构建期零依赖（纯 node）
-3. localStorage 键 `storyboard-prompt-panel:v1`；`version`=**17**；`migrate()` 须 v1→v17 **零丢失**（v15 加 `block.order`；v16 加 `cmpl.use`=补全条目使用记录 `{[hkey]:{n,t}}`，hkey = 内容派生 `FNV1a32(group\0label\0body)`；**v17 加 `projects[]`+`activeProject`，老数据升为单项目并沿用原 `title`；顶层 `blocks/pan/zoom/splice/collapsed/title` 是活动项目槽的镜像引用，切项目换引用**）
-4. `prefers-reduced-motion` 降级必须保留
-5. `dev/src/skin/corpus.js` 一字不改；皮肤语料演进（如给「硬性要求」节加专属气泡组）属皮肤层演进，需 Holly 批准
+★**约束条文见 `IRON_RULES.md` P1-P5**（本文件不再复制，避免两处漂移）。
+要点速记：单文件 `file://` 即用 · 经典脚本零依赖 · `migrate` 零丢失 · reduced-motion 降级 · 皮肤语料只消费不改。
 
 ## 版本沿革速览（细节见 CHANGELOG）
 
@@ -40,7 +37,9 @@
 > ⚠️ 套件单独跑需 9222 端口已有调试浏览器；`run-gate` 负责自起自收。单独跑报 `ECONNREFUSED 127.0.0.1:9222` 是**预期**。
 > ⚠️ 新增套件优先复用 run-gate 传入的 `PHJ_BROWSER_PORT` 会话（参照 `verify_v719.mjs`/`verify_v720.mjs` 形态）。
 
-## 工程不变式
+## 工程不变式（展开说明）
+
+> ★**约束条文见 `IRON_RULES.md` E1-E9**；本节是这些条文的背景与实现细节（若表述冲突，**以条文为准**）。
 
 - **改产物字节的合法路径**：`node dev/build.mjs` → 拷 `PHJ.html` 为 `_qa/snapshots/PHJ_v<版本>_<日期>.html` → 改 `verify_build_equivalence.mjs` 的 `OLD` → 改 `run-gate.mjs` 头注释 → 跑 **15/15**（★`run-gate` 无体积判定式，唯一真闸门是**等价性逐字节**）
 - **行尾无忧（已实测）**：`build.mjs` 读源码归一 LF、输出统一 CRLF → 源码 LF/CRLF 混用不影响产物；`PHJ.html` 与快照在 `.gitattributes` 为 `-text`
@@ -62,19 +61,15 @@
 8. ★headless CDP **鼠标拖选不派发选区**（v7.19 实测，about:blank 纯 textarea 对照证实）→ 划选类验证用「点击起点 + Shift+点选延展」同路径替代
 9. 本机 git 打含 `/` 的 ref 静默失败 → `show-ref` 复核
 
-## 测试工装铁律（11 条 · 全部实战事故）
+## 数据结构（version 17 · 供实现参考）
 
-1. 断言必须**真读**被测对象（state/LS/DOM 真值/getComputedStyle/rect/像素），不许判"元素存在"
-2. 每条改过的断言都要**证伪**（改到必红 → 还原）
-3. 存在性/计数断言追问「内容变空会不会照样通过」
-4. 断言**条数变动须先报 Holly** 核准
-5. ★新增「默认入口/默认初始态」会被既有套件 setup 绕开 → 变成零覆盖盲区，**必须单立断言**（v7.15：写作台 `display:none` 却 7/7 全绿）
-6. 门控/豁免断言必须配**反方向对照组**
-7. ★★新闸门必须做**闸门级证伪**（改坏 → 完整 run-gate 真红退自己那道的非零码；v7.16 出过"只跑 8 道硬编码报 9/9"的假闸门）
-8. 断言写完自问反向「改坏必红吗」；**夹具不得预含被插入/被断言的内容**（v7.20：fixture 首行含目标 body → 插入断言恒真）
-9. ★★修 flake 先稳定复现（连跑 20 次统计）；**修法不得放宽判定**（v7.17：跨进程时钟比较 → 基准挪同进程，不是放大容差）；**复现不出就不许改**
-10. ★闸门总数禁止硬编码：汇总用 `GATE_TOTAL` 推导；**新增闸门改四处**（SCRIPTS / GATE_META / 步骤头 `/N` / 汇总 key 数组）——漏 key 数组 = 不显示、漏步骤头 = 数字撒谎
-11. ★探测类操作（环境/工装陷阱）以**实测为准**：假设被证伪就接受（v7.19"dev 页顶层名全 undefined → W 组跑那儿只会崩不会部分红"），不按猜测改代码
+- `state.blocks`（当前项目的块）· `state.projects[]` + `activeProject`（v17 多项目；顶层 `blocks/pan/zoom/splice/collapsed/title` 是活动槽的**镜像引用**）· `state.cmpl`（片段库 + `use` 使用记录 `{[hkey]:{n,t}}`，hkey = `FNV1a32(group\0label\0body)`）· `state.templates` · `block.order`（写作台顺序，与画布 x/y 互不干扰）
+- `migrate()` 须 v1→v17 **零丢失**
+
+## 测试铁律
+
+★**条文见 `IRON_RULES.md` T1-T11**（本文件不再复制）。
+事故细节与实战取证见 `dev/_qa/records/handover/` 各档案（四轮浓缩含 v7.15 零覆盖盲区、v7.16 假闸门、v7.17 跨进程时钟 flake、v7.19 假设被证伪、v7.20 夹具恒真等全部原始情形）。
 
 ## 多 agent 协作（详见《多agent异步协作协议》）
 
