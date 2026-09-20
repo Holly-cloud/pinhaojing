@@ -413,7 +413,10 @@ document.addEventListener('DOMContentLoaded', function(){
     ta.addEventListener('scroll', function(){ hlSyncBox(hostDesk); });
     ta.addEventListener('click', function(){ hlRefresh(hostDesk); });
     ta.addEventListener('keyup', function(){ hlRefresh(hostDesk); });
-    ta.addEventListener('select', function(){ hlRefresh(hostDesk); });
+    /* v7.19：划选**只刷新状态栏**（行列 / 节 / 错误数），不再整层重建彩色层。
+       实测：键盘 Shift+方向 延展选区时 select 每按一次就触发一次（12 次按键 → 25 次整层重建），
+       而划选期间文本与光标位置都没变，重建彩色层既无必要又抖（且会把配对高亮清掉）。 */
+    ta.addEventListener('select', function(){ hlStatus(hostDesk); });
     ta.addEventListener('focus', function(){ hlRefresh(hostDesk); });
     if(window.ResizeObserver) new ResizeObserver(function(){ hlSyncBox(hostDesk); }).observe(ta);
   }

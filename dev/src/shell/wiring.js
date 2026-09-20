@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function(){
     ta.addEventListener('scroll', hlSyncBox);
     ta.addEventListener('click', hlRefresh);
     ta.addEventListener('keyup', hlRefresh);
-    ta.addEventListener('select', hlRefresh);
+    ta.addEventListener('select', function(){ hlStatus(); });   /* v7.19：划选只刷新状态栏（不整层重建彩色层，与写作台宿主同口径，见 view/write.js） */
     ta.addEventListener('focus', hlRefresh);
     if(window.ResizeObserver) new ResizeObserver(hlSyncBox).observe(ta);
     window.addEventListener('resize', hlSyncBox);

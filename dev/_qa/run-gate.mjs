@@ -6,8 +6,8 @@
           → 无论成败回收浏览器与临时 profile → 汇总各闸门通过数 → 语义化退出码。
 
    闸门顺序（与 README「改完必过的闸门」一致）：
-     [1] 构建           dev/build.mjs                       期望 304151 B（sha256 df22b5903fdcbe39cc6eae873b40689b6ed9fc37a7de46eb2609f2f848f91e71；v7.18 多项目容器 + 需求②「间距不均」渲染时机修复）
-     [2] 等价性校验     verify/verify_build_equivalence.mjs 期望 PASS（构建可复现：对 snapshots/PHJ_v7.18_2026-09-19.html 含 banner 逐字节一致）
+     [1] 构建           dev/build.mjs                       期望 306977 B（sha256 dfca622f62d0124ef6ee9dc21dac783cb27ce707c7b5f6928dfb9e6f8602cf52；v7.19 划选重影修复 + 写作台补全写回修复 + 撤销封存（scroll→cmplPlace 根因修复））
+     [2] 等价性校验     verify/verify_build_equivalence.mjs 期望 PASS（构建可复现：对 snapshots/PHJ_v7.19_2026-09-20.html 含 banner 逐字节一致）
      [3] 回归 verify_v7 verify/verify_v7.mjs                期望 83/83（**体积限制已解除** → B10a/B10b/C8a/C8b 四条体积断言已删除）
      [4] F 组 verify_v76 verify/verify_v76.mjs              期望 18/18
      [5] G 组 verify_v77 verify/verify_v77.mjs              期望 16/16
@@ -72,6 +72,7 @@ const SCRIPTS = {
   paste:  path.join(HERE, 'verify', 'verify_paste.mjs'),
   q718:   path.join(HERE, 'verify', 'verify_qa_v718.mjs'),
   migv:   path.join(HERE, 'verify', 'verify_qa_migrate_visual.mjs'),
+  v719:   path.join(HERE, 'verify', 'verify_v719.mjs'),
 };
 
 const GATE_META = {
@@ -88,6 +89,7 @@ const GATE_META = {
   paste:  { no: 11, label: 'P 组 verify_paste',     code: 14 },
   q718:   { no: 12, label: 'M 组 verify_qa_v718',   code: 15 },
   migv:   { no: 13, label: 'V 组 migrate_visual',   code: 16 },
+  v719:   { no: 14, label: 'v7.19 组 verify_v719',  code: 17 },
 };
 
 /* ★闸门总数：由 GATE_META 推导——禁止在汇总里硬编码「N/N 全绿」
@@ -251,7 +253,7 @@ async function main() {
     console.log('▶ CDP 就绪：' + (ver['Browser'] || 'headless') + '\n');
 
     /* ---- [1] 构建 ---- */
-    console.log('\n━━━ [1/13] 构建：dev/build.mjs ━━━');
+    console.log('\n━━━ [1/14] 构建：dev/build.mjs ━━━');
     {
       const r = runNode(SCRIPTS.build, port); emit(r);
       let size = null;
@@ -262,7 +264,7 @@ async function main() {
     }
 
     /* ---- [2] 等价性 ---- */
-    console.log('\n━━━ [2/13] 等价性：verify_build_equivalence.mjs ━━━');
+    console.log('\n━━━ [2/14] 等价性：verify_build_equivalence.mjs ━━━');
     {
       const r = runNode(SCRIPTS.equiv, port); emit(r);
       const detail = r.status === 0 ? 'PASS（构建可复现）' : r.status === 2 ? '历史语义/仅格式差异（非严格）' : 'FAIL';
@@ -272,7 +274,7 @@ async function main() {
     }
 
     /* ---- [3] verify_v7 ---- */
-    console.log('\n━━━ [3/13] 回归：verify_v7.mjs ━━━');
+    console.log('\n━━━ [3/14] 回归：verify_v7.mjs ━━━');
     {
       const r = runNode(SCRIPTS.v7, port); emit(r);
       const n = num(r.stdout, /结果：(\d+)\s*通过\s*\/\s*(\d+)\s*失败/);
@@ -282,7 +284,7 @@ async function main() {
     }
 
     /* ---- [4] verify_v76 ---- */
-    console.log('\n━━━ [4/13] F 组：verify_v76.mjs ━━━');
+    console.log('\n━━━ [4/14] F 组：verify_v76.mjs ━━━');
     {
       const r = runNode(SCRIPTS.v76, port); emit(r);
       const n = num(r.stdout, /F 组合计\s*(\d+)\/(\d+)/);
@@ -292,7 +294,7 @@ async function main() {
     }
 
     /* ---- [5] verify_v77 ---- */
-    console.log('\n━━━ [5/13] G 组：verify_v77.mjs ━━━');
+    console.log('\n━━━ [5/14] G 组：verify_v77.mjs ━━━');
     {
       const r = runNode(SCRIPTS.v77, port); emit(r);
       const n = num(r.stdout, /G 组合计\s*(\d+)\/(\d+)/);
@@ -302,7 +304,7 @@ async function main() {
     }
 
     /* ---- [6] verify_v78 ---- */
-    console.log('\n━━━ [6/13] v7.8：verify_v78.mjs ━━━');
+    console.log('\n━━━ [6/14] v7.8：verify_v78.mjs ━━━');
     {
       const r = runNode(SCRIPTS.v78, port); emit(r);
       const n = num(r.stdout, /H\+I 组合计\s*(\d+)\/(\d+)/);
@@ -312,7 +314,7 @@ async function main() {
     }
 
     /* ---- [7] probe_dev_index ---- */
-    console.log('\n━━━ [7/13] 开发态：probe_dev_index.mjs ━━━');
+    console.log('\n━━━ [7/14] 开发态：probe_dev_index.mjs ━━━');
     {
       const r = runNode(SCRIPTS.devidx, port); emit(r);
       const n = num(r.stdout, /开发态合计\s*(\d+)\/(\d+)/);
@@ -322,7 +324,7 @@ async function main() {
     }
 
     /* ---- [8] verify_w（v7.15 写作台 · 独立成套） ---- */
-    console.log('\n━━━ [8/13] W 组：verify_w.mjs ━━━');
+    console.log('\n━━━ [8/14] W 组：verify_w.mjs ━━━');
     {
       const r = runNode(SCRIPTS.w, port); emit(r);
       const n = num(r.stdout, /W 组合计\s*(\d+)\/(\d+)/);
@@ -332,7 +334,7 @@ async function main() {
     }
 
     /* ---- [9] verify_c（v7.16 写作补全四项增强 A/B/D/H · 独立成套） ---- */
-    console.log('\n━━━ [9/13] C 组：verify_c.mjs ━━━');
+    console.log('\n━━━ [9/14] C 组：verify_c.mjs ━━━');
     {
       const r = runNode(SCRIPTS.c, port); emit(r);
       const n = num(r.stdout, /C 组合计\s*(\d+)\/(\d+)/);
@@ -342,7 +344,7 @@ async function main() {
     }
 
     /* ---- [10] verify_e（v7.17 放大编辑「逗号转空格（台词除外）」· 独立成套） ---- */
-    console.log('\n━━━ [10/13] E 组：verify_e.mjs ━━━');
+    console.log('\n━━━ [10/14] E 组：verify_e.mjs ━━━');
     {
       const r = runNode(SCRIPTS.e, port); emit(r);
       const n = num(r.stdout, /E 组合计\s*(\d+)\/(\d+)/);
@@ -352,7 +354,7 @@ async function main() {
     }
 
     /* ---- [11] verify_paste（v7.18 编辑器内 Ctrl+V 不被画布抢占 · 含 S4 反面对照） ---- */
-    console.log('\n━━━ [11/13] P 组：verify_paste.mjs ━━━');
+    console.log('\n━━━ [11/14] P 组：verify_paste.mjs ━━━');
     {
       const r = runNode(SCRIPTS.paste, port); emit(r);
       const n = num(r.stdout, /合计\s*(\d+)\/(\d+)/);
@@ -362,7 +364,7 @@ async function main() {
     }
 
     /* ---- [12] verify_qa_v718（v7.18 多项目容器 + 需求② · 独立成套） ---- */
-    console.log('\n━━━ [12/13] M 组：verify_qa_v718.mjs ━━━');
+    console.log('\n━━━ [12/14] M 组：verify_qa_v718.mjs ━━━');
     {
       const r = runNode(SCRIPTS.q718, port); emit(r);
       const n = num(r.stdout, /合计\s*(\d+)\/(\d+)/);
@@ -372,13 +374,23 @@ async function main() {
     }
 
     /* ---- [13] verify_qa_migrate_visual（v7.18 老数据 v16→v17 观感逐像素不变） ---- */
-    console.log('\n━━━ [13/13] V 组：verify_qa_migrate_visual.mjs ━━━');
+    console.log('\n━━━ [13/14] V 组：verify_qa_migrate_visual.mjs ━━━');
     {
       const r = runNode(SCRIPTS.migv, port); emit(r);
       const n = num(r.stdout, /合计\s*(\d+)\/(\d+)/);
       const ok = r.status === 0;
       results.push({ key: 'migv', ok, detail: n ? 'V ' + n[0] + '/' + n[1] : '未取到汇总（exit ' + r.status + '）' });
       if (!ok) { exitCode = 16; return exitCode; }
+    }
+
+    /* ---- [14] verify_v719（v7.19 划选重影 + 写作台补全可用） ---- */
+    console.log('\n━━━ [14/14] v7.19 组：verify_v719.mjs ━━━');
+    {
+      const r = runNode(SCRIPTS.v719, port); emit(r);
+      const n = num(r.stdout, /v7\.19 组合计\s*(\d+)\/(\d+)/);
+      const ok = r.status === 0;
+      results.push({ key: 'v719', ok, detail: n ? 'v7.19 ' + n[0] + '/' + n[1] : '未取到汇总（exit ' + r.status + '）' });
+      if (!ok) { exitCode = 17; return exitCode; }
     }
 
     exitCode = 0;
@@ -402,7 +414,7 @@ const padW = (s, n) => s + ' '.repeat(Math.max(0, n - dispWidth(s)));
 function renderSummary(results, exitCode, elapsedMs) {
   const by = new Map(results.map((r) => [r.key, r]));
   console.log('\n╔════════════════════ 闸门汇总 ════════════════════╗');
-  for (const key of ['build', 'equiv', 'v7', 'v76', 'v77', 'v78', 'devidx', 'w', 'c', 'e', 'paste', 'q718', 'migv']) {
+  for (const key of ['build', 'equiv', 'v7', 'v76', 'v77', 'v78', 'devidx', 'w', 'c', 'e', 'paste', 'q718', 'migv', 'v719']) {
     const meta = GATE_META[key];
     const r = by.get(key);
     const mark = r && r.ok ? '✅' : (r ? '❌' : '⏭️');

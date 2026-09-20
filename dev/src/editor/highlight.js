@@ -161,7 +161,10 @@ function hlStatus(host, fam){
   var ta = host.el('ta'), v = ta.value, p = ta.selectionStart || 0;
   var line = v.slice(0, p).split('\n').length;
   var col = p - (v.lastIndexOf('\n', p - 1) + 1) + 1;
-  if(!fam) fam = hlClassify(v);
+  /* v7.19：缺省口径与 hlRefresh **同源**（带上结构豁免掩码）——此前此处无掩码，
+     若调用方不传 fam（如 v7.19 起 select 事件直接调 hlStatus），错误数会比着色层多算，
+     状态栏数字与彩色层打架。改后「不传 fam」与「hlRefresh 传进来的 fam」结果逐字一致。 */
+  if(!fam) fam = hlClassify(v, structExemptMask(v));
   var errs = 0, ei;                                          /* v7.7：错误计数与着色同源（复用分类结果；台词区内已豁免，不再计入） */
   for(ei = 0; ei < fam.length; ei++) if(fam[ei] === 'err') errs++;
   host.el('stLine').textContent = line;
@@ -188,5 +191,6 @@ function hlRefresh(host){
 }
 
 /* 本模块对外面 = 被他模块引用的顶层名（P3 客观统计口径）
-   v7.17：+hlCommaToSpace（wiring.js 的 #blkComma 引）——纯文本工具，句内复用 hlDialogueMask（不导出，仅模块内） */
-PHJ.highlight = { hlCommaToSpace, hlRefresh, hlSyncBox };
+   v7.17：+hlCommaToSpace（wiring.js 的 #blkComma 引）——纯文本工具，句内复用 hlDialogueMask（不导出，仅模块内）
+   v7.19：+hlStatus（write.js / wiring.js 的 select 事件引）——划选时只刷新状态栏，不再整层重建彩色层 */
+PHJ.highlight = { hlCommaToSpace, hlRefresh, hlStatus, hlSyncBox };

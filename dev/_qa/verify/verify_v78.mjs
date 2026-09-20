@@ -867,7 +867,7 @@ const P2_EXPORTS_GOLDEN = {
   canvas: ['applyPan', 'arrangeAll', 'autoResize', 'board', 'canvas', 'fitBlock', 'render', 'textWidth'],
   clipboard: ['copyText', 'toast'],
   complete: ['CMPL_SEED_V', 'cmplActive', 'cmplExportAsset', 'cmplGroupOrder', 'cmplImportAsset', 'cmplNewKey', 'cmplReset', 'cmplSeedItems', 'cmplSetItems', 'cmplStyleRef', 'cmplUseInvalidate'],
-  highlight: ['hlCommaToSpace', 'hlRefresh', 'hlSyncBox'],
+  highlight: ['hlCommaToSpace', 'hlRefresh', 'hlStatus', 'hlSyncBox'],
   host: ['hostDesk', 'hostPopup'],
   keys: [],
   library: ['closeCmplCfg', 'cmplCfgAdding', 'cmplCfgDel', 'cmplCfgEditing', 'cmplCfgQ', 'cmplCfgReset', 'cmplCfgResetAsk', 'cmplCfgSave', 'openCmplCfg', 'renderCmplCfg'],

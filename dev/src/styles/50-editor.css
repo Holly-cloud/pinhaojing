@@ -15,7 +15,12 @@
 .blk-input{position:relative;z-index:1;display:block;width:100%;height:80vh;min-height:220px;resize:vertical;outline:none;background:transparent;
   color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--text)}  /* v6.14：编辑区 = 屏幕高度 80%；v7.6：文字透明，由彩色层显形 */
 .blk-input::placeholder{color:var(--muted);-webkit-text-fill-color:var(--muted)}
-.blk-input::selection{background:rgba(0,113,227,.22);-webkit-text-fill-color:#1d1d1f;color:#1d1d1f}
+/* v7.19：选中**只留底色，文字不再显形**。
+   旧写法在此处把 `-webkit-text-fill-color` / `color` 覆盖成不透明深色，等于让「上层编辑层自己的字」
+   在选中区间显形，压在底层彩色层**同一份字**上 → 两份字叠印（Holly 实测的「重影 / 双重叠」）。
+   去掉覆盖后：文字**始终只由底层彩色层显示一份**，选中反馈由半透明蓝底表达（底色画在编辑层，
+   位于彩色层之上，故底层文字被染成蓝调而依然可读）。 */
+.blk-input::selection{background:rgba(0,113,227,.28)}
 .hl-brace{color:#a8336b}.hl-paren{color:#b04a12}.hl-angle{color:#00695c}.hl-lent{color:#6d3bbf}
 .hl-quote{color:#0b64b8}.hl-title{color:#2e7d32}.hl-square{color:#3949ab}.hl-punct{color:#8f6a00}
 .hl-err{color:#c62828;text-decoration:underline wavy #c62828;text-decoration-thickness:1px;text-underline-offset:2px}

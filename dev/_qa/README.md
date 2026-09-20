@@ -31,7 +31,7 @@
 
 ```bash
 node dev/build.mjs                          # 构建（产出 PHJ.html + src/dev-bundle.js）
-node dev/_qa/run-gate.mjs                   # ★ 全部 13 道闸门（自包含）；期望 13/13 全绿，退出码 0；各闸门 83/18/16/54/18/21/31/16/4/9/4
+node dev/_qa/run-gate.mjs                   # ★ 全部 14 道闸门（自包含）；期望 14/14 全绿，退出码 0；各闸门 83/18/16/54/18/21/31/16/4/9/4 + v7.19 组 10/10
 node dev/_qa/lib/skin-guard.mjs             # R3 皮肤边界：R3-A 命中 ≤ golden；R3-B 长语料+完整标记串 零命中（纯静态，无需浏览器）
 node dev/_qa/diag/probe_dev_index.mjs       # 开发态单跑（需先有 headless 浏览器监听 PHJ_BROWSER_PORT，缺省 9222）
 node dev/_qa/diag/probe_v782_verbatim.mjs   # 内置风格包逐字（v7.8.2 契约）

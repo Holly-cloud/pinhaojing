@@ -454,6 +454,12 @@ function cmplCommit(host){
   }else{ cmplSlots = null; caret = base + ins.text.length; }
   ta.focus();
   ta.setSelectionRange(caret, caret);
+  /* v7.19：上屏后**补派一次 input**，让宿主既有的「实时写回」路径跑起来。
+     写作台右栏是「输入即写回」语义（wdOnInput 把 ta.value 写进 state.blocks）；此前补全上屏只改了
+     textarea，**块文本与左栏摘要仍是旧值** → 切条 / 重开会丢字（弹窗宿主无此问题：它走「确定」才写回）。
+     ★必须放在 setSelectionRange **之后**：cmplOnInput 会用「光标位移」去跟踪槽位，早派会算错位。
+     ★放这里还能顺带让两宿主行为一致（弹窗的 input 处理器只做自适应宽 + 重渲染，无副作用）。 */
+  try{ ta.dispatchEvent(new Event('input', { bubbles: true })); }catch(e){}
   /* v7.16（D 条）：**仅在条目真正上屏成功后**记录一次使用（进组/查询/浏览不计）→ 查询视图据此加权 */
   cmplUseTouch(it);
   if(typeof scheduleSave === 'function') scheduleSave();
@@ -534,7 +540,12 @@ function cmplBind(host){
   ta.addEventListener('keydown', function(e){ cmplKeydown(e, host); });
   ta.addEventListener('compositionstart', function(){ cmplComposing = true; });
   ta.addEventListener('compositionend', function(){ cmplComposing = false; cmplOnInput(host); });
-  ta.addEventListener('scroll', function(){ if(cmplOpen) cmplClose(host); });
+  /* v7.19（Holly 重裁 · 方案②，2026-09-20）：滚动时**只重定位、不关闭**。
+     旧写法是滚动即关气泡，有个坑：长分镜在**文末**输入触发符时 textarea 会自动滚动把光标带进
+     可视区，这次滚动紧跟在 cmplOnInput 弹出气泡之后发生，气泡被当场关掉——刚弹即关，闪一下就没。
+     现改为调 cmplPlace(host)：气泡按新的 scrollTop / scrollLeft 重新锚定到光标处，
+     既保住刚弹的气泡，用户主动滚轮时气泡也跟随光标移动而不是消失。 */
+  ta.addEventListener('scroll', function(){ if(cmplOpen) cmplPlace(host); });
   ta.addEventListener('click', function(){
     if(cmplOpen) cmplClose(host);
     if(cmplSlots && cmplSlots.length){
