@@ -10,8 +10,8 @@
 | 产品版本 | **v7.20**（`state.version` = 17） |
 | 产物 | `PHJ.html` = **324783 B**，sha256 `8ca1925156e28d0494f56d74a51a9e71b254d92da03379977d62b36d3425ae8a` |
 | 闸门 | **15 道 / 15/15 全绿**（`node dev/_qa/run-gate.mjs`，自起自收约 100s） |
-| 本地 git | HEAD `b00e788`（v7.20）← `443b6eb`（v7.19）← `561d92c`（v7.15–v7.18 累积）；tag `v7.18`/`v7.19`/`v7.20` |
-| 远端 | ⚠️ **`origin/master` 停在 `63e0671`（v7.14 期）——三个提交 + 三个 tag 未推送**（推送需 Holly 的 PAT） |
+| 本地 git | HEAD `4f42d72`（xplat 跨平台巡回适配）← `598b08f`（ops 协作机制）← `b00e788`（v7.20）← `443b6eb`（v7.19）← `561d92c`（v7.15–v7.18 累积）；tag `v7.18`/`v7.19`/`v7.20` |
+| 远端 | ✅ **已同步**（2026-09-20 推送：master 至 `4f42d72` + 全部 tags）——Linux 侧 agent 可直接 clone 接手 |
 | 工作树 | 干净 |
 
 ## 最近交付（详见 CHANGELOG / handover 档案）
