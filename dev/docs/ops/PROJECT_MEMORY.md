@@ -6,15 +6,16 @@
 
 ## 项目一句话
 
-**拼好镜 PHJ** = 单文件 HTML 工具（短剧/动画**分镜提示词**写作 + 画布排布）。
-交付物 = 仓库根**一个 `PHJ.html`**，「双击即开、用完即走」；`github.com/Holly-cloud/pinhaojing`（公开）。
+**拼好镜 PHJ** = HTML 工具（短剧/动画**分镜提示词**写作 + 画布排布）。
+**当前交付形态** = 仓库根**一个 `PHJ.html`**，「双击即开、用完即走」；`github.com/Holly-cloud/pinhaojing`（公开）。
+★**形态不设锁**（A1⑤，2026-09-20 Holly 修订）：单文件是**当前实现形态**，不是铁律——出现能让项目迈入更优质阶段的重构方案时，评估其对可移植性与用户零摩擦的影响后由 Holly 决策，**不得以"必须单文件"为由否决**。
 
 **当前基线（v7.20，2026-09-20）**：`PHJ.html` = **324783 B** ｜ sha256 `8ca1925156e28d0494f56d74a51a9e71b254d92da03379977d62b36d3425ae8a` ｜ 闸门 **15/15** ｜ `state.version` = **17** ｜ 本地 HEAD `b00e788` + tag `v7.20`（**远端 `origin/master` 仍 `63e0671`（v7.14 期），v7.18/v7.19/v7.20 三个提交与 tag 未推送**——推送需 PAT：写 `~/.git-credentials` → `git -c credential.helper= -c credential.helper=store push origin master --tags` → **用完删**；`GIT_ASKPASS`+msys 路径会 spawn 失败）。
 
 ## 产品红线
 
-★**约束条文见 `IRON_RULES.md` P1-P5**（本文件不再复制，避免两处漂移）。
-要点速记：单文件 `file://` 即用 · 经典脚本零依赖 · `migrate` 零丢失 · reduced-motion 降级 · 皮肤语料只消费不改。
+★**约束条文见 `IRON_RULES.md`（A1-A2 根本原则 / P2-P6 产品红线）**（本文件不再复制，避免两处漂移）。
+要点速记：**打开即用、用户零摩擦**（现形态 = 单文件 `file://`；★A1⑤ 形态不设锁，允许为更优架构演进）· 经典脚本零依赖（P2，同属形态前提）· `migrate` 零丢失 · reduced-motion 降级 · 私有资产不入库（P6）。
 
 ## 版本沿革速览（细节见 CHANGELOG）
 
