@@ -16,14 +16,14 @@ import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildTestArtifact } from '../lib/test-artifact.mjs';
 import { detectBrowser } from '../lib/browser-detect.mjs';
 import { decodePng, countPixels } from '../lib/png.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEST_BUILD = buildTestArtifact();
-const TARGET = 'file:///' + encodeURI(TEST_BUILD.path.replace(/\\/g, '/'));
+const TARGET = pathToFileURL(TEST_BUILD.path).href;
 const PORT = process.env.PHJ_BROWSER_PORT || '9223';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

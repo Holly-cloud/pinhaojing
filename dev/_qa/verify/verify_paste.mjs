@@ -19,13 +19,13 @@ import os from 'node:os';
 import fs from 'node:fs';
 import net from 'node:net';
 import { spawn, spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildTestArtifact } from '../lib/test-artifact.mjs';
 import { detectBrowser } from '../lib/browser-detect.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEST_BUILD = buildTestArtifact();
-const TARGET = 'file:///' + encodeURI(TEST_BUILD.path.replace(/\\/g, '/'));
+const TARGET = pathToFileURL(TEST_BUILD.path).href;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ---- 浏览器：外部已起则直接附加；否则自起（一条命令可复现） ---- */

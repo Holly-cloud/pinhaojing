@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { detectBrowser } from '../lib/browser-detect.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -60,7 +60,7 @@ try {
 
     await send('Page.enable'); await send('Runtime.enable');
     await send('Page.addScriptToEvaluateOnNewDocument', { source: 'try{ localStorage.clear(); }catch(e){}' });
-    const TARGET = 'file:///' + encodeURI(path.join(ROOT, 'PHJ.html').replace(/\\/g, '/'));
+    const TARGET = pathToFileURL(path.join(ROOT, 'PHJ.html')).href;
     await send('Page.navigate', { url: TARGET });
     for (let i = 0; i < 40; i++) { if (await evalJS('document.readyState === "complete"')) break; await sleep(200); }
     await send('Page.reload');

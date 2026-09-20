@@ -20,9 +20,9 @@ const ROOT = path.resolve(HERE, '../../..');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const build = buildTestArtifact();
-const URL_718 = 'file:///' + encodeURI(build.path.replace(/\\/g, '/'));
+const URL_718 = pathToFileURL(build.path).href;
 const SNAP_717 = path.join(ROOT, 'dev', '_qa', 'snapshots', 'PHJ_v7.17_20260918.html');
-const URL_717 = 'file:///' + encodeURI(SNAP_717.replace(/\\/g, '/'));
+const URL_717 = pathToFileURL(SNAP_717).href;
 
 const V16 = {
   app: 'storyboard-prompt-panel', version: 16, title: '老档观感', zoom: 1.5, pan: { x: 33, y: -44 },

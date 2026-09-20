@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildTestArtifact, auditArtifactDiff } from '../lib/test-artifact.mjs';
 import { CSS as MANIFEST_CSS, SLICES as MANIFEST_SLICES } from '../../manifest.mjs';
 import { harvestDomainTokens, harvestCorpusStrings, harvestMarkerStrings, listEngineFiles, DOMAIN_HITS_GOLDEN } from '../lib/skin-guard.mjs';
@@ -90,9 +90,9 @@ async function digit(d) {   /* v7.8：数字键跳位（输入法式） */
   await sleep(90);
 }
 
-const TARGET = 'file:///' + encodeURI(TEST_ARTIFACT.replace(/\\/g, '/'));   /* A+：对测试产物执行 */
+const TARGET = pathToFileURL(TEST_ARTIFACT).href;   /* A+：对测试产物执行 */
 const REAL_PRODUCT = path.resolve(HERE, '../../../PHJ.html');   /* 真实产物：P1-A/P1-C/P1-D 断言的对象 */
-const REAL_PRODUCT_URL = 'file:///' + encodeURI(REAL_PRODUCT.replace(/\\/g, '/'));
+const REAL_PRODUCT_URL = pathToFileURL(REAL_PRODUCT).href;
 await send('Page.enable'); await send('Runtime.enable');
 /* 记录「每次新文档清空 localStorage」脚本的 id：X3「导入→reload→仍在」需临时摘掉它（否则 reload 即被清空） */
 const clearScriptId = (await send('Page.addScriptToEvaluateOnNewDocument', { source: 'try{ localStorage.clear(); }catch(e){}' })).identifier;

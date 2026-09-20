@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildTestArtifact } from '../lib/test-artifact.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEST_ARTIFACT = buildTestArtifact().path;   /* A+：测试产物（= 产物 + 1 行访问器），各在用套件对它执行；真实产物仅用于体积/P1-A/C/D 断言 */
@@ -31,7 +31,7 @@ async function click(sel) {
   await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: r.x, y: r.y, button: 'left', clickCount: 1 });
   await sleep(120);
 }
-const TARGET = 'file:///' + encodeURI(TEST_ARTIFACT.replace(/\\/g, '/'));   /* A+：对测试产物执行 */
+const TARGET = pathToFileURL(TEST_ARTIFACT).href;   /* A+：对测试产物执行 */
 await send('Page.enable'); await send('Runtime.enable');
 await send('Page.addScriptToEvaluateOnNewDocument', { source: 'try{ localStorage.clear(); }catch(e){}' });
 await send('Page.navigate', { url: TARGET });

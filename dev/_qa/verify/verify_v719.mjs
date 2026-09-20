@@ -35,7 +35,7 @@
    ※ 调试端口：优先读 PHJ_BROWSER_PORT（run-gate.mjs 传入），缺省 9222。
    --------------------------------------------------------------------------- */
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildTestArtifact } from '../lib/test-artifact.mjs';
 import { decodePng, countPixels } from '../lib/png.mjs';
 
@@ -43,7 +43,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 /* ★ 证伪测试钩子（与 verify_c 同款）：PHJ_V719_ARTIFACT 可指向一份故意改坏的测试产物副本，
    仅用于 QA 证伪；产品源码与交付产物一字不动。不设该变量时行为完全不变。 */
 const TEST_BUILD = process.env.PHJ_V719_ARTIFACT ? { path: process.env.PHJ_V719_ARTIFACT } : buildTestArtifact();
-const TARGET = 'file:///' + encodeURI(TEST_BUILD.path.replace(/\\/g, '/'));
+const TARGET = pathToFileURL(TEST_BUILD.path).href;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const PORT = process.env.PHJ_BROWSER_PORT || '9222';

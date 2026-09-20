@@ -38,3 +38,12 @@ git status 干净  +  run-gate 15/15 全绿  +  HANDOVER.md 与实际一致
 ```
 
 三者齐 = 交接闭环。任何一步不满足，按协作协议§交接 checklist 处理，**不要带病开工**。
+
+## 跨平台巡回（Windows ↔ Linux）
+
+项目支持在 **Windows 与 Linux 的 agent 管理区之间自由巡回**：工装已做平台适配
+（浏览器三平台探测 + `PHJ_BROWSER` 硬覆盖 + `PHJ_BROWSER_FLAGS` 注入 + root 自动
+`--no-sandbox`；套件 URL 统一 `pathToFileURL`；行尾策略跨平台无忧）。
+**Linux 侧接手**：按 `dev/docs/ops/环境探测与工装陷阱.md` §9 走（重点：CJK 字体是
+像素断言的前提）；首次巡回 = 跨平台的最终验收，跑完 15/15 在 `HANDOVER.md` 记录
+「已巡回平台」。

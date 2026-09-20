@@ -26,12 +26,12 @@
    ※ 调试端口：优先读 PHJ_BROWSER_PORT（run-gate.mjs 传入），缺省 9222。
    --------------------------------------------------------------------------- */
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildTestArtifact } from '../lib/test-artifact.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEST_BUILD = buildTestArtifact();                       /* A+：对测试产物执行（含顶层名访问器） */
-const TARGET = 'file:///' + encodeURI(TEST_BUILD.path.replace(/\\/g, '/'));
+const TARGET = pathToFileURL(TEST_BUILD.path).href;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const PORT = process.env.PHJ_BROWSER_PORT || '9222';

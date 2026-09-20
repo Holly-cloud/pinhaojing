@@ -32,6 +32,8 @@
    环境变量：
      PHJ_BROWSER      浏览器 exe 绝对路径（**硬覆盖**：设置后即以其为准；不可用则报错退出 10，绝不静默回落到自动探测）
      PHJ_BROWSER_PORT 起始调试端口，默认 9222；若被占用则自动顺延（+1…+49）
+     PHJ_BROWSER_FLAGS 额外启动 flag（空格分隔，追加到默认 flags 之后）；Linux root/容器
+                       下 runner 会自动追加 --no-sandbox（Chromium 无它拒绝启动）
 
    退出码（语义化）：
      0  = 全绿
@@ -235,11 +237,19 @@ async function main() {
 
   /* ---- 起 headless 浏览器 ---- */
   const prof = fs.mkdtempSync(path.join(os.tmpdir(), 'phj_gate_'));
+  /* 跨平台（2026-09-20）：PHJ_BROWSER_FLAGS 可追加自定义 flag（空格分隔）；
+     Linux root/容器下 Chromium 无 --no-sandbox 拒绝启动 → 自动追加（显式含则不重复） */
+  const extraFlags = (process.env.PHJ_BROWSER_FLAGS || '').trim().split(/\s+/).filter(Boolean);
+  if (process.platform !== 'win32' && typeof process.getuid === 'function' && process.getuid() === 0 &&
+      !extraFlags.includes('--no-sandbox')) {
+    extraFlags.push('--no-sandbox');
+  }
   let spawnErr = null;
   const proc = spawn(browser, [
     '--headless=new', '--disable-gpu', '--no-first-run',
     '--remote-debugging-port=' + port,
     '--user-data-dir=' + prof,
+    ...extraFlags,
     'about:blank',
   ], { stdio: 'ignore', detached: false });
   proc.on('error', (e) => { spawnErr = e; });

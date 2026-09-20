@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildTestArtifact } from '../lib/test-artifact.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEST_ARTIFACT = buildTestArtifact().path;   /* A+：测试产物（= 产物 + 1 行访问器），各在用套件对它执行；真实产物仅用于体积/P1-A/C/D 断言 */
@@ -34,7 +34,7 @@ async function evalJS(expr) {
 }
 /* 钉桩媒体特性（页目标会话级）：value ∈ 'no-preference' | 'reduce' */
 const setMotion = value => send('Emulation.setEmulatedMedia', { media: '', features: [{ name: 'prefers-reduced-motion', value }] });
-const TARGET = 'file:///' + encodeURI(TEST_ARTIFACT.replace(/\\/g, '/'));   /* A+：对测试产物执行 */
+const TARGET = pathToFileURL(TEST_ARTIFACT).href;   /* A+：对测试产物执行 */
 const OUT = path.resolve(HERE, '../../../PHJ.html');   /* 真实产物路径：体积**报告**直接 stat 它 */
 /* 体积：**项目容量限制已解除**（2026-09-16，Holly 指示）——
    · 不再有产品硬上限 / 工程护栏，**不再对体积做任何断言**（原 B10a/B10b/C8a/C8b 四条已删除）；

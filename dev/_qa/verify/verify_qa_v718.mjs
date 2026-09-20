@@ -24,7 +24,7 @@ import os from 'node:os';
 import net from 'node:net';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildTestArtifact } from '../lib/test-artifact.mjs';
 import { detectBrowser } from '../lib/browser-detect.mjs';
 
@@ -32,7 +32,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const TEST_BUILD = buildTestArtifact();
-const TARGET = 'file:///' + encodeURI(TEST_BUILD.path.replace(/\\/g, '/'));
+const TARGET = pathToFileURL(TEST_BUILD.path).href;
 
 /* ---- 选空闲端口 ---- */
 function isPortFree(port) {
