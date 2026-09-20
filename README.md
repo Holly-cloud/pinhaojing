@@ -55,12 +55,17 @@
 
 | 想了解 | 去看 |
 |---|---|
+| ★ **AI agent 接手本项目（30 秒上手 + 接手 5 步）** | `AGENTS.md`（`CLAUDE.md` 同指针） |
+| ★ **当前交接状态（版本/指纹/在途/待裁决）** | `HANDOVER.md`（活文件） |
+| ★ **项目记忆唯一事实源（红线/不变式/工具坑/测试铁律）** | `dev/docs/ops/PROJECT_MEMORY.md` |
 | 开发侧总导览（改动入口 / 构建验收 / 档案原则） | `dev/README.md` |
-| **版本沿革（逐版功能史 v6.1→v7.19）** | `dev/CHANGELOG.md` |
+| **版本沿革（逐版功能史 v6.1→v7.20）** | `dev/CHANGELOG.md` |
 | 历史决策 / 设计 / 发布 / 交接（分类索引 + **旧名→新名映射表**） | `dev/docs/README.md` |
 | 验收工装分区与快照角色 | `dev/_qa/README.md`、`dev/_qa/snapshots/INDEX.md` |
+| **多 agent 异步协作协议 + 任务存档** | `dev/docs/ops/多agent异步协作协议_2026-09-20.md`、`dev/_qa/records/handover/` |
+| **环境探测与工装陷阱（换机/换区按此探测）** | `dev/docs/ops/环境探测与工装陷阱.md` |
 | **目标架构与长期规划** | `dev/docs/ops/目标架构与长期规划_2026-09-17.md` |
-| **交接 / 换机指南** | `dev/docs/ops/交接与换机指南_2026-09-16.md` |
+| **交接 / 换机指南（历史）** | `dev/docs/ops/交接与换机指南_2026-09-16.md` |
 
 ## 六、架构现状（R0–R4 收口后 · 截至 v7.18）
 
