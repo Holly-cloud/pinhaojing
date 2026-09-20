@@ -11,18 +11,20 @@
 > **2026-09-18 逗号转空格（台词除外）**：当前基准提升为 **v7.17**（新快照 `PHJ_v7.17_20260918.html`；`PHJ` 对外面 +1 名 `highlight.hlCommaToSpace` → `P2-B2` 由 125 → **126** 名；`state.version` 仍 **16**、持久结构不变；`verify_v78` 仍 54/54，条数不变）。
 > **同日并入 v7.17（原地更新快照，不新开版本）**：QA 复核发现 toast（含「撤销」）被「放大编辑」弹窗遮挡（真缺陷）→ **就地补丁** `styles/10-canvas.css` `.toast` `z-index: 99 → 13000`；并另立**常驻断言组** `verify_e.mjs`（**E 16 条**，run-gate **第 10 道**）。快照重生成**同名**，`288249 → **288444 B**`（sha256 `d943d616…fd4b8`），闸门 **10/10**；v7.16 转入 §二 历史 argv 基准（见 §一/§二）。
 > **2026-09-20 划选重影 + 写作台补全写回/触发修复（含 A' 撤销封存改修根因）**：当前基准提升为 **v7.19**（新快照 `PHJ_v7.19_2026-09-20.html`，**306977 B**，sha256 `dfca622f…2cf52`；`state.version` 仍 **17**，持久结构不变）。三件事：① 修「划选文字重影/双重叠」（`styles/50-editor.css` 的 `::selection` 只保留半透明蓝底、去掉文字显形覆盖；`select` 事件由整层 `hlRefresh` 改为仅 `hlStatus`）② 修「写作台右栏补全上屏后未实时写回」（`complete.cmplCommit` 在 `setSelectionRange` 后补派 `input` 事件触发 `wdOnInput`）③ **A'（Holly 重裁方案②）撤销 `#` 触发封存**（`CMPL_TRIGGER_OFF` 全删），scroll 监听 `cmplClose` → **`cmplPlace`**（滚动只重定位不关闭——自动滚动不再刚弹即关、气泡跟随滚轮）。`PHJ` 对外面 +1 名（`highlight.hlStatus`）→ `P2-B2` 由 135 → **136** 名。闸门 **13 → 14 道**（新增 `verify_v719.mjs` 10 断言 = 第 14 道），**14/14**；v7.18 转入 §二 历史 argv 基准（见 §一/§二）。
+> **2026-09-20 项目名常显化 + 写作灵感气泡群**：当前基准提升为 **v7.20**（新快照 `PHJ_v7.20_2026-09-20.html`，**324783 B**，sha256 `8ca19251…5ae8a`；`state.version` 仍 **17**，持久结构不变）。两件事：① **项目名常显化**（写作台左栏头部项目身份行 `.wd-proj` + 顶栏 `#btnProj` 显示当前项目名，点击即弹项目菜单，切换/新建/重命名/删除后两处立即刷新）② **写作灵感气泡群**（`#wdBubbles` 编辑区右下角持续漂浮，跟随光标所在节实时更换，点击直接上屏并实时写回，「换一批」翻页 / 可折叠（会话态）/ 无候选隐藏 / reduced-motion 直切）。`PHJ` 对外面 **136 名不变**；闸门仍 **14 道**（[14] verify_v719 G6 计墨夹具对 `#wdBubbles` 隔离，判定式与条数零改动），**14/14**；`skin-guard` 仍 **R3-A=15 / R3-B=0**；v7.19 转入 §二 历史 argv 基准（见 §一/§二）。
 
 ## 一、当前基准（**在用**）
 
 | 文件 | 角色 |
 |---|---|
-| `PHJ_v7.19_2026-09-20.html` | ★ **当前交付快照** = 等价性闸门（「构建可复现」）的**默认比对基准**（`verify_build_equivalence.mjs` 的 `OLD` 常量） |
-| `BASELINE_v7.19.md` | ★ **当前基线文档**（指纹 / 结构 / 闸门结果 / 本轮变更与证伪 / 已知遗留） |
+| `PHJ_v7.20_2026-09-20.html` | ★ **当前交付快照** = 等价性闸门（「构建可复现」）的**默认比对基准**（`verify_build_equivalence.mjs` 的 `OLD` 常量） |
+| `BASELINE_v7.20.md` | ★ **当前基线文档**（指纹 / 结构 / 闸门结果 / 本轮变更与证伪 / 已知遗留） |
 
 ## 二、历史基准（**保留：可作 argv 指定基线复跑**）
 
 | 文件 | 角色 |
 |---|---|
+| `PHJ_v7.19_2026-09-20.html` + `BASELINE_v7.19.md` | 划选重影修复 + 写作台补全写回/触发修复（`state.version` 仍 **17**） |
 | `PHJ_v7.18_2026-09-19.html` + `BASELINE_v7.18.md` | 多项目容器 + 两个既有缺陷修复（修「编辑器内 Ctrl+V 被画布抢占」+ 修「重开后块间距不均」+ 新增多项目；`state.version` **16 → 17**，顶层 `blocks/pan/zoom/splice` 改为活动项目槽镜像） |
 | `PHJ_v7.17_20260918.html` + `BASELINE_v7.17.md` | 「逗号转空格（台词除外）」基线（「放大编辑」弹窗文本工具 + toast z-index 就地修复；`state.version` 仍 **16**） |
 | `PHJ_v7.16_20260918.html` + `BASELINE_v7.16.md` | 写作补全四项增强（A/B/D/H）基线（`state.version` 15 → 16，新增 `state.cmpl.use`；候选引擎 A 状态栏豁免 / B 动态徽章 / D 使用加权 / H 语料体检） |
@@ -68,7 +70,7 @@ node dev/_qa/verify/verify_build_equivalence.mjs PHJ.html dev/_qa/snapshots/PHJ_
 
 ## 五、维护约定
 
-1. **新建基线**：`node dev/build.mjs` → 拷 `PHJ.html` 为 `snapshots/PHJ_v<版本>_<日期>.html` → 写 `BASELINE_v<版本>.md` → 改 `verify_build_equivalence.mjs` 的 `OLD` 默认值 → 跑闸门 14/14。
+1. **新建基线**：`node dev/build.mjs` → 拷 `PHJ.html` 为 `snapshots/PHJ_v<版本>_<日期>.html` → 写 `BASELINE_v<版本>.md` → 改 `verify_build_equivalence.mjs` 的 `OLD` 默认值 → 跑闸门 15/15。
 2. **不要**把归入"当前基准"的快照移进 `archive/`（闸门会立刻红）。
 3. **不要**动 `PHJ_v7.8_20260913.html`（H 组夹具来源）。
 4. 体积限制已解除（2026-09-16）：新快照只需与构建产物逐字节一致，不再有大小门槛。

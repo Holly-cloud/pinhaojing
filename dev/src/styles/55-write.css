@@ -71,3 +71,64 @@ body.view-write .write-desk:not(.hide){animation:wdFadeIn .18s ease-out}
   .write-desk,.wd-item,.wd-x,.vs-seg,.wd-grip,.wd-add{transition:none!important;animation:none!important}
   body.view-write .write-desk:not(.hide){animation:none!important}
 }
+
+/* ==================== v7.20：项目身份行（左栏头部常显当前项目名 + 顶栏按钮同显） ==================== */
+/* 风格沿用写作台既有头部语言（透明底 + 悬停微深 + --text/--muted），不引入新色彩体系 */
+.wd-proj{display:flex;align-items:center;gap:5px;width:calc(100% + 12px);margin:-2px -6px 7px;padding:3px 6px;
+  border:0;background:transparent;border-radius:8px;cursor:pointer;font:inherit;text-align:left;transition:background .15s}
+.wd-proj:hover{background:rgba(0,0,0,.05)}
+.wd-proj:active{background:rgba(0,0,0,.08)}
+.wd-proj-name{flex:0 1 auto;min-width:0;max-width:16em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  font-size:13.5px;font-weight:600;color:var(--text);letter-spacing:-.12px}
+.wd-proj-caret{flex:0 0 auto;font-size:10px;line-height:1;color:var(--muted)}
+/* 顶栏按钮：项目名截断（span.btn-clip 承担 ellipsis——flex 容器自身不支持 text-overflow） */
+.btn-clip{display:block;min-width:0;max-width:9em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+
+/* ==================== v7.20：写作灵感气泡群（#wdBubbles · 编辑区右下角漂浮） ====================
+   形态：半透明卡片群常驻右下角；容器 pointer-events:none（不挡正文/滚动条），气泡与按钮本体 auto；
+   z-index 5 < .cmpl-pop 的 6（# 触发的候选气泡优先）；动效只动 opacity/transform（零布局抖动）。 */
+.wd-bubbles{position:absolute;right:16px;bottom:14px;z-index:5;display:flex;flex-direction:column;align-items:flex-end;
+  gap:8px;pointer-events:none;transition:opacity .2s}
+.wd-bubbles.hide{display:none}
+.wd-bubbles.wdb-dim{opacity:.35}                 /* 输入中 800ms 降存在感 */
+.wd-bubbles.wdb-dim:hover{opacity:1}             /* 指针回到气泡上（本体 auto）即恢复 */
+/* 折叠态小圆钮（收成「✦」；会话内存，不持久） */
+.wdb-fab{display:none;pointer-events:auto;width:34px;height:34px;border-radius:50%;align-items:center;justify-content:center;
+  border:1px solid rgba(255,255,255,.65);background:rgba(252,252,254,.85);
+  -webkit-backdrop-filter:saturate(160%) blur(16px);backdrop-filter:saturate(160%) blur(16px);
+  color:var(--accent);font-size:15px;line-height:1;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.12);
+  transition:transform .12s,box-shadow .12s,background .12s}
+.wdb-fab:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(0,0,0,.16);background:rgba(252,252,254,.95)}
+.wd-bubbles.wdb-folded .wdb-fab{display:inline-flex}
+/* 群卡片：折叠时收放过渡 200ms（只动 opacity/transform/visibility，不触发布局）。
+   ★ 不写显式 visibility:visible——visibility 靠继承（父容器 hidden 时整群随之隐藏，含投影），
+     显式 visible 会把折叠/外层隐藏短路掉（G6 计墨实测踩中）。 */
+.wdb-cluster{display:flex;flex-direction:column;align-items:flex-end;gap:7px;padding:10px 10px 9px;border-radius:14px;
+  max-width:min(300px,72%);pointer-events:auto;opacity:1;transform:none;
+  background:rgba(252,252,254,.55);-webkit-backdrop-filter:saturate(160%) blur(18px);backdrop-filter:saturate(160%) blur(18px);
+  border:1px solid rgba(255,255,255,.65);box-shadow:0 10px 28px rgba(0,0,0,.10);
+  transition:opacity .2s,transform .2s,visibility 0s}
+.wd-bubbles.wdb-folded .wdb-cluster{opacity:0;transform:translateY(8px) scale(.96);visibility:hidden;pointer-events:none;
+  transition:opacity .2s,transform .2s,visibility 0s .2s}
+.wdb-cluster.wdb-out{opacity:0;transform:translateY(6px);transition:opacity .12s ease-out,transform .12s ease-out}  /* 换节：旧群淡出 120ms */
+.wdb-head{display:flex;align-items:center;gap:6px;width:100%}
+.wdb-tag{flex:1;min-width:0;font-size:11px;color:var(--muted);letter-spacing:-.12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wdb-more,.wdb-fold{flex:0 0 auto;border:0;background:transparent;color:var(--muted);font-size:11px;line-height:1;
+  padding:3px 6px;border-radius:6px;cursor:pointer;transition:background .12s,color .12s}
+.wdb-more:hover,.wdb-fold:hover{background:rgba(0,0,0,.06);color:var(--text)}
+/* 气泡本体：入场 160ms ease-out（backwards 填充动画延迟期，结束后回落基础态 → hover 过渡不被锁） */
+.wdb-wrap{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:100%}
+.wdb-bubble{pointer-events:auto;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.6);color:var(--text);
+  font:12px/1 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  padding:6px 10px;border-radius:999px;cursor:pointer;
+  animation:wdbIn .16s ease-out backwards;   /* 交错延迟由 JS 写 animation-delay */
+  transition:background .12s,transform .12s,box-shadow .12s}
+@keyframes wdbIn{from{opacity:0;transform:translateY(6px)}}
+.wdb-bubble:hover{background:rgba(0,113,227,.12);transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.08)}  /* hover：上浮 1px + 加深 */
+.wdb-bubble.wdb-blk{color:var(--accent)}
+/* 无障碍（R4）：系统「减少动态」→ 气泡群全部动效降级为直接显隐（功能不变） */
+@media (prefers-reduced-motion:reduce){
+  .wd-bubbles,.wdb-cluster,.wdb-fab,.wdb-more,.wdb-fold,.wd-proj,.wdb-bubble{transition:none!important;animation:none!important}
+  .wdb-bubble{opacity:1!important;transform:none!important}
+}

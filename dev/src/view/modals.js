@@ -448,6 +448,7 @@ function renameActiveProject(){
     if(!name) name = '未命名项目';
     slot.title = name;
     state.title = name;
+    applyView();   /* v7.20：重命名后两处项目身份显示（左栏头部 + 顶栏按钮）立即刷新（applyView 内含 projSyncIdentity） */
     saveNow();
     toast('已重命名项目「' + name + '」');
   });

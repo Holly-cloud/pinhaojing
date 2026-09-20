@@ -31,10 +31,11 @@
 
 ```bash
 node dev/build.mjs                          # 构建（产出 PHJ.html + src/dev-bundle.js）
-node dev/_qa/run-gate.mjs                   # ★ 全部 14 道闸门（自包含）；期望 14/14 全绿，退出码 0；各闸门 83/18/16/54/18/21/31/16/4/9/4 + v7.19 组 10/10
+node dev/_qa/run-gate.mjs                   # ★ 全部 15 道闸门（自包含）；期望 15/15 全绿，退出码 0；各闸门 83/18/16/54/18/21/31/16/4/9/4 + v7.19 组 10/10 + v7.20 组 18/18
 node dev/_qa/lib/skin-guard.mjs             # R3 皮肤边界：R3-A 命中 ≤ golden；R3-B 长语料+完整标记串 零命中（纯静态，无需浏览器）
 node dev/_qa/diag/probe_dev_index.mjs       # 开发态单跑（需先有 headless 浏览器监听 PHJ_BROWSER_PORT，缺省 9222）
 node dev/_qa/diag/probe_v782_verbatim.mjs   # 内置风格包逐字（v7.8.2 契约）
+node dev/_qa/diag/probe_v720_selftest.mjs   # v7.20 自测探针（项目身份行 + 灵感气泡群 14 断言；自测口径，不接入闸门）
 node dev/_qa/verify/verify_build_equivalence.mjs PHJ.html dev/_qa/snapshots/PHJ_v7.13_20260917.html
                                             # 等价性：以历史基线复跑（argv[3] 指定基线）
 ```

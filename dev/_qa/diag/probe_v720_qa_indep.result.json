@@ -1,0 +1,102 @@
+[
+  {
+    "name": "Q1 身份三处一致：#wdProjName = #btnProjName = state.title",
+    "pass": true,
+    "detail": "{\"left\":\"未命名分镜\",\"top\":\"未命名分镜\",\"title\":\"未命名分镜\",\"leftTitle\":\"当前项目：未命名分镜 · 点击切换 / 新建 / 重命名 / 删除\",\"topTitle\":\"项目：切换 / 新建 / 重命名 / 删除\",\"truncated\":false,\"overflowCss\":\"ellipsis\"}"
+  },
+  {
+    "name": "Q2 真点击身份行 → 项目菜单弹出（open + 菜单项>0）",
+    "pass": true,
+    "detail": "{\"open\":true,\"n\":4}"
+  },
+  {
+    "name": "Q3 新建项目 → 两处立即=新名",
+    "pass": true,
+    "detail": "{\"left\":\"独立复验项目A\",\"top\":\"独立复验项目A\",\"title\":\"独立复验项目A\",\"leftTitle\":\"当前项目：独立复验项目A · 点击切换 / 新建 / 重命名 / 删除\",\"topTitle\":\"项目：切换 / 新建 / 重命名 / 删除\",\"truncated\":false,\"overflowCss\":\"ellipsis\"}"
+  },
+  {
+    "name": "Q4 切换项目 → 两处立即=旧名",
+    "pass": true,
+    "detail": "{\"left\":\"未命名分镜\",\"top\":\"未命名分镜\",\"title\":\"未命名分镜\",\"leftTitle\":\"当前项目：未命名分镜 · 点击切换 / 新建 / 重命名 / 删除\",\"topTitle\":\"项目：切换 / 新建 / 重命名 / 删除\",\"truncated\":false,\"overflowCss\":\"ellipsis\"}"
+  },
+  {
+    "name": "Q5 重命名 → 两处立即=新名（applyView 补调生效）",
+    "pass": true,
+    "detail": "{\"left\":\"改名的项目X\",\"top\":\"改名的项目X\",\"title\":\"改名的项目X\",\"leftTitle\":\"当前项目：改名的项目X · 点击切换 / 新建 / 重命名 / 删除\",\"topTitle\":\"项目：切换 / 新建 / 重命名 / 删除\",\"truncated\":false,\"overflowCss\":\"ellipsis\"}"
+  },
+  {
+    "name": "Q6 删除当前项目：确认弹窗出现 → 确认后先切走（title≠被删名）+ 数量-1 + 两处立即刷新",
+    "pass": true,
+    "detail": "before={\"n\":3,\"title\":\"待删项目B\"} modal=true after={\"n\":2,\"title\":\"独立复验项目A\"} id={\"left\":\"独立复验项目A\",\"top\":\"独立复验项目A\",\"title\":\"独立复验项目A\",\"leftTitle\":\"当前项目：独立复验项目A · 点击切换 / 新建 / 重命名 / 删除\",\"topTitle\":\"项目：切换 / 新建 / 重命名 / 删除\",\"truncated\":false,\"overflowCss\":\"ellipsis\"}"
+  },
+  {
+    "name": "Q7 长名：ellipsis 截断生效 + 身份行 title 含全名 + 画布视图顶栏常显项目名",
+    "pass": true,
+    "detail": "write={\"left\":\"这是一个特别特别特别长的项目名称用于验证截断效果是否正常工作\",\"top\":\"这是一个特别特别特别长的项目名称用于验证截断效果是否正常工作\",\"title\":\"这是一个特别特别特别长的项目名称用于验证截断效果是否正常工作\",\"leftTitle\":\"当前项目：这是一个特别特别特别长的项目名称用于验证截断效果是否正常工作 · 点击切换 / 新建 / 重命名 / 删除\",\"topTitle\":\"项目：切换 / 新建 / 重命名 / 删除\",\"truncated\":true,\"overflowCss\":\"ellipsis\"} canvas.top=这是一个特别特别特别长的项目名称用于验证截断效果是否正常工作 vis={\"inVp\":true,\"disp\":\"flex\",\"text\":\"这是一个特别特别特别长的项目名称用于验证截断效果是否正常工作\"}"
+  },
+  {
+    "name": "Q8 真点击起手式行：光标落第0行 + 气泡出现且 label 全属起手式组",
+    "pass": true,
+    "detail": "caret={\"line\":0,\"st\":{\"region\":\"anchor\",\"label\":\"起手式\"}} labels=[\"事件发生在…室内\",\"镜头N·首帧画面·左右站位\",\"俯视站位参考图\",\"场景照片\"] poolHead=[\"事件发生在…室内\",\"镜头N·首帧画面·左右站位\",\"俯视站位参考图\",\"场景照片\"]"
+  },
+  {
+    "name": "Q9 真点击风格包行：集合真的变（≠起手式集）且 label 全属风格包组",
+    "pass": true,
+    "detail": "prev=[\"事件发生在…室内\",\"镜头N·首帧画面·左右站位\",\"俯视站位参考图\",\"场景照片\"] now=[\"风格包 · 全套\",\"光影逻辑\",\"CG 风格\",\"镜头构图\",\"渲染质感\",\"负面提示词\",\"硬性要求\"]"
+  },
+  {
+    "name": "Q10 移回起手式行：气泡集合复原为首批（往返一致）",
+    "pass": true,
+    "detail": "now=[\"事件发生在…室内\",\"镜头N·首帧画面·左右站位\",\"俯视站位参考图\",\"场景照片\"] expectA=[\"事件发生在…室内\",\"镜头N·首帧画面·左右站位\",\"俯视站位参考图\",\"场景照片\"]"
+  },
+  {
+    "name": "Q11 真点击气泡：body 真插入 + state.blocks 写回（block===ta）+ 焦点回 textarea",
+    "pass": true,
+    "detail": "body=事件发生在@室内。 focus=true block===ta:true"
+  },
+  {
+    "name": "Q12 切条往返：内容不丢（block===ta）+ flush 后 LS 含插入内容 + reload 后落盘仍在",
+    "pass": true,
+    "detail": "inB=\"第二条占位。\" kept=true lsKept=true afterReload=\"镜事件发生在@室内。头1·@首帧画面。\\n\\n风格：\\n【光影逻辑】测试用风格段落。\\n\\n画面开始：\\n镜头1 摇镜测试。\\n画面结\""
+  },
+  {
+    "name": "Q13 换一批：池 32 条 / 4 页；点击换批（新≠旧）；末页再点循环回首批",
+    "pass": true,
+    "detail": "b1=[\"摇镜·右→拍摄\",\"摇镜·左→拍摄\",\"切镜\",\"过肩视角\",\"固定镜头\",\"推镜（你没用过）\",\"环绕（你没用过）\",\"跟拍（你没用过）\"] b2=[\"近景\",\"特写\",\"中景\",\"半身\",\"中近景\",\"大特写\",\"全景\",\"远景\"] wrap=[\"摇镜·右→拍摄\",\"摇镜·左→拍摄\",\"切镜\",\"过肩视角\",\"固定镜头\",\"推镜（你没用过）\",\"环绕（你没用过）\",\"跟拍（你没用过）\"]"
+  },
+  {
+    "name": "Q14 空态（无块/编辑器 disabled）：整体隐藏 display:none；有候选：显示（反面对照）",
+    "pass": true,
+    "detail": "empty={\"hideCls\":true,\"disp\":\"none\",\"vis\":\"visible\",\"clusterVis\":\"visible\",\"folded\":false} filled={\"hideCls\":false,\"disp\":\"flex\",\"vis\":\"visible\",\"clusterVis\":\"visible\",\"folded\":false}"
+  },
+  {
+    "name": "Q15 折叠：群消失只剩 ✦ 圆钮；落盘 JSON version=17 且无气泡字段；展开恢复",
+    "pass": true,
+    "detail": "folded={\"hideCls\":false,\"disp\":\"flex\",\"vis\":\"visible\",\"clusterVis\":\"hidden\",\"folded\":true} saved={\"version\":17,\"topKeys\":\"app,version,templates,cmpl,activeProject,projects,blocks,pan,zoom,splice,collapsed,title\",\"bubbleLeak\":false} expanded={\"hideCls\":false,\"disp\":\"flex\",\"vis\":\"visible\",\"clusterVis\":\"visible\",\"folded\":false}"
+  },
+  {
+    "name": "Q16 不挡正文：pe none/auto；textarea 真滚动（0→23）；正文真划选 selLen>0",
+    "pass": true,
+    "detail": "pe={\"box\":\"none\",\"bubble\":\"auto\"} selLen=9"
+  },
+  {
+    "name": "Q17 与#并存：# 触发候选正常 → Esc 关闭 → 气泡集合不变且点击插入仍工作",
+    "pass": true,
+    "detail": "pop={\"open\":true,\"hidden\":false,\"items\":7} labelsSame=true insertAfterEsc=true"
+  },
+  {
+    "name": "Q18 reduced-motion：animationName=none（直切）且点击插入功能正常",
+    "pass": true,
+    "detail": "anim=none dur=0s labels=[\"事件发生在…室内\",\"镜头N·首帧画面·左右站位\",\"俯视站位参考图\",\"场景照片\"] insert=true"
+  },
+  {
+    "name": "Q19 G6 隔离计量：气泡墨迹=920>0（隔离有必要）／双隐=0=0（隔离生效）／注入 visibility:visible 缺陷后=920>0（G6 必红·非空转）／恢复后气泡正常",
+    "pass": true,
+    "detail": "selLen=10 inkBubbles=920 inkIsolated=0 inkDefect=920 restored=[\"事件发生在…室内\",\"镜头N·首帧画面·左右站位\",\"俯视站位参考图\",\"场景照片\"]"
+  },
+  {
+    "name": "Q20 全程零未捕获错误",
+    "pass": true,
+    "detail": "err=0"
+  }
+]

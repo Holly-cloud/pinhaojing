@@ -215,7 +215,9 @@ window.__lineMetrics = function(sel){
   await sleep(120);
 }
 
-/* G6 写作台宿主：同口径划选 → 编辑层墨迹 = 0 */
+/* G6 写作台宿主：同口径划选 → 编辑层墨迹 = 0
+   v7.20 同步：写作台右栏新增「灵感气泡群」常驻覆盖层（#wdBubbles，合法 UI，含深色气泡文字），
+   与 .wd-hl 一样**不属于被测编辑层** → 计墨前一并隐藏，保持「编辑层墨迹=0」判定本意与条数不变。 */
 {
   await evalJS('__deskPrep()');
   await evalJS('__deskText("写作台划选测试文本一句。")');
@@ -225,9 +227,11 @@ window.__lineMetrics = function(sel){
   await clickShiftSelect(m.left + 54, m.top + 12 + m.lh / 2, m.left + 200, m.top + 12 + m.lh / 2);
   const selLen = await evalJS('(function(){ var ta = document.querySelector("#wdInput"); return ta.selectionEnd - ta.selectionStart; })()');
   await evalJS('__setLayerVis(".wd-hl", false)');
+  await evalJS('__setLayerVis("#wdBubbles", false)');
   const img = await shot(taRect);
   const ink = inkCount(img);
   await evalJS('__setLayerVis(".wd-hl", true)');
+  await evalJS('__setLayerVis("#wdBubbles", true)');
   t('G6 写作台划选后：编辑层墨迹=0（第二宿主同修）', selLen > 0 && ink === 0, 'selLen=' + selLen + ' inkPx=' + ink);
 }
 

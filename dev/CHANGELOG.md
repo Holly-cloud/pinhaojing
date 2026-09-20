@@ -2,9 +2,31 @@
 
 > 本文件是**版本沿革（倒序）**——从最新版本往回排（v7.17 → v6.1）。
 > **v6 系列的详细发布说明与验收记录**见 `dev/docs/releases/`。
-> **当前现状**以 `dev/_qa/snapshots/BASELINE_v7.19.md` 为准（本文件是历史，不是现状）。
+> **当前现状**以 `dev/_qa/snapshots/BASELINE_v7.20.md` 为准（本文件是历史，不是现状）。
 > 来源说明：以下逐版小节自仓库根 `README.md` **原样搬入**（2026-09-17 结构整理），**正文一字未改**，仅位置搬移。
 > 补记（2026-09-18）：v7.15 一轮**漏记**本表，本次随 v7.16 一并**补记**（见下两节）。
+
+## v7.20 · 项目名常显化 + 写作灵感气泡群（功能增量）
+
+> 需求①（Holly 选定方案一）项目名常显 + 快速切换；需求②（Holly 亲自定义形态）写作灵感气泡群。
+> 逐项证据与基线见 `dev/_qa/snapshots/BASELINE_v7.20.md`；自测探针 `dev/_qa/diag/probe_v720_selftest.mjs`（14 断言，**本轮自测口径、不接入闸门**）。
+
+| 项 | 内容 |
+|---|---|
+| **项目身份行** | 写作台左栏 `.wd-head` 顶部新增 `.wd-proj`（当前项目名 + ▾）；点击 → `openProjectMenu()`（复用 `#ctxMenu`，不新造菜单）；项目名过长 CSS ellipsis（`max-width:16em`），`title` 给全名 |
+| **顶栏常显** | `#btnProj` 固定文字「项目」→ 当前项目名（内层 `span.btn-clip` 承担 `max-width:9em + ellipsis`——flex 容器自身不支持 text-overflow）；`title` 保留原功能说明 |
+| **刷新点** | `projSyncIdentity()`（`view/write.js`）挂 `applyView()` 单点 → 切换/新建/删除走既有刷新链即生效；重命名（`renameActiveProject`）就地补调 `applyView()` 一行 |
+| **灵感气泡群（形态）** | `#wdBubbles` 悬浮于 `.wd-edit` 内部右下角，半透明卡片群**持续显式漂浮**；容器 `pointer-events:none`（不挡正文/滚动条）+ 气泡本体 `auto`；输入中（input 后 800ms）整群降透明（指针回到气泡上即恢复）；**只在写作台**（画布内联与放大弹窗不放） |
+| **内容随节实时更换** | 数据 = `cmplBuildGroups(本节 region)` 的本节相关组 → `cmplBuildGroupItems` 扁平池（上限 40）；每批 8 个；多于一批给「换一批」轻量翻页；**无候选整体隐藏**（不出空壳）；刷新钩子 = 既有编辑事件链监听体内加行（`wdOnInput` / ta `click` / ta `keyup` / `wdFillEditor`），**仅 region 变化才重渲染**（同节打字不重播动画） |
+| **点击直接上屏** | 不走 `#` 触发：`cmplPrepare` 吃槽位并复用 Tab 跳位（`cmplSlots`）；整块件按 `cmplCommit` 同规则补空行；`ta.focus()` + `setSelectionRange` + **补派 `input`** → `wdOnInput` 真写回 `state.blocks` → 气泡群按新光标节刷新；与既有 `#` 补全**并存不干扰**（气泡 z-index 5 < `.cmpl-pop` 6） |
+| **折叠 / 动效** | 折叠收成「✦」小圆钮，**会话内存不持久**（`state.version` 不动）；动效全 CSS：入场 160ms 交错 35ms（`fill-mode:backwards` 保 hover 过渡不被锁）/ 换节旧群淡出 120ms → 新群交错淡入 / hover 上浮 1px 120ms / 折叠收放 200ms；只动 transform/opacity；**reduced-motion 全部直切**（R4） |
+| **数据契约** | `state.version` 仍 **17**，持久结构无变化；`skin/corpus.js` **一字未改**（只消费） |
+| **对外面** | **136 名不变**（新顶层函数均未被跨模块引用；QA 经测试产物访问器直达） |
+| **纪律** | 零新增 document/window 级 keydown/keyup/blur 监听（仅元素级）；新中文文案全落 `view/**` / `index.html`，`skin-guard` 仍 **R3-A=15 / R3-B=0** |
+| **闸门同步** | [14] verify_v719 G6 计墨夹具对 `#wdBubbles` 隔离（判定式与条数零改动）；排查中修掉真 CSS 缺陷：`.wdb-cluster` 显式 `visibility:visible` 短路父容器 hidden 继承（已删） |
+| **产物** | 306977 → **324783 B**（+17806）；sha256 `8ca1925156e28d0494f56d74a51a9e71b254d92da03379977d62b36d3425ae8a` |
+| **闸门** | `node dev/_qa/run-gate.mjs` = **15/15**（83/18/16/54/18/21/31/16/4/9/4 + v7.19 组 10/10 + v7.20 组 18/18；新增第 15 道 `verify_v720.mjs`） |
+| **基线** | 新 `dev/_qa/snapshots/BASELINE_v7.20.md`；新快照 `PHJ_v7.20_2026-09-20.html`；等价性 `OLD` → `PHJ_v7.20_2026-09-20.html` |
 
 ## v7.19 · 划选重影修复 + 写作台补全写回/触发修复（缺陷修复 · A' 撤销封存改修根因）
 

@@ -25,8 +25,9 @@
   <span class="view-count" id="viewCount">分镜 0 条</span>
   <button class="btn primary" id="btnArrange" title="一键整理：所有块自上而下左对齐">整</button>
   <button class="btn" id="btnMenu" title="导入 / 导出">导</button>
-  <!-- v7.18：多项目容器入口（切换 / 新建 / 重命名 / 删除）；置于「导」之后，两视图均可见 -->
-  <button class="btn" id="btnProj" title="项目：切换 / 新建 / 重命名 / 删除">项目</button>
+  <!-- v7.18：多项目容器入口（切换 / 新建 / 重命名 / 删除）；置于「导」之后，两视图均可见。
+       v7.20：按钮文字由固定「项目」改为**当前项目名**（JS 刷新，CSS ellipsis 截断），title 保留原功能说明 -->
+  <button class="btn" id="btnProj" title="项目：切换 / 新建 / 重命名 / 删除"><span class="btn-clip" id="btnProjName">项目</span></button>
   <!-- v7.8：补全配置入口（片段库：浏览 / 修改 / 新增） -->
   <button class="btn" id="btnCmpl" title="补全配置：浏览 / 修改 / 新增候选片段（编辑器里输入 # 触发）">补</button>
   <button class="btn" id="btnZoom" title="画布缩放：Ctrl+滚轮缩放 ｜ 点击恢复 100%">100%</button>
@@ -157,6 +158,8 @@
 <div class="write-desk hide" id="writeDesk">
   <div class="wd-outline" id="wdOutline">
     <div class="wd-head">
+      <!-- v7.20：项目身份行（当前项目名 + ▾；点击 = 项目菜单，复用 openProjectMenu；名字过长 CSS ellipsis） -->
+      <button class="wd-proj" id="wdProj" type="button" title="当前项目 · 点击切换 / 新建 / 重命名 / 删除"><span class="wd-proj-name" id="wdProjName">…</span><span class="wd-proj-caret">▾</span></button>
       <div class="wd-head-title">大纲 · <b id="wdCount">0</b> 条</div>
       <div class="wd-head-hint">拖 ⠿ 调整顺序（不影响画布位置）</div>
     </div>
@@ -174,6 +177,8 @@
       <pre class="blk-hl wd-hl" aria-hidden="true"><code id="wdHl"></code></pre>
       <textarea class="blk-input wd-input" id="wdInput" spellcheck="false" placeholder="新建后在此写作"></textarea>
       <div class="cmpl-pop hide" id="wdPop"></div>
+      <!-- v7.20：写作灵感气泡群（跟随当前节实时更换的漂浮补全气泡；仅写作台；折叠态为会话内存不持久） -->
+      <div class="wd-bubbles hide" id="wdBubbles" aria-label="写作灵感气泡"></div>
     </div>
     <div class="blk-status wd-status">
       <span class="grp struct" title="当前所在结构（由符号判定）">节 <b id="wdStruct">—</b></span>

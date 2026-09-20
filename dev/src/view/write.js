@@ -69,6 +69,7 @@ function applyView(){
     for(var i = 0; i < segs.length; i++) segs[i].classList.toggle('active', segs[i].dataset.view === activeView);
   }
   wdUpdateCount();
+  projSyncIdentity();   /* v7.20：两处项目身份显示（左栏头部 + 顶栏按钮）随既有视图刷新点同步 */
 }
 function wdUpdateCount(){
   var blocks = wdTextBlocks();
@@ -185,11 +186,13 @@ function wdFillEditor(focusEnd){
     ta.value = '';
     ta.disabled = true;   /* 空态：编辑器不可编辑（避免「能打字却不知道存到哪」） */
     hlRefresh(hostDesk);
+    wdBubbleRefresh();    /* v7.20：空态无候选 → 气泡群整体隐藏（不出空壳） */
     return;
   }
   ta.disabled = false;
   if(ta.value !== (b.text || '')) ta.value = b.text || '';
   hlRefresh(hostDesk);
+  wdBubbleRefresh();      /* v7.20：编辑器内容/光标节变化 → 气泡群按新节刷新 */
   if(focusEnd) focusDeskEditor();
 }
 function focusDeskEditor(){
@@ -347,7 +350,208 @@ function wdOnInput(){
   cmplUseInvalidate();   /* B：写作台实时写回 → 「未用过」判定依赖用户文本，须失效（既有监听体内加行，不新增监听） */
   wdUpdateRow(b);
   hlRefresh(hostDesk);
+  wdBubbleDim();         /* v7.20：输入中 → 气泡群临时降透明（800ms），不挡打字视线 */
+  wdBubbleRefresh();     /* v7.20：光标所在节可能因输入而变 → 按节判定刷新（同节不重播动画） */
   scheduleSave();
+}
+
+/* ==================== v7.20 · 项目身份行 + 写作灵感气泡群 ====================
+   ① 项目身份行：左栏头部 .wd-proj 与顶栏 #btnProjName 两处常显当前项目名（projSyncIdentity，
+     挂在 applyView 单点刷新 → 切换/新建/删除走既有刷新链即生效；重命名由 modals 补调 applyView）。
+   ② 写作灵感气泡群（Holly 定义形态：零散漂浮、可点选、跟随输入阶段实时更换，持续显式漂浮）：
+     · 位置 = .wd-edit 内部右下角（#wdBubbles）；容器 pointer-events:none、气泡本体 auto（不挡正文）；
+     · 数据 = cmplBuildGroups(本节 region) 的本节相关组 → cmplBuildGroupItems 扁平池（消费 skin/corpus.js，
+       语料一字不改）；每批 8 个；多于一批给「换一批」轻量翻页；本节无候选 → 整体隐藏（不出空壳）；
+     · 刷新钩子 = 既有编辑事件链（wdOnInput / ta click / ta keyup / wdFillEditor 监听体内加行），
+       ★不新增任何 document/window 级监听（R2）；仅当光标所在节（region）变化时才重渲染（同节不重播）；
+     · 点击气泡 = 直接插入该条 body 到光标处（不走 # 触发），插后补派 input 走 v7.19 实时写回链路
+       （state.blocks 真写回），焦点回 textarea，槽位 ${n} 复用 # 候选的 Tab 跳位机制；
+     · 折叠/展开 = 会话内存（wdBbl.fold），★不持久化（state.version 不动）；
+     · 动效全部 CSS（入场 160ms 交错 35ms / 换节旧群淡出 120ms / hover 120ms / 折叠 200ms），
+       prefers-reduced-motion 下按既有降级先例直切显隐（见 55-write.css 末尾）。
+   ================================================================= */
+var wdBbl = { fold: false, region: '', page: 0, dimTimer: 0, swapTimer: 0 };   /* 会话态：不持久 */
+var WDB_PAGE = 8;        /* 每批气泡数（口径 6-8，取 8） */
+var WDB_POOL_MAX = 40;   /* 池上限（与 cmplBuildGroupItems 单组上限等大） */
+
+/* 项目身份行：左栏头部 + 顶栏按钮 两处同步当前项目名（过长截断由 CSS ellipsis 承担） */
+function projSyncIdentity(){
+  var name = (state && state.title) ? String(state.title) : '';
+  var wn = document.getElementById('wdProjName');
+  var wp = document.getElementById('wdProj');
+  var bn = document.getElementById('btnProjName');
+  var btn = document.getElementById('btnProj');
+  if(wn) wn.textContent = name || '未命名项目';
+  if(wp) wp.title = '当前项目：' + (name || '未命名项目') + ' · 点击切换 / 新建 / 重命名 / 删除';
+  if(bn) bn.textContent = name || '项目';
+  if(btn) btn.title = '项目：切换 / 新建 / 重命名 / 删除';
+}
+
+/* 气泡池：本节相关组（cmplBuildGroups 已按本节置顶排序）在前，条目扁平；无本节专属组 → 取最前几组兜底 */
+function wdBubblePool(region){
+  var groups = cmplBuildGroups(region), rel = [], i, j, items, out = [];
+  for(i = 0; i < groups.length; i++){ if(groups[i].score === 0) rel.push(groups[i]); }
+  if(!rel.length) rel = groups.slice(0, 4);
+  for(i = 0; i < rel.length; i++){
+    items = cmplBuildGroupItems(rel[i].group);
+    for(j = 0; j < items.length; j++){
+      if(out.length >= WDB_POOL_MAX) return out;
+      out.push(items[j]);
+    }
+  }
+  return out;
+}
+
+/* 刷新：只在写作台；空态/无候选 → 整体隐藏；同节 → 不重播（换节/首现 → 旧群淡出后新群交错淡入） */
+function wdBubbleRefresh(){
+  var desk = document.getElementById('writeDesk');
+  if(!desk || desk.classList.contains('hide')) return;   /* 只在写作台（画布内联与放大弹窗不放） */
+  var box = document.getElementById('wdBubbles');
+  if(!box) return;
+  var ta = hostDesk.el('ta');
+  if(!ta || ta.disabled){ wdBubbleHide(); return; }
+  var st = structAt(ta.value, ta.selectionStart);
+  var pool = wdBubblePool(st.region);
+  if(!pool.length){ wdBubbleHide(); wdBbl.region = st.region; wdBbl.page = 0; return; }
+  if(st.region === wdBbl.region && !box.classList.contains('hide')) return;
+  wdBbl.region = st.region;
+  wdBbl.page = 0;
+  wdBubbleSwap(pool);
+}
+
+/* 换节过渡：旧群整体淡出（120ms）→ 新群交错淡入；无旧群则直接建 */
+function wdBubbleSwap(pool){
+  var box = document.getElementById('wdBubbles');
+  if(!box) return;
+  if(wdBbl.swapTimer){ clearTimeout(wdBbl.swapTimer); wdBbl.swapTimer = 0; }
+  var old = box.querySelector('.wdb-cluster');
+  if(old && old.childElementCount){
+    old.classList.add('wdb-out');
+    wdBbl.swapTimer = setTimeout(function(){ wdBbl.swapTimer = 0; wdBubbleRender(pool); }, 130);
+  }else{
+    wdBubbleRender(pool);
+  }
+}
+
+/* 渲染一批：折叠钮 + 头（节名 / 换一批 / 折叠）+ 气泡（交错入场动画延迟 i*35ms） */
+function wdBubbleRender(pool){
+  var box = document.getElementById('wdBubbles');
+  if(!box) return;
+  var ta = hostDesk.el('ta');
+  box.classList.remove('hide');
+  box.classList.toggle('wdb-folded', wdBbl.fold);
+  var pages = Math.max(1, Math.ceil(pool.length / WDB_PAGE));
+  if(wdBbl.page >= pages) wdBbl.page = 0;
+  var batch = pool.slice(wdBbl.page * WDB_PAGE, wdBbl.page * WDB_PAGE + WDB_PAGE);
+  var st = (ta && typeof structAt === 'function') ? structAt(ta.value, ta.selectionStart) : { label: '' };
+  box.innerHTML = '';
+  var fab = document.createElement('button');
+  fab.type = 'button';
+  fab.className = 'wdb-fab';
+  fab.textContent = '✦';
+  fab.title = '展开灵感气泡';
+  fab.addEventListener('click', function(){ wdBubbleFold(false); });
+  box.appendChild(fab);
+  var cluster = document.createElement('div');
+  cluster.className = 'wdb-cluster';
+  var head = document.createElement('div');
+  head.className = 'wdb-head';
+  var tag = document.createElement('span');
+  tag.className = 'wdb-tag';
+  tag.textContent = st.label;
+  tag.title = '当前节 · 气泡内容随节切换';
+  head.appendChild(tag);
+  if(pages > 1){
+    var more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'wdb-more';
+    more.textContent = '换一批';
+    more.title = '换一批灵感气泡（第 ' + (wdBbl.page + 1) + ' / ' + pages + ' 批）';
+    more.addEventListener('click', function(){
+      wdBbl.page = (wdBbl.page + 1) % pages;
+      wdBubbleRender(pool);
+    });
+    head.appendChild(more);
+  }
+  var foldBtn = document.createElement('button');
+  foldBtn.type = 'button';
+  foldBtn.className = 'wdb-fold';
+  foldBtn.textContent = '⌄';
+  foldBtn.title = '折叠灵感气泡';
+  foldBtn.addEventListener('click', function(){ wdBubbleFold(true); });
+  head.appendChild(foldBtn);
+  cluster.appendChild(head);
+  var wrap = document.createElement('div');
+  wrap.className = 'wdb-wrap';
+  for(var i = 0; i < batch.length; i++) wdBubbleOne(wrap, batch[i], i);
+  cluster.appendChild(wrap);
+  box.appendChild(cluster);
+}
+
+/* 单个气泡（独立函数承载闭包，避免循环体内建闭包的写法） */
+function wdBubbleOne(wrap, it, idx){
+  var b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'wdb-bubble' + (it.block ? ' wdb-blk' : '');
+  b.textContent = it.label;
+  b.title = '插入：' + String(it.body || '').replace(/\$\{\d+\}/g, '…').replace(/\s+/g, ' ').slice(0, 80);
+  b.dataset.wdbLabel = it.label;
+  b.dataset.wdbBody = it.body || '';
+  b.style.animationDelay = (idx * 35) + 'ms';   /* 群内交错出现 */
+  b.addEventListener('mousedown', function(e){
+    e.preventDefault();                          /* 保住 textarea 焦点与光标（与 # 候选点选同口径） */
+    wdBubbleInsert(it);
+  });
+  wrap.appendChild(b);
+}
+
+/* 点击气泡 → 直接插入该条 body 到光标处（不走 # 触发）；插后补派 input → wdOnInput 真写回 state.blocks */
+function wdBubbleInsert(it){
+  var ta = hostDesk.el('ta');
+  if(!ta || ta.disabled || !it) return;
+  var ins = cmplPrepare(it.body);
+  var text = ins.text;
+  var p = (typeof ta.selectionStart === 'number') ? ta.selectionStart : ta.value.length;
+  var q = (typeof ta.selectionEnd === 'number') ? ta.selectionEnd : p;
+  var before = ta.value.slice(0, p), after = ta.value.slice(q);
+  /* 整块件（风格包全套等）与上下文空行分隔（与 cmplCommit 同规则） */
+  if(it.block){
+    if(before.length && !/\n\s*\n$/.test(before)) text = (/\n$/.test(before) ? '\n' : '\n\n') + text;
+    if(after.length && !/^\s*\n/.test(after)) text = text + '\n\n';
+  }
+  var base = p + (text.length - ins.text.length);
+  ta.value = before + text + after;
+  var caret;
+  if(ins.slots.length){
+    cmplSlots = [];                              /* 槽位模式复用 # 候选的既有键路（Tab 逐位跳） */
+    for(var s = 0; s < ins.slots.length; s++) cmplSlots.push(base + ins.slots[s]);
+    cmplSlotIdx = 0;
+    caret = cmplSlots[0];
+  }else{ cmplSlots = null; caret = base + ins.text.length; }
+  ta.focus();                                    /* 焦点回 textarea */
+  ta.setSelectionRange(caret, caret);
+  try{ ta.dispatchEvent(new Event('input', { bubbles: true })); }catch(e){}   /* v7.19 写回链路 */
+  wdBubbleRefresh();                             /* 新光标节 → 立即刷新气泡群 */
+}
+
+/* 折叠 / 展开（会话内存，不持久） */
+function wdBubbleFold(on){
+  wdBbl.fold = !!on;
+  var box = document.getElementById('wdBubbles');
+  if(box) box.classList.toggle('wdb-folded', wdBbl.fold);
+}
+/* 无候选 → 整体隐藏（不出空壳） */
+function wdBubbleHide(){
+  var box = document.getElementById('wdBubbles');
+  if(box) box.classList.add('hide');
+}
+/* 输入态降透明：input 后 800ms 内气泡群临时降低存在感 */
+function wdBubbleDim(){
+  var box = document.getElementById('wdBubbles');
+  if(!box) return;
+  box.classList.add('wdb-dim');
+  if(wdBbl.dimTimer) clearTimeout(wdBbl.dimTimer);
+  wdBbl.dimTimer = setTimeout(function(){ wdBbl.dimTimer = 0; box.classList.remove('wdb-dim'); }, 800);
 }
 
 /* ---- DCL：初始化（applyView → renderWrite）+ 元素级接线（不新增 document/window 级 key 监听） ---- */
@@ -406,13 +610,25 @@ document.addEventListener('DOMContentLoaded', function(){
   var addBtn = document.getElementById('wdAdd');
   if(addBtn) addBtn.addEventListener('click', function(){ wdNew(); });
 
+  /* v7.20：左栏头部项目身份行 → 项目菜单（复用 openProjectMenu / #ctxMenu，与顶栏 #btnProj 同型） */
+  var projBtn = document.getElementById('wdProj');
+  if(projBtn){
+    projBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var cm = document.getElementById('ctxMenu');
+      if(cm.classList.contains('open')){ closeCtxMenu(); return; }
+      var r = this.getBoundingClientRect();
+      openProjectMenu(r.left, r.bottom + 6);
+    });
+  }
+
   /* 右栏编辑器 = coding 编辑器内核（宿主 hostDesk）；补全/复制全文由 complete.cmplBind(hostDesk) 接线 */
   var ta = hostDesk.el('ta');
   if(ta){
     ta.addEventListener('input', wdOnInput);
     ta.addEventListener('scroll', function(){ hlSyncBox(hostDesk); });
-    ta.addEventListener('click', function(){ hlRefresh(hostDesk); });
-    ta.addEventListener('keyup', function(){ hlRefresh(hostDesk); });
+    ta.addEventListener('click', function(){ hlRefresh(hostDesk); wdBubbleRefresh(); });   /* v7.20：点选光标 → 节判定刷新（既有监听体内加行，不新增监听） */
+    ta.addEventListener('keyup', function(){ hlRefresh(hostDesk); wdBubbleRefresh(); });   /* v7.20：键盘移光标 → 同上 */
     /* v7.19：划选**只刷新状态栏**（行列 / 节 / 错误数），不再整层重建彩色层。
        实测：键盘 Shift+方向 延展选区时 select 每按一次就触发一次（12 次按键 → 25 次整层重建），
        而划选期间文本与光标位置都没变，重建彩色层既无必要又抖（且会把配对高亮清掉）。 */

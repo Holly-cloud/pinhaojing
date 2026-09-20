@@ -32,7 +32,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../../..');
 const NEW  = process.argv[2] || path.join(ROOT, 'PHJ.html');
-const OLD  = process.argv[3] || path.join(ROOT, 'dev', '_qa', 'snapshots', 'PHJ_v7.19_2026-09-20.html');
+const OLD  = process.argv[3] || path.join(ROOT, 'dev', '_qa', 'snapshots', 'PHJ_v7.20_2026-09-20.html');
 
 /* 仅在「历史比对」退一步时使用：剥离构建 banner（按第 2 行、多行模式） */
 const stripBanner = s => s.replace(/^<!--\s*构建生成[\s\S]*?-->\r?\n/m, '');
