@@ -10,7 +10,8 @@
 **当前交付形态** = 仓库根**一个 `PHJ.html`**，「双击即开、用完即走」；`github.com/Holly-cloud/pinhaojing`（公开）。
 ★**形态不设锁**（A1⑤，2026-09-20 Holly 修订）：单文件是**当前实现形态**，不是铁律——出现能让项目迈入更优质阶段的重构方案时，评估其对可移植性与用户零摩擦的影响后由 Holly 决策，**不得以"必须单文件"为由否决**。
 
-**当前基线（v7.20，2026-09-20）**：`PHJ.html` = **324783 B** ｜ sha256 `8ca1925156e28d0494f56d74a51a9e71b254d92da03379977d62b36d3425ae8a` ｜ 闸门 **15/15** ｜ `state.version` = **17** ｜ 本地 HEAD `b00e788` + tag `v7.20`（**远端 `origin/master` 仍 `63e0671`（v7.14 期），v7.18/v7.19/v7.20 三个提交与 tag 未推送**——推送需 PAT：写 `~/.git-credentials` → `git -c credential.helper= -c credential.helper=store push origin master --tags` → **用完删**；`GIT_ASKPASS`+msys 路径会 spawn 失败）。
+**当前基线（v7.20，2026-09-21 复核）**：`PHJ.html` = **324783 B** ｜ sha256 `8ca1925156e28d0494f56d74a51a9e71b254d92da03379977d62b36d3425ae8a` ｜ 闸门 **15/15** ｜ `state.version` = **17** ｜ 本地 HEAD = **2026-09-21 交接校正提交**（**父 `00b4bfc`**；本轮仅文档、无产物变更）｜ 上一内容提交链：`00b4bfc` 根 README 分离（tag `v7.20` 所指提交 `b00e788` 之后另有 **9 个提交**：协作机制 → 跨平台巡回适配 → 交接同步 → 铁律区建立 → 铁律首轮修订 + 审计补录 → A1 改写 → 环境文档补坑 → 再次交接同步 → 根 README 分离）｜ 远端 `origin/master` = `00b4bfc`（**已同步**：tag `v7.9`/`v7.10`/`v7.11`/`v7.13`/`v7.18`/`v7.19`/`v7.20` 共 7 个全在远端）；⚠️ **本轮文档校正提交尚未推送**（本机无推送凭证，需 PAT）。
+> **推送方法（备查）**：写 `~/.git-credentials` → `git -c credential.helper= -c credential.helper=store push origin master --tags` → **用完删**；`GIT_ASKPASS`+msys 路径会 spawn 失败。
 
 ## 产品红线
 
