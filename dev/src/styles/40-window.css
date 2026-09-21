@@ -49,3 +49,19 @@
 .tpl-block-op{border:0;background:transparent;color:var(--muted);font-size:12px;cursor:pointer;padding:2px 5px;border-radius:6px;line-height:1}
 .tpl-block-op:hover{background:rgba(0,0,0,.06);color:var(--text)}
 .tpl-block-op.danger:hover{color:#d64545;background:#fdeeee}
+
+/* v7.21：项目总览面板（只读矩阵；复用 .modal-mask/.modal 骨架，仅补内容样式） */
+.map-wrap{display:flex;flex-direction:column;gap:7px;max-height:62vh;overflow-y:auto}
+.map-h{font-size:12px;color:var(--muted);letter-spacing:.02em;margin:6px 0 1px}
+.map-h:first-child{margin-top:0}
+.map-row{padding:7px 9px;border-radius:9px;background:rgba(0,0,0,.03);border:1px solid rgba(0,0,0,.05)}
+.map-row.todo{background:rgba(217,119,6,.07);border-color:rgba(217,119,6,.22)}
+.map-r1{display:flex;align-items:center;gap:7px;font-size:12px}
+.map-name{flex:1 1 auto;min-width:0;font-weight:500;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.map-ver{flex:0 0 auto;font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(0,0,0,.06);color:var(--muted)}
+.map-state{flex:0 0 auto;font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(0,113,227,.14);color:var(--accent)}
+.map-row.todo .map-state{background:rgba(217,119,6,.18);color:#8a5a00}
+.map-r2{margin-top:3px;font-size:11px;color:var(--muted);word-break:break-all}
+.map-kv{display:flex;flex-wrap:wrap;gap:6px}
+.map-kv span{font-size:11px;padding:2px 7px;border-radius:8px;background:rgba(0,0,0,.045);color:var(--text)}
+.map-note{font-size:11px;line-height:1.6;color:var(--muted)}

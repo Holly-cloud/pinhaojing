@@ -85,6 +85,27 @@ function wdUpdateCount(){
   }
 }
 
+/* v7.21：块标签（'初' | '补' | '' = 无）。仅写作界面消费（大纲分组 + 标签钮）。
+   缺字段/脏值一律归 '' —— 与 core/persist.js 的 migrateBlocks 归一口径同源，保证老数据零丢失。 */
+function wdTagOf(b){ return (b && (b.tag === '初' || b.tag === '补')) ? b.tag : ''; }
+
+/* v7.21：标签分组头。★必须是**独立 class**（绝不能是 .wd-item）——
+   否则会打断 W4 的「#wdList .wd-item 的 DOM 序 == order 序」与 wdPos 计数。 */
+function wdGroupHead(key, n){
+  var h = document.createElement('div');
+  h.className = 'wd-group';
+  h.dataset.group = key || 'none';
+  var t = document.createElement('span');
+  t.className = 'wd-group-t';
+  t.textContent = key ? ('标签「' + key + '」') : '无标签';
+  var c = document.createElement('span');
+  c.className = 'wd-group-c';
+  c.textContent = String(n);
+  h.appendChild(t);
+  h.appendChild(c);
+  return h;
+}
+
 /* ---- 大纲渲染 ---- */
 function renderWrite(){
   if(normalizeOrder()) scheduleSave();   /* 惰性归一：仅在「有块缺 order / 有重复 / 非 0..N-1 紧致」时动手 */
@@ -102,7 +123,24 @@ function renderWrite(){
     wdFillEditor(false);
     return;
   }
-  for(var i = 0; i < blocks.length; i++) list.appendChild(wdRow(blocks[i], i));
+  /* v7.21：按标签分组渲染（初 → 补 → 无）。**order 语义不变**——分组只是呈现层，
+     order 仍是单一全序 ⇒ 拼接栏 / 导出 prompt / 画布 全部零改动（本需求仅服务写作界面）。
+     —— 仅当存在 ≥2 种标签时才出组头，避免打扰尚未使用标签的既有项目。
+     ★行内 idx 一律传**全局序位**（与 order 同源）⇒ wd-no 编号、wdPos、拖拽与右键菜单的 idx 全不受分组影响。 */
+  var kinds = {}, nk = 0, i;
+  for(i = 0; i < blocks.length; i++){ var kk = wdTagOf(blocks[i]); if(!kinds[kk]){ kinds[kk] = 1; nk++; } }
+  if(nk > 1){
+    var groupOrder = ['初', '补', ''];
+    for(var g = 0; g < groupOrder.length; g++){
+      var key = groupOrder[g], members = [];
+      for(i = 0; i < blocks.length; i++){ if(wdTagOf(blocks[i]) === key) members.push(i); }
+      if(!members.length) continue;
+      list.appendChild(wdGroupHead(key, members.length));
+      for(i = 0; i < members.length; i++) list.appendChild(wdRow(blocks[members[i]], members[i]));
+    }
+  }else{
+    for(i = 0; i < blocks.length; i++) list.appendChild(wdRow(blocks[i], i));
+  }
   wdUpdateCount();
   wdFillEditor(false);
   wdMarkSel(false);
@@ -122,6 +160,16 @@ function wdRow(b, idx){
   var no = document.createElement('span');
   no.className = 'wd-no';
   no.textContent = String(idx + 1);
+
+  /* v7.21：标签钮（元素级 click，由 #wdList 的既有委托处理；不新增任何全局按键监听） */
+  var lk = wdTagOf(b);
+  var lab = document.createElement('button');
+  lab.className = 'wd-lab' + (lk ? ' on' : '');
+  lab.type = 'button';
+  lab.dataset.idx = String(idx);
+  lab.dataset.tag = lk;
+  lab.textContent = lk || '·';
+  lab.title = '标签：' + (lk || '无标签') + '（点击循环：初 → 补 → 无）';
 
   var sum = document.createElement('span');
   sum.className = 'wd-sum';
@@ -143,6 +191,7 @@ function wdRow(b, idx){
 
   row.appendChild(grip);
   row.appendChild(no);
+  row.appendChild(lab);
   row.appendChild(sum);
   row.appendChild(cnt);
   row.appendChild(x);
@@ -254,6 +303,9 @@ function wdMove(a, b){
 function wdReorder(from, to){
   var blocks = wdTextBlocks();
   if(from < 0 || from >= blocks.length || to < 0 || to >= blocks.length || from === to) return;
+  /* v7.21：分组态下禁止**跨组**重排（跨组改标签请用标签钮）——组内重排不受影响。
+     未使用标签时所有块同为 ''，此守卫恒不触发 ⇒ 既有行为逐字不变。 */
+  if(wdTagOf(blocks[from]) !== wdTagOf(blocks[to])){ toast('跨标签分组不能直接拖动，请用标签钮调整'); return; }
   var moved = blocks.splice(from, 1)[0];
   blocks.splice(to, 0, moved);
   for(var k = 0; k < blocks.length; k++) blocks[k].order = k;
@@ -269,12 +321,24 @@ function wdShiftSel(d){
   wdReorder(cur, cur + d);
 }
 
+/* v7.21：点标签钮 → 循环 初 → 补 → 无 → 初（真写回 state.blocks 并落盘）。
+   不改 wdSelId：分组重排后 renderWrite 的 wdEnsureSel 仍保当前选中条不变。 */
+function wdCycleTag(idx){
+  var blocks = wdTextBlocks();
+  var b = blocks[idx];
+  if(!b) return;
+  var seq = ['初', '补', ''];
+  b.tag = seq[(seq.indexOf(wdTagOf(b)) + 1) % seq.length];
+  renderWrite();
+  saveNow();
+}
+
 /* ---- 新增 / 删除 ---- */
 function wdNew(){
   var blocks = wdTextBlocks();
   var cur = wdIndexOfSel();
   var ref = (cur >= 0 && blocks[cur]) ? blocks[cur] : null;
-  var nb = { id: uid(), text: '' };
+  var nb = { id: uid(), text: '', tag: '初' };   /* v7.21：新块默认标签「初」 */
   nb.x = ref ? ref.x : 20;
   nb.y = ref ? (ref.y + 150) : 20;
   state.blocks.push(nb);
@@ -562,6 +626,8 @@ document.addEventListener('DOMContentLoaded', function(){
   var list = document.getElementById('wdList');
   if(list){
     list.addEventListener('click', function(e){
+      var lab = e.target.closest ? e.target.closest('.wd-lab') : null;
+      if(lab){ e.stopPropagation(); wdCycleTag(parseInt(lab.dataset.idx, 10)); return; }   /* v7.21：标签钮 */
       var x = e.target.closest ? e.target.closest('.wd-x') : null;
       if(x){ e.stopPropagation(); wdDel(parseInt(x.dataset.idx, 10)); return; }
       var item = e.target.closest ? e.target.closest('.wd-item') : null;

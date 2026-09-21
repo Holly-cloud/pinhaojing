@@ -77,12 +77,14 @@ function migrateCmpl(dCmpl){
 }
 
 /* 块归一：v6.16 剔图片（须在 map 前过滤——map 已剥离 type 字段）；
-   v7.15 块投影新增 order；hasOrd/ord/i 仅供随后排序定序用（不进最终块对象）；
-   按「有 order 的在前（order, y, x, i）、无 order 的在后（y, x, i）」全序排序，再赋连续 order = 0..N-1。 */
+   v7.15 块投影新增 order；**v7.21 块投影新增 tag**（仅认 '初'/'补'，其余/缺失一律归 '' —— 老数据零丢失）；
+   hasOrd/ord/i 仅供随后排序定序用（不进最终块对象）；
+   按「有 order 的在前（order, y, x, i）、无 order 的在后（y, x, i）」全序排序，再赋连续 order = 0..N-1。
+   ★★ 新增块字段必须同时改**两处**投影（中间对象 + 末尾 map），否则字段会在每次 load 时被静默剥离。 */
 function migrateBlocks(blocksIn){
   var blocks = (Array.isArray(blocksIn) ? blocksIn : []).filter(function(b){ return b && b.type !== 'image'; }).map(function(b, i){
     var pos = (typeof b.x === 'number' && typeof b.y === 'number') ? { x: b.x, y: b.y } : gridPos(i);
-    return { id: b.id || uid(), text: b.text || '', x: pos.x, y: pos.y,
+    return { id: b.id || uid(), text: b.text || '', tag: (b.tag === '初' || b.tag === '补') ? b.tag : '', x: pos.x, y: pos.y,
              hasOrd: (Number.isInteger(b.order) && b.order >= 0), ord: b.order, i: i };
   });
   blocks.sort(function(A, B){
@@ -92,7 +94,7 @@ function migrateBlocks(blocksIn){
     if(A.x !== B.x) return A.x - B.x;
     return A.i - B.i;
   });
-  return blocks.map(function(z, k){ return { id: z.id, text: z.text, x: z.x, y: z.y, order: k }; });
+  return blocks.map(function(z, k){ return { id: z.id, text: z.text, tag: z.tag, x: z.x, y: z.y, order: k }; });
 }
 
 /* 拼接栏归一：v6.6 条目化——平铺块条目 + 模板单元窗口条目；旧 order 平铺迁移为块条目（依旧平铺）。
@@ -167,6 +169,10 @@ function migrate(d){
   for(var j = 0; j < projects.length; j++){ if(projects[j].id === activeProject){ act = projects[j]; break; } }
 
   /* ⑤ 顶层镜像 = 活动项目（**同一引用**） */
+  /* v7.21：version **仍 17** —— 新增的 `block.tag` 是**纯增量可选字段**（缺失/脏值一律归 ''），
+     迁移天然零丢失，故**不升版**：升版会连带改动 C / v7.8 / W / v7.20 四个套件里
+     `version === 17` 的断言判定式，属无收益的大范围扰动。若将来需要「按版本区分是否有 tag」，
+     直接按 `b.tag === undefined` 判定即可。 */
   return { app: 'storyboard-prompt-panel', version: 17,
            templates: templates, cmpl: cmpl,
            activeProject: activeProject, projects: projects,

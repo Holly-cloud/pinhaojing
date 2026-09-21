@@ -3,7 +3,7 @@
 把一条视频提示词拆成**可自由摆放的提示词块**，在无限画布上排布、拼接、导出——
 一个「**双击即开、用完即走**」的写作小工具。
 
-> 当前版本 **v7.20** ｜ 产物 `PHJ.html` = 324783 B ｜ 验收：`node dev/_qa/run-gate.mjs` → **15/15 全绿**
+> 当前版本 **v7.20** ｜ 产物 `PHJ.html` = 324783 B ｜ 验收：`node dev/_qa/run-gate.mjs` → **16/16 全绿**
 
 ## 怎么用（三步）
 
@@ -36,7 +36,7 @@
 ## 开发者 / 接手者
 
 - **唯一手改入口 = `dev/src/`**；`PHJ.html` 与 `dev/src/dev-bundle.js` 是构建产物，勿手改。
-- **改一条命令、验收一条命令**：`node dev/build.mjs` → `node dev/_qa/run-gate.mjs`（**必须 15/15**）。
+- **改一条命令、验收一条命令**：`node dev/build.mjs` → `node dev/_qa/run-gate.mjs`（**必须 16/16**）。
 - **动手前先读铁律**：`IRON_RULES.md`（项目最高约束）。
 
 ## 文档去哪看

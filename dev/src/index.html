@@ -30,6 +30,10 @@
   <button class="btn" id="btnProj" title="项目：切换 / 新建 / 重命名 / 删除"><span class="btn-clip" id="btnProjName">项目</span></button>
   <!-- v7.8：补全配置入口（片段库：浏览 / 修改 / 新增） -->
   <button class="btn" id="btnCmpl" title="补全配置：浏览 / 修改 / 新增候选片段（编辑器里输入 # 触发）">补</button>
+  <!-- v7.21：项目总览入口（功能 / 开发状态 / 代码完善度；只读面板）。
+       ★命名避坑：此处**不得**用「全景」——它是 skin/corpus.js 的领域词元（景别），
+         写进引擎代码会顶穿 R3-A 词元棘轮（实测 15→16 当场闸门红）。 -->
+  <button class="btn" id="btnMap" title="项目总览：功能 / 开发状态 / 代码完善度">览</button>
   <button class="btn" id="btnZoom" title="画布缩放：Ctrl+滚轮缩放 ｜ 点击恢复 100%">100%</button>
   <input type="file" id="fileInput" accept=".json,application/json" hidden>
 </div>
@@ -68,6 +72,15 @@
     <div class="modal-actions">
       <button class="btn" id="modalCancel">取消</button>
       <button class="btn primary" id="modalOk">确定</button>
+    </div>
+  </div>
+</div>
+<div class="modal-mask hide" id="mapMask">
+  <div class="modal">
+    <div class="modal-title">项目总览</div>
+    <div class="modal-body" id="mapBody"></div>
+    <div class="modal-actions">
+      <button class="btn primary" id="mapClose">知道了</button>
     </div>
   </div>
 </div>

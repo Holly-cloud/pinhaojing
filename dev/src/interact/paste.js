@@ -51,7 +51,7 @@ document.addEventListener('paste', function(e){
   if(!txt || !txt.trim()) return;
   e.preventDefault();
   var n = state.blocks.length;
-  var b = { id: uid(), text: txt.trim() };
+  var b = { id: uid(), text: txt.trim(), tag: '初' };   /* v7.21：新块默认标签「初」 */
   b.x = (-state.pan.x + (canvas.clientWidth / 2)) / state.zoom - (MIN_BLOCK_W / 2) + ((n % 5) - 2) * 20;
   b.y = (-state.pan.y + (canvas.clientHeight / 2)) / state.zoom - 60 + ((n % 5) - 2) * 16;
   state.blocks.push(b);

@@ -14,7 +14,7 @@
 1. **读交接状态**：[`HANDOVER.md`](HANDOVER.md)（当前版本/指纹/闸门形态/在途工作/待裁决项——**活文件，每次交付必须更新**）
 2. **读项目记忆**：[`dev/docs/ops/PROJECT_MEMORY.md`](dev/docs/ops/PROJECT_MEMORY.md)（沿革/结构地图/工具坑——**事实类唯一事实源**）
 3. **环境引导**：[`dev/docs/ops/环境探测与工装陷阱.md`](dev/docs/ops/环境探测与工装陷阱.md)（只写探测方法，本机差异按模板自行探测；§9 为 Linux 巡回）
-4. **跑闸门**：`node dev/_qa/run-gate.mjs` → 必须 **15/15 全绿**（自起自收 headless 浏览器，约 100s）。**跑不过闸门不许改代码**——先修复环境或向交接方追问
+4. **跑闸门**：`node dev/_qa/run-gate.mjs` → 必须 **16/16 全绿**（自起自收 headless 浏览器，约 100s）。**跑不过闸门不许改代码**——先修复环境或向交接方追问
 5. **读协作协议**：[`dev/docs/ops/多agent异步协作协议_2026-09-20.md`](dev/docs/ops/多agent异步协作协议_2026-09-20.md)（角色/任务书要素/回报格式/交接 checklist）
 
 ## 改动前必知
@@ -25,7 +25,7 @@
 ## 交接完成判据
 
 ```
-git status 干净  +  run-gate 15/15 全绿  +  HANDOVER.md 与实际一致
+git status 干净  +  run-gate 16/16 全绿  +  HANDOVER.md 与实际一致
 ```
 
 三者齐 = 交接闭环。任何一步不满足，按协作协议§交接 checklist 处理，**不要带病开工**。
@@ -36,5 +36,5 @@ git status 干净  +  run-gate 15/15 全绿  +  HANDOVER.md 与实际一致
 （浏览器三平台探测 + `PHJ_BROWSER` 硬覆盖 + `PHJ_BROWSER_FLAGS` 注入 + root 自动
 `--no-sandbox`；套件 URL 统一 `pathToFileURL`；行尾策略跨平台无忧）。
 **Linux 侧接手**：按 `dev/docs/ops/环境探测与工装陷阱.md` §9 走（重点：CJK 字体是
-像素断言的前提）；首次巡回 = 跨平台的最终验收，跑完 15/15 在 `HANDOVER.md` 记录
+像素断言的前提）；首次巡回 = 跨平台的最终验收，跑完 16/16 在 `HANDOVER.md` 记录
 「已巡回平台」。

@@ -2,7 +2,7 @@
 
 > **用户用品在仓库根**：`PHJ.html`（双击即用的单文件交付物）+ `README.md`（交接入口）。
 > 本目录是开发侧：源码、构建、验收、文档。
-> **一条命令复现全部验收**：`node dev/_qa/run-gate.mjs`（15 道闸门，自起自收 headless 浏览器）。
+> **一条命令复现全部验收**：`node dev/_qa/run-gate.mjs`（16 道闸门，自起自收 headless 浏览器）。
 
 ## 一、本目录 3 个区域（先看这张表）
 
@@ -45,7 +45,7 @@
 |---|---|
 | `build.mjs` | 纯 node、**零依赖**：按 manifest 顺序内联 → `PHJ.html`；同一份字节写入 `src/dev-bundle.js`（**dev≡prod**） |
 | `manifest.mjs` | 模块清单：`SLICES`（顺序源）/ `CSS` / `MODULES`+`deps`（文档性质）/ `PENDING`（已全部判定关闭） |
-| `_qa/run-gate.mjs` | ★ **一键闸门**（构建 / 等价性 / verify_v7 / F / G / H+I / 开发态 / W / C / E / P / M / V / v7.19 组 / v7.20 组），期望 **15/15**（83/18/16/**54**/18/**21**/**31**/**16**/**4**/**9**/**4** + **10** + **18**） |
+| `_qa/run-gate.mjs` | ★ **一键闸门**（构建 / 等价性 / verify_v7 / F / G / H+I / 开发态 / W / C / E / P / M / V / v7.19 组 / v7.20 组），期望 **16/16**（83/18/16/**54**/18/**21**/**31**/**16**/**4**/**9**/**4** + **10** + **18**） |
 | `_qa/lib/skin-guard.mjs` | ★ **皮肤边界护栏（R3）**：抽皮肤词元 / 长语料 / `【…】` 完整标记串，列引擎文件，`DOMAIN_HITS_GOLDEN`（**棘轮 + 零泄漏 + 防真空自检**三件事的公用采集层）；可 CLI 单跑 |
 | `_qa/README.md` | `_qa/` 分区导览（在用 / 历史 / 留档 / 生成物一眼分清） |
 | `_qa/snapshots/INDEX.md` | 快照角色表（当前基准 / 历史 argv 基准 / 不可动清单） |
@@ -76,6 +76,6 @@
 - **编辑器宿主化（v7.15）**：编辑器内核（`editor/highlight.js` / `editor/complete.js`）按**宿主对象**寻址（`editor/host.js` 的 `makeHost`）——`hostPopup`（放大编辑弹窗）/ `hostDesk`（写作台右栏）**复用同一内核**；写作台 = `view/write.js` + `styles/55-write.css`（左大纲 + 右大编辑器），与画布**同源**同一份 `state.blocks`。
 - **产物形态**：**单个 IIFE + 严格模式**；开发态与产物跑**同一份字节**（`dev/src/dev-bundle.js` = 产物内联 JS 段逐字）。
 - **单点归口**：document 级 Escape **唯一**在 `interact/keys.js` 的 `closeTopLayer()`（按「最上层优先」只关一层）；会话态唯一来源 = `core/store.js`；`PHJ.<module>` = **显式对外面（136 名）**，**不是调用通道**。
-- **闸门**：`node dev/_qa/run-gate.mjs` 一条命令跑 **15 道**（83 / 18 / 16 / 54 / 18 / 21 / 31 / 16 / 4 / 9 / 4 / 10 / 18）；快照角色与维护约定见 `_qa/snapshots/INDEX.md`。
+- **闸门**：`node dev/_qa/run-gate.mjs` 一条命令跑 **16 道**（83 / 18 / 16 / 54 / 18 / 21 / 31 / 16 / 4 / 9 / 4 / 10 / 18 / 11）；快照角色与维护约定见 `_qa/snapshots/INDEX.md`。★**闸门总数不写死在文档里**——以 `run-gate` 汇总为准（铁律 **C2** 已按此修订）。
 - **刻意不做**（已评估、收益低于代价）：模块调用点改走 `PHJ.x.y()`；让 `resolveOrder()` 接管顺序；`shell/wiring.js` 拆分（Q10 决定**只改名不拆**）。
 - **下一步候选**（按优先级）：拆分 `shell/wiring.js`（F2 隐性上帝对象；会动加载序，需 P2-A 契约同步）→ 15 个符号契约继续下沉皮肤以**收紧棘轮** → 「外置皮肤包」；产品侧：槽位轮盘 / 行号栏节标记 / 左侧结构竖条 / 结构体检。详见 `dev/docs/ops/目标架构与长期规划_2026-09-17.md`。

@@ -62,6 +62,12 @@ document.addEventListener('DOMContentLoaded', function(){
 
   document.getElementById('btnZoom').addEventListener('click', resetZoom);
 
+  /* v7.21：项目总览面板入口 + 关闭（元素级 click；不新增任何全局 keydown/keyup/blur 监听） */
+  var btnMap = document.getElementById('btnMap');
+  if(btnMap) btnMap.addEventListener('click', function(){ openMapPanel(); });
+  var mapClose = document.getElementById('mapClose');
+  if(mapClose) mapClose.addEventListener('click', function(){ closeMapPanel(); });
+
   var fileInput = document.getElementById('fileInput');
   fileInput.addEventListener('change', function(){
     var f = fileInput.files && fileInput.files[0];

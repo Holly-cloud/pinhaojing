@@ -10,7 +10,7 @@
 **当前交付形态** = 仓库根**一个 `PHJ.html`**，「双击即开、用完即走」；`github.com/Holly-cloud/pinhaojing`（公开）。
 ★**形态不设锁**（A1⑤，2026-09-20 Holly 修订）：单文件是**当前实现形态**，不是铁律——出现能让项目迈入更优质阶段的重构方案时，评估其对可移植性与用户零摩擦的影响后由 Holly 决策，**不得以"必须单文件"为由否决**。
 
-**当前基线（v7.20，2026-09-21 复核）**：`PHJ.html` = **324783 B** ｜ sha256 `8ca1925156e28d0494f56d74a51a9e71b254d92da03379977d62b36d3425ae8a` ｜ 闸门 **15/15** ｜ `state.version` = **17** ｜ **内容提交链**（截至 `00b4bfc`）：`00b4bfc` 根 README 分离（tag `v7.20` 所指提交 `b00e788` 之后另有 **9 个提交**：协作机制 → 跨平台巡回适配 → 交接同步 → 铁律区建立 → 铁律首轮修订 + 审计补录 → A1 改写 → 环境文档补坑 → 再次交接同步 → 根 README 分离）｜ 远端 `origin/master` = `00b4bfc`（**最后一次已推送的内容提交**；tag `v7.9`/`v7.10`/`v7.11`/`v7.13`/`v7.18`/`v7.19`/`v7.20` 共 7 个全在远端）；⚠️ 其上另有**未推送的文档收口提交**——★**HEAD 与推送条数一律实测**（`git log -1 --oneline` / `git rev-list --count origin/master..HEAD`），**不在此冻结**（见 §交付惯例 2）。
+**当前基线（v7.21，2026-09-21）**：`PHJ.html` = **338465 B** ｜ sha256 `2b2551d5a179f6625b9a9175a59abb7b4976c1c51c33301eb1742b352d1126d9` ｜ 闸门 **16/16** ｜ `state.version` = **17** ｜ **内容提交链**（截至 `00b4bfc`）：`00b4bfc` 根 README 分离（tag `v7.20` 所指提交 `b00e788` 之后另有 **9 个提交**：协作机制 → 跨平台巡回适配 → 交接同步 → 铁律区建立 → 铁律首轮修订 + 审计补录 → A1 改写 → 环境文档补坑 → 再次交接同步 → 根 README 分离）｜ 远端 `origin/master` = `00b4bfc`（**最后一次已推送的内容提交**；tag `v7.9`/`v7.10`/`v7.11`/`v7.13`/`v7.18`/`v7.19`/`v7.20` 共 7 个全在远端）；⚠️ 其上另有**未推送的文档收口提交**——★**HEAD 与推送条数一律实测**（`git log -1 --oneline` / `git rev-list --count origin/master..HEAD`），**不在此冻结**（见 §交付惯例 2）。
 > **推送方法（备查）**：写 `~/.git-credentials` → `git -c credential.helper= -c credential.helper=store push origin master --tags` → **用完删**；`GIT_ASKPASS`+msys 路径会 spawn 失败。
 
 ## 产品红线
@@ -21,6 +21,7 @@
 ## 版本沿革速览（细节见 CHANGELOG）
 
 - **v7.20** = 项目名常显化（左栏身份行 `.wd-proj` + 顶栏 `#btnProjName`）+ **写作灵感气泡群** `#wdBubbles`（编辑区右下角漂浮、跟随光标所在节实时换内容、点击插入走写回链路、换一批、可折叠会话态）+ 第 15 道闸门
+- **v7.21** = **写作台块标签「初/补」+ 大纲分组排列**（`block.tag` 纯增量可选字段、脏值归 `''`、**不升 `state.version`**；分组走**呈现层** ⇒ `order` 全序与拼接栏/导出**零改动**；组头独立 class `.wd-group` 护住 W4；跨组拖动被拒）+ **产品内项目总览面板**（顶栏「览」；功能矩阵 × 版本 × 实现位置 × **闸门覆盖证据** × 完善度；数据由断言交叉校验防漂移）+ 第 16 道闸门 `verify_v721`（11 条）
 - **v7.19** = 划选重影修复（`::selection` 去文字显形；`select` 事件改 `hlStatus`）+ 补全上屏写回（`cmplCommit` 补派 input）+ scroll 改 `cmplPlace`（气泡跟随重定位，长文本文末输 # 不再刚弹即关）+ 第 14 道闸门
 - **v7.18** = 多项目容器（`projects[]`+`activeProject`，version 16→17）+ 编辑器粘贴修复 + 渲染时机修复（`setView` 先 applyView 后 render；`autoResize` 隐藏态不写 0）+ 第 11-13 道闸门
 - **v7.17** = 放大编辑「逗号转空格（台词除外）」（复用 `hlDialogueMask`）+ toast 层级修复（z-index 99→13000）+ 第 10 道闸门
@@ -30,12 +31,12 @@
 
 - `dev/` 顶层 = **活文件**：`README.md` · `CHANGELOG.md` · `manifest.mjs`（顺序唯一源）· `build.mjs` · `src/`（**唯一手改入口**）
 - `dev/docs/` = **冻结历史**（只增不改；`ops/` 内带日期文档同冻结，`AGENTS.md`/`HANDOVER.md`/`PROJECT_MEMORY.md` 三个跨文档指针类为**活文件**）
-- `dev/_qa/` = 验收工装：`run-gate.mjs`（15 道）· `verify/`（11 套件）· `lib/` · `diag/` · `snapshots/` · `records/` · `gen/` · `handover/`（任务存档）
+- `dev/_qa/` = 验收工装：`run-gate.mjs`（16 道）· `verify/`（14 套件）· `lib/` · `diag/` · `snapshots/` · `records/` · `gen/` · `handover/`（任务存档）
 - 双视图：**写作台**（默认，左大纲 + 右编辑器 `#wdInput`）｜ 画布（`activeView` 会话态不持久）；两个编辑器宿主共用内核 `editor/host.js`（`hostPopup`=#blkInput 弹窗 / `hostDesk`=#wdInput 写作台）
 
 ## 闸门（改完必跑）
 
-`node dev/_qa/run-gate.mjs` → 期望 **15/15**：324783 B ｜ 等价性 PASS ｜ 83/83 ｜ F 18/18 ｜ G 16/16 ｜ v7.8 **54/54** ｜ 开发态 18/18 ｜ W 21/21 ｜ C 31/31 ｜ E 16/16 ｜ P 4/4（粘贴）｜ M 9/9（多项目）｜ V 4/4（迁移观感）｜ v7.19 10/10 ｜ **v7.20 18/18**
+`node dev/_qa/run-gate.mjs` → 期望 **16/16**：338465 B ｜ 等价性 PASS ｜ 83/83 ｜ F 18/18 ｜ G 16/16 ｜ v7.8 **54/54** ｜ 开发态 18/18 ｜ W 21/21 ｜ C 31/31 ｜ E 16/16 ｜ P 4/4（粘贴）｜ M 9/9（多项目）｜ V 4/4（迁移观感）｜ v7.19 10/10 ｜ v7.20 18/18 ｜ **v7.21 11/11**（标签 初/补 与分组 A×6 + 项目总览面板 B×5）
 > ⚠️ 套件单独跑需 9222 端口已有调试浏览器；`run-gate` 负责自起自收。单独跑报 `ECONNREFUSED 127.0.0.1:9222` 是**预期**。
 > ⚠️ 新增套件优先复用 run-gate 传入的 `PHJ_BROWSER_PORT` 会话（参照 `verify_v719.mjs`/`verify_v720.mjs` 形态）。
 
@@ -43,7 +44,7 @@
 
 > ★**约束条文见 `IRON_RULES.md` E1-E9**；本节是这些条文的背景与实现细节（若表述冲突，**以条文为准**）。
 
-- **改产物字节的合法路径**：`node dev/build.mjs` → 拷 `PHJ.html` 为 `_qa/snapshots/PHJ_v<版本>_<日期>.html` → 改 `verify_build_equivalence.mjs` 的 `OLD` → 改 `run-gate.mjs` 头注释 → 跑 **15/15**（★`run-gate` 无体积判定式，唯一真闸门是**等价性逐字节**）
+- **改产物字节的合法路径**：`node dev/build.mjs` → 拷 `PHJ.html` 为 `_qa/snapshots/PHJ_v<版本>_<日期>.html` → 改 `verify_build_equivalence.mjs` 的 `OLD` → 改 `run-gate.mjs` 头注释 → 跑 **16/16**（★`run-gate` 无体积判定式，唯一真闸门是**等价性逐字节**）
 - **行尾无忧（已实测）**：`build.mjs` 读源码归一 LF、输出统一 CRLF → 源码 LF/CRLF 混用不影响产物；`PHJ.html` 与快照在 `.gitattributes` 为 `-text`
 - **顺序敏感**：`addEventListener` 注册序 + 顶层 `var` 初始化序（`manifest.mjs` 的 `deps` 是运行期依赖）
 - **皮肤边界 = 5 条断言守门**（R1/R3-A 棘轮 ≤15/R3-B/R3-C/R4）；`skin/corpus` 在 `SLICES` 第 9 位；`SLICES` 共 **20 条**；★新领域文案落 `view/**` 或 `index.html`（进 `skin/` 会顶穿 R3-A 棘轮）
@@ -78,7 +79,7 @@
 - 角色：主理人（编排/裁决/中转）· 工程师 · QA · 架构师 · 产品经理；**跨成员信息流必须经主理人**
 - 任务书要素：环境（PATH/仓库根）· 基线指纹 · 需求口径表 · 红线 · 完成判据 · 回报格式 · 「不 commit/push」纪律
 - 回报必含：TL;DR / 改动清单 / 逐项闸门结果 / skin-guard / 体积 sha / IS_PASS / 遗留
-- 交接闭环判据：`git status 干净 + run-gate 15/15 + HANDOVER.md 与实际一致`
+- 交接闭环判据：`git status 干净 + run-gate 16/16 + HANDOVER.md 与实际一致`
 
 ## 交付惯例（本项目一直遵守 · 2026-09-21 立）
 

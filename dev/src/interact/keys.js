@@ -69,6 +69,7 @@ function closeTopLayer(){
   if(cm && cm.classList.contains('open')){ closeCtxMenu(); return 'ctxMenu'; }
   if(visible('cmplCfgMask')){ closeCmplCfg(); return 'cmplCfg'; }
   if(visible('blkMask')){ closeBlockEditor(); return 'blockEditor'; }
+  if(visible('mapMask')){ closeMapPanel(); return 'mapPanel'; }   /* v7.21：项目总览面板（单点归口内加层，不新增监听） */
   if(visible('tplPrevMask')){ document.getElementById('tplPrevMask').classList.add('hide'); return 'tplPrev'; }
   if(visible('tplMask')){ closeTplWin(); return 'tplWin'; }
   if(spliceMode){ toggleSpliceMode(false); return 'spliceMode'; }

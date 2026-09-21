@@ -483,7 +483,7 @@ function addBlockHere(cx, cy){
   var c = document.getElementById('canvas');
   var cr = c.getBoundingClientRect();
   var n = state.blocks.length;
-  var b = { id: uid(), text: '' };
+  var b = { id: uid(), text: '', tag: '初' };   /* v7.21：新块默认标签「初」 */
   b.x = (cx - cr.left - state.pan.x) / state.zoom - (MIN_BLOCK_W / 2) + ((n % 5) - 2) * 20;
   b.y = (cy - cr.top - state.pan.y) / state.zoom - 60 + ((n % 5) - 2) * 16;
   state.blocks.push(b);
@@ -593,6 +593,100 @@ document.addEventListener('click', function(e){
   else if(act === 'proj-del'){ deleteProject(); }
   __ctxBlock = -1;
 });
+
+/* ==================== v7.21 · 项目总览面板（需求三） ====================
+   让人以**低认知负荷**一眼掌握「有哪些功能 / 开发到哪一版 / 代码完善度如何」。
+   口径（与 PROJECT_MEMORY §交付惯例 同源）：
+     · 「完善度」= **闸门覆盖 × 上线状态** —— 用仓库里**已存在的客观证据**（各套件常驻断言条数），
+       不做主观自评；`cover` 即「哪些套件在守它、各多少条」。
+     · 数据为**手写**，但由常驻断言**交叉校验**（套件名 / 条数 / 版本对不上 → 闸门红），
+       以杜绝「改了功能却忘更面板」的静默漂移（2026-09-21 交接文档漂移的同类风险）。
+   形态：复用既有窗骨架 CSS 类（.modal-mask/.modal/.modal-title/.modal-body），**不新造窗骨架样式**；
+        Escape 关层仍走 interact/keys.js 的 closeTopLayer() 单点归口（本模块只被其调用，不新增任何监听）。 */
+var MAP_GATE_TOTAL = 16;     /* 闸门道数 */
+var MAP_ASSERT_TOTAL = 313;  /* 常驻断言合计（14 个套件；不含 [1] 构建 / [2] 等价性两道工装闸门）
+                                 ★由 verify_v721 的 B3 断言交叉校验：与 run-gate 各套件期望之和必须相等 */
+var MAP_FEATURES = [
+  { name: '画布排布与拖拽', ver: 'v6–v7.20', where: 'view/canvas.js · interact/pointer.js', cover: 'verify_v7 83 / F 18 / G 16 / v7.8 54', state: 'full' },
+  { name: '写作台（大纲 + 编辑器）', ver: 'v7.15', where: 'view/write.js · editor/host.js', cover: 'W 21', state: 'full' },
+  { name: '写作补全（# 触发 / 片段库）', ver: 'v7.8–v7.16', where: 'editor/complete.js · editor/library.js', cover: 'C 31', state: 'full' },
+  { name: '放大编辑 · 逗号转空格', ver: 'v7.17', where: 'editor/block-editor.js', cover: 'E 16', state: 'full' },
+  { name: '编辑器粘贴不被画布抢占', ver: 'v7.18', where: 'interact/paste.js', cover: 'P 4', state: 'full' },
+  { name: '多项目容器（切换 / 新建 / 重命名 / 删除）', ver: 'v7.18', where: 'core/store.js · view/modals.js', cover: 'M 9 / V 4', state: 'full' },
+  { name: '划选重影修复 + 补全上屏写回', ver: 'v7.19', where: 'editor/highlight.js · editor/complete.js', cover: 'v7.19 10', state: 'full' },
+  { name: '项目名常显 + 写作灵感气泡群', ver: 'v7.20', where: 'view/write.js · styles/55-write.css', cover: 'v7.20 18', state: 'full' },
+  { name: '写作台块标签「初/补」+ 分组排列', ver: 'v7.21', where: 'view/write.js · core/persist.js', cover: 'v7.21 组 6', state: 'full' },
+  { name: '项目总览面板（本面板）', ver: 'v7.21', where: 'view/modals.js · index.html', cover: 'v7.21 组 5', state: 'full' }
+];
+
+function mapSection(title){
+  var h = document.createElement('div');
+  h.className = 'map-h';
+  h.textContent = title;
+  return h;
+}
+function mapFeatureRow(f){
+  var r = document.createElement('div');
+  r.className = 'map-row' + (f.state === 'todo' ? ' todo' : '');
+  r.dataset.ver = f.ver;
+  r.dataset.state = f.state;
+  var l1 = document.createElement('div');
+  l1.className = 'map-r1';
+  var nm = document.createElement('span');
+  nm.className = 'map-name';
+  nm.textContent = f.name;
+  var vv = document.createElement('span');
+  vv.className = 'map-ver';
+  vv.textContent = f.ver;
+  var st = document.createElement('span');
+  st.className = 'map-state';
+  st.textContent = (f.state === 'full') ? '完善' : '待补断言';
+  l1.appendChild(nm); l1.appendChild(vv); l1.appendChild(st);
+  var l2 = document.createElement('div');
+  l2.className = 'map-r2';
+  l2.textContent = f.where + '　｜　覆盖：' + f.cover;
+  r.appendChild(l1); r.appendChild(l2);
+  return r;
+}
+function mapBuildDom(){
+  var wrap = document.createElement('div');
+  wrap.className = 'map-wrap';
+  wrap.appendChild(mapSection('① 功能 · 开发状态 · 代码完善度（完善度 = 闸门覆盖 × 上线状态）'));
+  for(var i = 0; i < MAP_FEATURES.length; i++) wrap.appendChild(mapFeatureRow(MAP_FEATURES[i]));
+
+  wrap.appendChild(mapSection('② 当前现状'));
+  var kv = document.createElement('div');
+  kv.className = 'map-kv';
+  var facts = ['闸门 ' + MAP_GATE_TOTAL + ' 道', '常驻断言 ' + MAP_ASSERT_TOTAL + ' 条',
+               '数据版本 state.version = ' + (state ? state.version : '?'),
+               '单文件产物 · file:// 双击即用'];
+  for(var j = 0; j < facts.length; j++){
+    var s = document.createElement('span');
+    s.textContent = facts[j];
+    kv.appendChild(s);
+  }
+  wrap.appendChild(kv);
+
+  wrap.appendChild(mapSection('③ 口径与维护'));
+  var note = document.createElement('div');
+  note.className = 'map-note';
+  note.textContent = '覆盖证据取自仓库既有验收工装（dev/_qa/run-gate.mjs 各套件常驻断言），是客观口径、非自评。'
+    + '本面板数据由常驻断言交叉校验：套件名 / 条数 / 版本对不上即闸门报红 —— 故「改了功能却忘更面板」会被立刻发现。'
+    + '在途工作与待裁决项见仓库 HANDOVER.md（活文件；不在本面板复制，以免两处漂移）。';
+  wrap.appendChild(note);
+  return wrap;
+}
+function openMapPanel(){
+  var body = document.getElementById('mapBody');
+  if(!body) return;
+  body.innerHTML = '';
+  body.appendChild(mapBuildDom());
+  document.getElementById('mapMask').classList.remove('hide');
+}
+function closeMapPanel(){
+  var m = document.getElementById('mapMask');
+  if(m) m.classList.add('hide');
+}
 
 /* 本模块对外面 = 被他模块引用的顶层名（P3 客观统计口径） */
 PHJ.modals = { addBlockHere, closeCtxMenu, closeModal, closeTplWin, deleteProject, modalCb, newProject, newTemplate, newUnit, openCtxMenu, openProjectMenu, openTplWin, renameActiveProject, renderTplList, renderTplWin, switchProject, toggleCollapsed };
