@@ -6,7 +6,7 @@
           → 无论成败回收浏览器与临时 profile → 汇总各闸门通过数 → 语义化退出码。
 
    闸门顺序（与 README「改完必过的闸门」一致）：
-     [1] 构建           dev/build.mjs                       期望 338465 B（sha256 2b2551d5a179f6625b9a9175a59abb7b4976c1c51c33301eb1742b352d1126d9；v7.21 写作台块标签「初/补」+ 大纲分组排列 + 项目总览面板）
+     [1] 构建           dev/build.mjs                       期望 347218 B（sha256 5426d5e7e7a8cbc1f60643dd003809691a88f33207d3ebffd6340e1b4364e986；v7.21 写作台块标签「初/补」+ 大纲分组排列 + 项目总览面板〔v7.21b 低门槛改版：宽面板两栏 / 白话优先 / 技术证据入右栏 / 健康行数字动态+「（交付时）」时效标注〕）
      [2] 等价性校验     verify/verify_build_equivalence.mjs 期望 PASS（构建可复现：对 snapshots/PHJ_v7.21_2026-09-21.html 含 banner 逐字节一致）
      [3] 回归 verify_v7 verify/verify_v7.mjs                期望 83/83（**体积限制已解除** → B10a/B10b/C8a/C8b 四条体积断言已删除）
      [4] F 组 verify_v76 verify/verify_v76.mjs              期望 18/18

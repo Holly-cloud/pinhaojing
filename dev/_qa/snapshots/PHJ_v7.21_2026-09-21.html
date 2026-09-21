@@ -194,21 +194,48 @@ body{background:
 .tpl-block-op:hover{background:rgba(0,0,0,.06);color:var(--text)}
 .tpl-block-op.danger:hover{color:#d64545;background:#fdeeee}
 
-/* v7.21：项目总览面板（只读矩阵；复用 .modal-mask/.modal 骨架，仅补内容样式） */
-.map-wrap{display:flex;flex-direction:column;gap:7px;max-height:62vh;overflow-y:auto}
-.map-h{font-size:12px;color:var(--muted);letter-spacing:.02em;margin:6px 0 1px}
-.map-h:first-child{margin-top:0}
-.map-row{padding:7px 9px;border-radius:9px;background:rgba(0,0,0,.03);border:1px solid rgba(0,0,0,.05)}
-.map-row.todo{background:rgba(217,119,6,.07);border-color:rgba(217,119,6,.22)}
-.map-r1{display:flex;align-items:center;gap:7px;font-size:12px}
-.map-name{flex:1 1 auto;min-width:0;font-weight:500;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.map-ver{flex:0 0 auto;font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(0,0,0,.06);color:var(--muted)}
-.map-state{flex:0 0 auto;font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(0,113,227,.14);color:var(--accent)}
-.map-row.todo .map-state{background:rgba(217,119,6,.18);color:#8a5a00}
-.map-r2{margin-top:3px;font-size:11px;color:var(--muted);word-break:break-all}
-.map-kv{display:flex;flex-wrap:wrap;gap:6px}
-.map-kv span{font-size:11px;padding:2px 7px;border-radius:8px;background:rgba(0,0,0,.045);color:var(--text)}
-.map-note{font-size:11px;line-height:1.6;color:var(--muted)}
+/* v7.21：项目总览面板（v7.21b 低门槛改版：宽面板两栏 / 白话优先 / 技术证据移入右栏）。
+   ★宽度与两栏只在 .modal.map-win 作用域内生效——基础 .modal（模板命名框等共用）保持 320px 不变。 */
+.modal.map-win{width:min(880px,92vw);height:min(78vh,680px);display:flex;flex-direction:column}
+#mapBody{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.map-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.map-top{display:flex;flex-direction:column;gap:9px}
+.map-health{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)}
+.map-stamp{font-size:12px;color:rgba(0,0,0,.34);letter-spacing:-.1px}  /* 时效标记：比 --muted 更淡，只作提示 */
+.map-dot{flex:0 0 auto;width:9px;height:9px;border-radius:50%;background:#34a853}
+.map-dot.pending{background:#d97706}
+.map-dot.plan{background:rgba(0,0,0,.28)}
+.map-kv{display:flex;gap:10px}
+.map-kv .map-metric{flex:1 1 0;min-width:0;display:flex;align-items:baseline;gap:8px;background:rgba(0,0,0,.03);border:1px solid rgba(0,0,0,.06);border-radius:12px;padding:8px 12px}
+.map-metric-n{font-size:21px;font-weight:600;color:var(--text);line-height:1.1;font-variant-numeric:tabular-nums}
+.map-metric-lab{font-size:12px;color:var(--muted)}
+.map-cols{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:236px minmax(0,1fr);gap:14px}
+.map-list{min-height:0;overflow-y:auto;padding-right:4px;border-right:1px solid rgba(0,0,0,.06)}
+.map-group{font-size:12px;color:var(--muted);letter-spacing:.02em;margin:8px 2px 4px}
+.map-group:first-child{margin-top:0}
+.map-row{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;border-left:3px solid transparent;cursor:pointer;transition:background .15s,border-color .15s}
+.map-row:hover{background:rgba(0,0,0,.03)}
+.map-row.on{background:rgba(0,113,227,.10);border-left-color:var(--accent)}
+.map-name{flex:1 1 auto;min-width:0;font-size:14px;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.map-row.on .map-name{font-weight:600}
+.map-detail{min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:9px;padding-right:2px}
+.map-dname{font-size:16px;font-weight:600;color:var(--text);letter-spacing:-.1px}
+.map-desc{font-size:13px;line-height:1.6;color:var(--text)}
+.map-badges{display:flex;flex-wrap:wrap;gap:8px}
+.map-state{font-size:12px;padding:2px 9px;border-radius:9px;background:rgba(0,0,0,.06);color:var(--muted)}
+.map-state.done{background:rgba(52,168,83,.14);color:#1e7a3a}
+.map-state.pending{background:rgba(217,119,6,.16);color:#8a5a00}
+.map-state.plan{background:rgba(0,0,0,.06);color:var(--muted)}
+.map-ver{font-size:12px;padding:2px 9px;border-radius:9px;background:rgba(0,0,0,.06);color:var(--muted)}
+.map-tech{margin-top:2px;padding-top:10px;border-top:1px solid rgba(0,0,0,.06);display:flex;flex-direction:column;gap:5px}
+.map-tech-row{display:grid;grid-template-columns:60px minmax(0,1fr);gap:8px;font-size:12px;line-height:1.6}
+.map-tech-k{color:var(--muted)}
+.map-tech-v{color:var(--text);word-break:break-all}
+.map-note{font-size:12px;line-height:1.6;color:var(--muted)}
+/* R4：本面板若动用效，reduce 下必须直切（本块只关本面板的 transition，不动 55-write.css 既有媒体查询） */
+@media (prefers-reduced-motion:reduce){
+  .map-row{transition:none}
+}
 /* v6.12：提示词块编辑窗口 */
 .blk-win{width:560px;max-width:94vw;max-height:96vh;display:flex;flex-direction:column;background:rgba(250,250,252,.92);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);border:1px solid rgba(255,255,255,.7);border-radius:16px;padding:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 24px 64px rgba(0,0,0,.25);overflow-y:auto}  /* v6.14：宽度随内容自适应（JS 测量最长行），高度受屏幕约束 */
 /* v7.6：coding 编辑器 —— 叠层高亮 + 行号栏 + 状态栏 + 逗号错误标红
@@ -644,7 +671,7 @@ body.space-pan .canvas.panning,body.space-pan .canvas.panning .block,body.space-
   </div>
 </div>
 <div class="modal-mask hide" id="mapMask">
-  <div class="modal">
+  <div class="modal map-win">
     <div class="modal-title">项目总览</div>
     <div class="modal-body" id="mapBody"></div>
     <div class="modal-actions">
@@ -4033,84 +4060,228 @@ document.addEventListener('click', function(e){
 
 /* ==================== v7.21 · 项目总览面板（需求三） ====================
    让人以**低认知负荷**一眼掌握「有哪些功能 / 开发到哪一版 / 代码完善度如何」。
+
+   v7.21b 低门槛改版（用户实测反馈：旧版「可读性极差、门槛过高」）——四项口径：
+     · 形态：**宽面板两栏**（左栏＝按用途分组的白话功能清单，右栏＝选中项详情）；宽度变体走 `.map-win`。
+     · 技术信息：**只在右栏出现**（右栏即天然的「展开详情」位，不再叠一层折叠控件）。
+     · 「代码完善度」：三档**人话状态**（已上线·已验收 / 已上线·待验收 / 规划中）+ 彩色点，不出现公式。
+     · 组织方式：**按用途分组**（group）。
+
    口径（与 PROJECT_MEMORY §交付惯例 同源）：
      · 「完善度」= **闸门覆盖 × 上线状态** —— 用仓库里**已存在的客观证据**（各套件常驻断言条数），
        不做主观自评；`cover` 即「哪些套件在守它、各多少条」。
      · 数据为**手写**，但由常驻断言**交叉校验**（套件名 / 条数 / 版本对不上 → 闸门红），
        以杜绝「改了功能却忘更面板」的静默漂移（2026-09-21 交接文档漂移的同类风险）。
-   形态：复用既有窗骨架 CSS 类（.modal-mask/.modal/.modal-title/.modal-body），**不新造窗骨架样式**；
-        Escape 关层仍走 interact/keys.js 的 closeTopLayer() 单点归口（本模块只被其调用，不新增任何监听）。 */
+   形态：复用既有窗骨架 CSS 类（.modal-mask/.modal/.modal-title/.modal-body），仅加 `.map-win` 宽度变体；
+        Escape 关层仍走 interact/keys.js 的 closeTopLayer() 单点归口（本模块只被其调用，**不新增任何监听**；
+        左栏联动用**元素级** click + 事件委托，不新增任何 document/window 级事件绑定）。 */
 var MAP_GATE_TOTAL = 16;     /* 闸门道数 */
 var MAP_ASSERT_TOTAL = 313;  /* 常驻断言合计（14 个套件；不含 [1] 构建 / [2] 等价性两道工装闸门）
                                  ★由 verify_v721 的 B3 断言交叉校验：与 run-gate 各套件期望之和必须相等 */
+
+/* 三档「代码完善度」的人话文案（值域 done | pending | plan） */
+var MAP_STATE_TEXT = { done: '已上线 · 已验收', pending: '已上线 · 待验收', plan: '规划中' };
+
+/* MAP_FEATURES —— 本面板的唯一数据源。
+   · group：用途分组名（写作 / 画布 / 项目与界面）
+   · name ：**白话**功能名（读者是人，不是开发者）
+   · desc ：一句话说明「这功能是干什么的」（人类语言）
+   · ver / where / cover：技术证据层（版本 / 代码位置 / 验收证据），只在右栏显示
+   · state：done=已上线·已验收 / pending=已上线·待验收 / plan=规划中 */
 var MAP_FEATURES = [
-  { name: '画布排布与拖拽', ver: 'v6–v7.20', where: 'view/canvas.js · interact/pointer.js', cover: 'verify_v7 83 / F 18 / G 16 / v7.8 54', state: 'full' },
-  { name: '写作台（大纲 + 编辑器）', ver: 'v7.15', where: 'view/write.js · editor/host.js', cover: 'W 21', state: 'full' },
-  { name: '写作补全（# 触发 / 片段库）', ver: 'v7.8–v7.16', where: 'editor/complete.js · editor/library.js', cover: 'C 31', state: 'full' },
-  { name: '放大编辑 · 逗号转空格', ver: 'v7.17', where: 'editor/block-editor.js', cover: 'E 16', state: 'full' },
-  { name: '编辑器粘贴不被画布抢占', ver: 'v7.18', where: 'interact/paste.js', cover: 'P 4', state: 'full' },
-  { name: '多项目容器（切换 / 新建 / 重命名 / 删除）', ver: 'v7.18', where: 'core/store.js · view/modals.js', cover: 'M 9 / V 4', state: 'full' },
-  { name: '划选重影修复 + 补全上屏写回', ver: 'v7.19', where: 'editor/highlight.js · editor/complete.js', cover: 'v7.19 10', state: 'full' },
-  { name: '项目名常显 + 写作灵感气泡群', ver: 'v7.20', where: 'view/write.js · styles/55-write.css', cover: 'v7.20 18', state: 'full' },
-  { name: '写作台块标签「初/补」+ 分组排列', ver: 'v7.21', where: 'view/write.js · core/persist.js', cover: 'v7.21 组 6', state: 'full' },
-  { name: '项目总览面板（本面板）', ver: 'v7.21', where: 'view/modals.js · index.html', cover: 'v7.21 组 5', state: 'full' }
+  { group: '写作', name: '写作台：大纲 + 编辑器', desc: '把提示词按顺序排成一条大纲，逐条编辑',
+    ver: 'v7.15', where: 'view/write.js · editor/host.js', cover: 'W 组 21 条', state: 'done' },
+  { group: '写作', name: '写作补全：输入 # 唤起词库', desc: '打了 # 就从你看过的内容里补全',
+    ver: 'v7.8–v7.16', where: 'editor/complete.js · editor/library.js', cover: 'C 组 31 条', state: 'done' },
+  { group: '写作', name: '块标签「初 / 补」+ 自动分组', desc: '标出这条是初稿还是补充，同类的自动归到一起',
+    ver: 'v7.21', where: 'view/write.js · core/persist.js', cover: 'v7.21 组 6 条', state: 'done' },
+  { group: '写作', name: '放大编辑：逗号自动转空格', desc: '双击单条放大精修',
+    ver: 'v7.17', where: 'editor/block-editor.js', cover: 'E 组 16 条', state: 'done' },
+  { group: '写作', name: '编辑器粘贴不被画布抢走', desc: '在编辑器里粘贴，内容不会跑到画布上',
+    ver: 'v7.18', where: 'interact/paste.js', cover: 'P 组 4 条', state: 'done' },
+  { group: '画布', name: '画布排布与拖拽', desc: '自由摆放、拖动、缩放提示词块',
+    ver: 'v6–v7.20', where: 'view/canvas.js · interact/pointer.js', cover: '4 个套件共 171 条', state: 'done' },
+  { group: '画布', name: '划选与重影修复', desc: '划选不出重影，补全上屏正确写回',
+    ver: 'v7.19', where: 'editor/highlight.js · editor/complete.js', cover: 'v7.19 组 10 条', state: 'done' },
+  { group: '项目与界面', name: '一个文件放多个项目', desc: '可切换、新建、改名、删除',
+    ver: 'v7.18', where: 'core/store.js · view/modals.js', cover: 'M 组 9 + V 组 4 条', state: 'done' },
+  { group: '项目与界面', name: '项目名常显 + 写作灵感气泡', desc: '顶栏常显项目名；气泡随文段推荐词',
+    ver: 'v7.20', where: 'view/write.js · styles/55-write.css', cover: 'v7.20 组 18 条', state: 'done' },
+  { group: '项目与界面', name: '项目总览面板', desc: '就是这个面板本身',
+    ver: 'v7.21', where: 'view/modals.js · index.html', cover: 'v7.21 组 5 条', state: 'done' }
 ];
 
-function mapSection(title){
-  var h = document.createElement('div');
-  h.className = 'map-h';
-  h.textContent = title;
-  return h;
+/* 三档状态 → 人话文案（未知值兜底为「规划中」，避免将来新增状态时渲染空白） */
+function mapStateText(s){
+  return MAP_STATE_TEXT[s] ? MAP_STATE_TEXT[s] : MAP_STATE_TEXT.plan;
 }
-function mapFeatureRow(f){
-  var r = document.createElement('div');
-  r.className = 'map-row' + (f.state === 'todo' ? ' todo' : '');
-  r.dataset.ver = f.ver;
-  r.dataset.state = f.state;
-  var l1 = document.createElement('div');
-  l1.className = 'map-r1';
-  var nm = document.createElement('span');
-  nm.className = 'map-name';
-  nm.textContent = f.name;
+/* 状态点：done=绿 / pending=琥珀 / plan=灰（未知值兜底为 plan 灰） */
+function mapDot(state){
+  var s = (state === 'done' || state === 'pending') ? state : 'plan';
+  var d = document.createElement('span');
+  d.className = 'map-dot ' + s;
+  return d;
+}
+/* 顶部：健康度条（一色点 + 一句话） + 三个 metric（功能 / 验收道 / 自动检查） */
+function mapBuildTop(){
+  var top = document.createElement('div');
+  top.className = 'map-top';
+
+  var doneN = 0, pendingN = 0, planN = 0;
+  for(var i = 0; i < MAP_FEATURES.length; i++){
+    var s = MAP_FEATURES[i].state;
+    if(s === 'pending') pendingN++;
+    else if(s === 'plan') planN++;
+    else doneN++;
+  }
+  var health = document.createElement('div');
+  health.className = 'map-health';
+  health.appendChild(mapDot(pendingN > 0 ? 'pending' : (planN > 0 ? 'plan' : 'done')));
+  var ht = document.createElement('span');
+  /* ★数字一律动态取（项数 = MAP_FEATURES.length、道数 = MAP_GATE_TOTAL）——面板不自带"写死即过期"的数字；
+     句末 `.map-stamp`「（交付时）」显式标注时效：这是**交付时快照**，不是实时探测（实时结果以 run-gate 为准）。 */
+  if(pendingN === 0 && planN === 0){
+    ht.textContent = MAP_FEATURES.length + ' 项功能全部已上线 · ' + MAP_GATE_TOTAL + ' 道自动验收全部通过';
+  } else {
+    ht.textContent = '已上线 ' + doneN + ' 项，待验收 ' + pendingN + ' 项，规划中 ' + planN + ' 项';
+  }
+  health.appendChild(ht);
+  var stamp = document.createElement('span');
+  stamp.className = 'map-stamp';
+  stamp.textContent = '（交付时）';
+  health.appendChild(stamp);
+  top.appendChild(health);
+
+  var kv = document.createElement('div');
+  kv.className = 'map-kv';
+  var metrics = [
+    { n: MAP_FEATURES.length, lab: '功能' },
+    { n: MAP_GATE_TOTAL, lab: '验收道' },
+    { n: MAP_ASSERT_TOTAL, lab: '自动检查' }
+  ];
+  for(var j = 0; j < metrics.length; j++){
+    var m = document.createElement('div');
+    m.className = 'map-metric';
+    var mn = document.createElement('div');
+    mn.className = 'map-metric-n';
+    mn.textContent = String(metrics[j].n);
+    var ml = document.createElement('div');
+    ml.className = 'map-metric-lab';
+    ml.textContent = metrics[j].lab;
+    m.appendChild(mn); m.appendChild(ml);
+    kv.appendChild(m);
+  }
+  top.appendChild(kv);
+  return top;
+}
+/* 左栏：按用途分组的功能清单（分组标题 + 白话功能名 + 状态点）；可滚动 */
+function mapBuildList(){
+  var list = document.createElement('div');
+  list.className = 'map-list';
+  var lastGroup = null;
+  for(var i = 0; i < MAP_FEATURES.length; i++){
+    var f = MAP_FEATURES[i];
+    if(f.group !== lastGroup){
+      var g = document.createElement('div');
+      g.className = 'map-group';
+      g.textContent = f.group;
+      list.appendChild(g);
+      lastGroup = f.group;
+    }
+    var r = document.createElement('div');
+    r.className = 'map-row';
+    r.dataset.idx = String(i);
+    r.dataset.state = f.state;
+    r.appendChild(mapDot(f.state));
+    var nm = document.createElement('span');
+    nm.className = 'map-name';
+    nm.textContent = f.name;
+    r.appendChild(nm);
+    list.appendChild(r);
+  }
+  return list;
+}
+/* 右栏技术证据的一行（标签 + 值） */
+function mapTechRow(k, v){
+  var row = document.createElement('div');
+  row.className = 'map-tech-row';
+  var ks = document.createElement('span');
+  ks.className = 'map-tech-k';
+  ks.textContent = k;
+  var vs = document.createElement('span');
+  vs.className = 'map-tech-v';
+  vs.textContent = v;
+  row.appendChild(ks); row.appendChild(vs);
+  return row;
+}
+/* 右栏详情：白话说明在前，技术证据（代码位置 / 验收证据）在后 */
+function mapDetailNode(f){
+  var d = document.createElement('div');
+  d.className = 'map-detail';
+  var dn = document.createElement('div');
+  dn.className = 'map-dname';
+  dn.textContent = f.name;
+  var ds = document.createElement('div');
+  ds.className = 'map-desc';
+  ds.textContent = f.desc;
+  var badges = document.createElement('div');
+  badges.className = 'map-badges';
+  var st = document.createElement('span');
+  st.className = 'map-state ' + ((f.state === 'done' || f.state === 'pending') ? f.state : 'plan');
+  st.textContent = mapStateText(f.state);
   var vv = document.createElement('span');
   vv.className = 'map-ver';
   vv.textContent = f.ver;
-  var st = document.createElement('span');
-  st.className = 'map-state';
-  st.textContent = (f.state === 'full') ? '完善' : '待补断言';
-  l1.appendChild(nm); l1.appendChild(vv); l1.appendChild(st);
-  var l2 = document.createElement('div');
-  l2.className = 'map-r2';
-  l2.textContent = f.where + '　｜　覆盖：' + f.cover;
-  r.appendChild(l1); r.appendChild(l2);
-  return r;
+  badges.appendChild(st); badges.appendChild(vv);
+  var tech = document.createElement('div');
+  tech.className = 'map-tech';
+  tech.appendChild(mapTechRow('代码位置', f.where));
+  tech.appendChild(mapTechRow('验收证据', f.cover));
+  d.appendChild(dn); d.appendChild(ds); d.appendChild(badges); d.appendChild(tech);
+  return d;
+}
+/* 左→右联动：把选中态移到 idx，并让右栏显示该项详情 */
+function mapSelect(listEl, detailEl, idx){
+  var rows = listEl.querySelectorAll('.map-row');
+  for(var i = 0; i < rows.length; i++){
+    if(Number(rows[i].dataset.idx) === idx) rows[i].classList.add('on');
+    else rows[i].classList.remove('on');
+  }
+  detailEl.innerHTML = '';
+  detailEl.appendChild(mapDetailNode(MAP_FEATURES[idx]));
+}
+/* 底部注记（人话）：三档状态口径 + 数据交叉校验 */
+function mapBuildNote(){
+  var note = document.createElement('div');
+  note.className = 'map-note';
+  note.textContent = '注：新功能在补上自动检查前会显示为琥珀色「待验收」；本面板数据由仓库的常驻断言交叉校验'
+    + '（套件名 / 条数 / 版本对不上即闸门报红），不会悄悄过期。'
+    + '本面板为交付时状态；验收的实时结果以 node dev/_qa/run-gate.mjs 为准。';
+  return note;
 }
 function mapBuildDom(){
   var wrap = document.createElement('div');
   wrap.className = 'map-wrap';
-  wrap.appendChild(mapSection('① 功能 · 开发状态 · 代码完善度（完善度 = 闸门覆盖 × 上线状态）'));
-  for(var i = 0; i < MAP_FEATURES.length; i++) wrap.appendChild(mapFeatureRow(MAP_FEATURES[i]));
+  wrap.appendChild(mapBuildTop());
 
-  wrap.appendChild(mapSection('② 当前现状'));
-  var kv = document.createElement('div');
-  kv.className = 'map-kv';
-  var facts = ['闸门 ' + MAP_GATE_TOTAL + ' 道', '常驻断言 ' + MAP_ASSERT_TOTAL + ' 条',
-               '数据版本 state.version = ' + (state ? state.version : '?'),
-               '单文件产物 · file:// 双击即用'];
-  for(var j = 0; j < facts.length; j++){
-    var s = document.createElement('span');
-    s.textContent = facts[j];
-    kv.appendChild(s);
-  }
-  wrap.appendChild(kv);
+  var cols = document.createElement('div');
+  cols.className = 'map-cols';
+  var list = mapBuildList();
+  var detail = document.createElement('div');
+  detail.className = 'map-detail';
+  cols.appendChild(list); cols.appendChild(detail);
+  wrap.appendChild(cols);
+  wrap.appendChild(mapBuildNote());
 
-  wrap.appendChild(mapSection('③ 口径与维护'));
-  var note = document.createElement('div');
-  note.className = 'map-note';
-  note.textContent = '覆盖证据取自仓库既有验收工装（dev/_qa/run-gate.mjs 各套件常驻断言），是客观口径、非自评。'
-    + '本面板数据由常驻断言交叉校验：套件名 / 条数 / 版本对不上即闸门报红 —— 故「改了功能却忘更面板」会被立刻发现。'
-    + '在途工作与待裁决项见仓库 HANDOVER.md（活文件；不在本面板复制，以免两处漂移）。';
-  wrap.appendChild(note);
+  /* 默认选中第一项 */
+  mapSelect(list, detail, 0);
+  /* 左栏联动：**元素级** click + 事件委托（不新增任何 document/window 级监听） */
+  list.addEventListener('click', function(e){
+    var t = e.target;
+    var row = (t && t.closest) ? t.closest('.map-row') : null;
+    if(!row || !list.contains(row)) return;
+    mapSelect(list, detail, Number(row.dataset.idx));
+  });
   return wrap;
 }
 function openMapPanel(){

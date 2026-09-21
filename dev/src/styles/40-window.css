@@ -50,18 +50,45 @@
 .tpl-block-op:hover{background:rgba(0,0,0,.06);color:var(--text)}
 .tpl-block-op.danger:hover{color:#d64545;background:#fdeeee}
 
-/* v7.21：项目总览面板（只读矩阵；复用 .modal-mask/.modal 骨架，仅补内容样式） */
-.map-wrap{display:flex;flex-direction:column;gap:7px;max-height:62vh;overflow-y:auto}
-.map-h{font-size:12px;color:var(--muted);letter-spacing:.02em;margin:6px 0 1px}
-.map-h:first-child{margin-top:0}
-.map-row{padding:7px 9px;border-radius:9px;background:rgba(0,0,0,.03);border:1px solid rgba(0,0,0,.05)}
-.map-row.todo{background:rgba(217,119,6,.07);border-color:rgba(217,119,6,.22)}
-.map-r1{display:flex;align-items:center;gap:7px;font-size:12px}
-.map-name{flex:1 1 auto;min-width:0;font-weight:500;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.map-ver{flex:0 0 auto;font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(0,0,0,.06);color:var(--muted)}
-.map-state{flex:0 0 auto;font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(0,113,227,.14);color:var(--accent)}
-.map-row.todo .map-state{background:rgba(217,119,6,.18);color:#8a5a00}
-.map-r2{margin-top:3px;font-size:11px;color:var(--muted);word-break:break-all}
-.map-kv{display:flex;flex-wrap:wrap;gap:6px}
-.map-kv span{font-size:11px;padding:2px 7px;border-radius:8px;background:rgba(0,0,0,.045);color:var(--text)}
-.map-note{font-size:11px;line-height:1.6;color:var(--muted)}
+/* v7.21：项目总览面板（v7.21b 低门槛改版：宽面板两栏 / 白话优先 / 技术证据移入右栏）。
+   ★宽度与两栏只在 .modal.map-win 作用域内生效——基础 .modal（模板命名框等共用）保持 320px 不变。 */
+.modal.map-win{width:min(880px,92vw);height:min(78vh,680px);display:flex;flex-direction:column}
+#mapBody{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.map-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.map-top{display:flex;flex-direction:column;gap:9px}
+.map-health{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)}
+.map-stamp{font-size:12px;color:rgba(0,0,0,.34);letter-spacing:-.1px}  /* 时效标记：比 --muted 更淡，只作提示 */
+.map-dot{flex:0 0 auto;width:9px;height:9px;border-radius:50%;background:#34a853}
+.map-dot.pending{background:#d97706}
+.map-dot.plan{background:rgba(0,0,0,.28)}
+.map-kv{display:flex;gap:10px}
+.map-kv .map-metric{flex:1 1 0;min-width:0;display:flex;align-items:baseline;gap:8px;background:rgba(0,0,0,.03);border:1px solid rgba(0,0,0,.06);border-radius:12px;padding:8px 12px}
+.map-metric-n{font-size:21px;font-weight:600;color:var(--text);line-height:1.1;font-variant-numeric:tabular-nums}
+.map-metric-lab{font-size:12px;color:var(--muted)}
+.map-cols{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:236px minmax(0,1fr);gap:14px}
+.map-list{min-height:0;overflow-y:auto;padding-right:4px;border-right:1px solid rgba(0,0,0,.06)}
+.map-group{font-size:12px;color:var(--muted);letter-spacing:.02em;margin:8px 2px 4px}
+.map-group:first-child{margin-top:0}
+.map-row{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;border-left:3px solid transparent;cursor:pointer;transition:background .15s,border-color .15s}
+.map-row:hover{background:rgba(0,0,0,.03)}
+.map-row.on{background:rgba(0,113,227,.10);border-left-color:var(--accent)}
+.map-name{flex:1 1 auto;min-width:0;font-size:14px;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.map-row.on .map-name{font-weight:600}
+.map-detail{min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:9px;padding-right:2px}
+.map-dname{font-size:16px;font-weight:600;color:var(--text);letter-spacing:-.1px}
+.map-desc{font-size:13px;line-height:1.6;color:var(--text)}
+.map-badges{display:flex;flex-wrap:wrap;gap:8px}
+.map-state{font-size:12px;padding:2px 9px;border-radius:9px;background:rgba(0,0,0,.06);color:var(--muted)}
+.map-state.done{background:rgba(52,168,83,.14);color:#1e7a3a}
+.map-state.pending{background:rgba(217,119,6,.16);color:#8a5a00}
+.map-state.plan{background:rgba(0,0,0,.06);color:var(--muted)}
+.map-ver{font-size:12px;padding:2px 9px;border-radius:9px;background:rgba(0,0,0,.06);color:var(--muted)}
+.map-tech{margin-top:2px;padding-top:10px;border-top:1px solid rgba(0,0,0,.06);display:flex;flex-direction:column;gap:5px}
+.map-tech-row{display:grid;grid-template-columns:60px minmax(0,1fr);gap:8px;font-size:12px;line-height:1.6}
+.map-tech-k{color:var(--muted)}
+.map-tech-v{color:var(--text);word-break:break-all}
+.map-note{font-size:12px;line-height:1.6;color:var(--muted)}
+/* R4：本面板若动用效，reduce 下必须直切（本块只关本面板的 transition，不动 55-write.css 既有媒体查询） */
+@media (prefers-reduced-motion:reduce){
+  .map-row{transition:none}
+}

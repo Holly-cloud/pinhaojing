@@ -111,23 +111,50 @@ window.__migrateProbe = function(src){
 };
 window.__mapState = function(){
   var m = document.getElementById('mapMask');
+  /* v7.21b 两栏：左栏条目 = .map-list 内 .map-row；分组标题 = .map-group；待验收 = 右栏外的 pending/plan 行数 */
   return { exists: !!m, hidden: m ? m.classList.contains('hide') : null,
-           rows: document.querySelectorAll('#mapBody .map-row').length,
-           todo: document.querySelectorAll('#mapBody .map-row.todo').length,
-           heads: document.querySelectorAll('#mapBody .map-h').length };
+           rows: document.querySelectorAll('#mapBody .map-list .map-row').length,
+           todo: document.querySelectorAll('#mapBody .map-row[data-state="pending"], #mapBody .map-row[data-state="plan"]').length,
+           heads: document.querySelectorAll('#mapBody .map-list .map-group').length };
 };
 window.__mapData = function(){
+  /* ★gateTotal / assertTotal 语义**不许改**（B3 依赖）；todoN 随新 state 值域同步（pending/plan）；
+     groups = 去重后的用途分组数（数据驱动，替代判定式里硬编码的 3 —— 分组数将来会变） */
+  var seen = {}, groups = 0;
+  for (var i = 0; i < MAP_FEATURES.length; i++) {
+    var g = MAP_FEATURES[i].group;
+    if (!seen[g]) { seen[g] = 1; groups++; }
+  }
   return { gateTotal: MAP_GATE_TOTAL, assertTotal: MAP_ASSERT_TOTAL, n: MAP_FEATURES.length,
-           todoN: MAP_FEATURES.filter(function(f){ return f.state === 'todo'; }).length };
+           names: MAP_FEATURES.map(function(f){ return f.name; }),
+           groups: groups,
+           todoN: MAP_FEATURES.filter(function(f){ return f.state === 'pending' || f.state === 'plan'; }).length };
 };
 window.__mapCellsOk = function(){
-  var rs = document.querySelectorAll('#mapBody .map-row');
+  /* 左栏：每项须有非空 .map-name 与 .map-dot（★空值防护：产品被改坏时报红而非抛异常） */
+  var rs = document.querySelectorAll('#mapBody .map-list .map-row');
   if (!rs.length) return false;
   for (var i = 0; i < rs.length; i++) {
-    var a = rs[i].querySelector('.map-name'), b = rs[i].querySelector('.map-ver'), c = rs[i].querySelector('.map-state');
-    if (!a || !a.textContent || !b || !b.textContent || !c || !c.textContent) return false;
+    var a = rs[i].querySelector('.map-name'), d = rs[i].querySelector('.map-dot');
+    if (!a || !a.textContent || !d) return false;
   }
-  return true;
+  /* 右栏：详情四要素（名称 / 说明 / 状态徽章 / 版本徽章）均须非空 */
+  var dn = document.querySelector('#mapBody .map-detail .map-dname');
+  var ds = document.querySelector('#mapBody .map-detail .map-desc');
+  var st = document.querySelector('#mapBody .map-detail .map-state');
+  var vv = document.querySelector('#mapBody .map-detail .map-ver');
+  return !!(dn && dn.textContent && ds && ds.textContent && st && st.textContent && vv && vv.textContent);
+};
+window.__mapDetail = function(){
+  /* 右栏当前显示的 { name, state }（★空值防护：以 <no-…> 兜底，不抛异常） */
+  var n = document.querySelector('#mapBody .map-detail .map-dname');
+  var s = document.querySelector('#mapBody .map-detail .map-state');
+  return { name: n ? n.textContent : '<no-name>', state: s ? s.textContent : '<no-state>' };
+};
+window.__mapOnIdx = function(){
+  /* 左栏当前选中项下标（无选中 → -1） */
+  var r = document.querySelector('#mapBody .map-list .map-row.on');
+  return r ? Number(r.dataset.idx) : -1;
 };
 window.__lsProbe = function(){
   try { var r = JSON.parse(localStorage.getItem(LS_KEY)); var b = r.blocks[0];
@@ -248,16 +275,27 @@ await installHelpers();
     '初始hidden=' + initHidden + ' 开后=' + opened + ' 按钮关=' + closed + ' Esc关=' + escClosed);
 }
 
-/* B2 面板真渲染：行数 / todo 行数 / 三区标题 / 每行三要素非空 */
+/* B2 面板真渲染（v7.21b 两栏）：左栏条目数 / 待验收一致性 / 分组标题（数据驱动）/ 右栏详情 /
+   ★左→右联动 / 每项状态点与名称非空。
+   ★T11：分两栏后判定式**适配**（非放宽）—— 相比旧版保留「DOM 待验收行数 == 数据待验收项数」一致性，
+      新增「右栏默认显示第一项」与「点击第 2 项右栏随之切换、选中态迁移」两条，断言强度只增不减。 */
 {
   await clickSel('#btnMap');
   const st = await evalJS('__mapState()');
   const md = await evalJS('__mapData()');
   const cells = await evalJS('__mapCellsOk()');
+  const d0 = await evalJS('__mapDetail()');
+  /* ★联动检查：真机点左栏第 2 项 → 右栏 .map-dname 文本变为第 2 项 name，且左栏选中态从第 1 项迁到第 2 项 */
+  const clicked = await clickSel('#mapBody .map-list .map-row[data-idx="1"]');
+  const d1 = await evalJS('__mapDetail()');
+  const onIdx = await evalJS('__mapOnIdx()');
   const err = await evalJS('window.__mapErr');
-  t('B2 面板真渲染：.map-row 数 == MAP_FEATURES 数、todo 行数一致、三区标题齐、每行名称/版本/完善度徽标非空',
-    st.exists === true && st.rows === md.n && st.todo === md.todoN && st.heads === 3 && cells === true,
-    'state=' + JSON.stringify(st) + ' data=' + JSON.stringify(md) + ' cellsOk=' + cells + ' err=' + err);
+  t('B2 面板真渲染（两栏）：左栏 .map-row 数 == MAP_FEATURES 数、待验收行数一致、分组标题 == 分组数（数据驱动）、右栏详情非空且默认显示第一项、★点击第 2 项右栏随之切换且选中态迁移、每项状态点与名称非空',
+    st.exists === true && st.rows === md.n && st.todo === md.todoN && st.heads === md.groups && cells === true
+    && !!d0 && d0.name === md.names[0] && !!d0.state
+    && clicked === true && !!d1 && d1.name === md.names[1] && onIdx === 1 && err === 0,
+    'state=' + JSON.stringify(st) + ' data=' + JSON.stringify(md) + ' cellsOk=' + cells
+    + ' 默认详情=' + JSON.stringify(d0) + ' 点击后详情=' + JSON.stringify(d1) + ' 选中idx=' + onIdx + ' err=' + err);
   await clickSel('#mapClose');
 }
 
