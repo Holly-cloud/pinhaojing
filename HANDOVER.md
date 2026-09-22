@@ -11,7 +11,7 @@
 | 产物 | `PHJ.html` = **355975 B**，sha256 `d7fa407088f105e8bdb83426d70b9612323c453b9bb9b046e393d46985aec364` |
 | 闸门 | **16 道 / 16/16 全绿**（`node dev/_qa/run-gate.mjs`，自起自收约 100s） |
 | 本地 git | 本文件最后修改所在提交（自校验：`git log -1 --format='%h %s' -- HANDOVER.md`）｜**内容提交链**（截至 `00b4bfc`）：`00b4bfc` 根 README 分离 ← `12d5c53` 交接同步 ← `e3e58ef` 环境文档补坑 ← `a6094a5` A1 改写 ← `331a3b5` 铁律首轮修订 + 审计补录 ← `56594bc` 铁律建区 ← `272e3ba` 交接同步 ← `4f42d72` 跨平台巡回 ← `598b08f` 协作机制 ← `b00e788` v7.20 ← `443b6eb` v7.19 ← `561d92c` v7.15–v7.18 累积）｜tag `v7.18`/`v7.19`/`v7.20`｜★**HEAD 不在此冻结**——实测 `git log -1 --oneline`；★行内**不写**「本轮 XXX」这类会过期的**描述**，只留自校验命令（见 `PROJECT_MEMORY`「交付惯例」2） |
-| 远端 | `origin/master` = `00b4bfc`（最后一次已推送的内容提交；7 个 tags 均已推送）｜⚠️ 其上另有**未推送的交付提交**，数量**以实测为准**：`git rev-list --count origin/master..HEAD`｜推送方法与凭证要求见 `PROJECT_MEMORY.md` |
+| 远端 | 与远端的同步关系**以实测为准**：`git rev-list --count origin/master..HEAD`（**0 = 全部已推送**）｜tags `v7.9`…`v7.20` 共 7 个均已推送｜推送方法与凭证要求见 `PROJECT_MEMORY.md` |
 | 工作树 | 干净 |
 
 ## 最近交付（详见 CHANGELOG / handover 档案）
