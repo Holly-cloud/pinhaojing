@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* 拼好镜 · v7.21 组常驻断言（verify_v721）—— run-gate 第 16 道（退出码 19）
    ---------------------------------------------------------------------------
-   覆盖（Holly 已核准 11 条；最终 11 条 = A×6 + B×5）：
+   覆盖（Holly 已核准 12 条；最终 12 条 = A×6 + B×5 + B6×1）：
      A×6  需求一「写作台块标签 初/补 + 大纲分组排列」：
            迁移零丢失 / ★tag 持久化往返（专防 migrateBlocks 投影剥离）/ 标签钮循环真写回
            / 分组渲染 + 组头不计入 .wd-item / ★order 语义不变（反面对照）
@@ -10,10 +10,14 @@
            入口开合（含 Esc 走 keys.js 单点归口）/ 面板真渲染 /
            ★数据交叉校验（面板声明 vs run-gate 实际，防漂移）/ Esc 只关一层 + 未新增全局按键监听
            / reduced-motion 直切（用 .wd-lab 的 transition 做有齿断言，非真空）。
+     B6×1 需求二补强「灵感气泡按当前行内容排组」（v7.21c）：在 **anchor 块**（块内无「画面开始：」→ region 恒 anchor）
+           里，证明**行内内容**可命中 **区外** 组并把它拉进池并置顶（并集），无命中则退回本节兜底；
+           四用例（起手式 / 镜头句 / 运镜 / 起手式）+ 「四行 region 均为 anchor」前提一并断言（防 T8 恒真）。
    工装口径：真机 CDP（Input.dispatchMouseEvent / dispatchKeyEvent），被测对象全部**真读**
              （state / localStorage / DOM 真值 / getComputedStyle）。
    ★夹具红线（T8）：夹具**不得预含**被断言的内容——A5 同时断言「分组确实重排了 DOM」与
-             「order 未变」，故分组若整体失效必红（不会恒真）。
+             「order 未变」，故分组若整体失效必红（不会恒真）。B6 同法：把「region 均为 anchor」写进断言，
+             否则夹具若混入「画面开始：」会让 region 变 body、断言退化为恒真。
    由 run-gate 传入 PHJ_BROWSER_PORT 附加共享浏览器会话（与 [11]-[15] 同形态）。
    --------------------------------------------------------------------------- */
 import fs from 'node:fs';
@@ -164,6 +168,21 @@ window.__lsProbe = function(){
 window.__oneBlock = function(id){
   var b = state.blocks.filter(function(x){ return x.id === id; })[0];
   return b ? { t: b.tag, has: Object.prototype.hasOwnProperty.call(b, 'tag') } : null;
+};
+window.__b6Probe = function(lines){
+  /* B6：对每行取「该行在整块（多行文本）上下文里的 region」+ 该行 wdBubblePool 的**首组**。
+     ★ region 从 structMap(整块) 取 —— 与产品 wdBubbleRefresh 用 structAt(value, caret).region 同源；
+       四行 region 必须都是 anchor（夹具不得混入「画面开始：」，否则退化为恒真）。 */
+  var text = lines.join('\\n');
+  var map = structMap(text);
+  var out = [];
+  for (var i = 0; i < lines.length; i++){
+    var region = map[i] ? map[i].region : '<none>';
+    var pool = wdBubblePool(region, lines[i]);
+    out.push({ i: i, line: lines[i], region: region,
+               first: pool.length ? (pool[0].group || '未分组') : '<empty>' });
+  }
+  return out;
 };
 `;
 async function installHelpers() {
@@ -350,11 +369,32 @@ await installHelpers();
     'no-preference=' + normalTd + ' reduce=' + rmTd + ' 钉回=' + backTd + ' 面板=' + JSON.stringify(rm) + ' err=' + err);
 }
 
+/* B6 ★需求二补强「灵感气泡按当前行内容排组」（v7.21c）：
+      在一个 **anchor 块**（块内**无**「画面开始：」→ 四行 region 恒 anchor）里，证明 `wdBubblePool(region, 行)`
+      的首组会随**行内内容**改变——行内命中可把 **区外** 组拉进池并置顶（并集），无命中则退回本节兜底。
+      ★T8：把「四行 region 均为 anchor」也写进判定式（夹具若混入区切换标记 → region 变 → 断言变质/恒真）。
+      ★有齿：停用行内匹配（wdBubblePool 只按 region）时，用例 ②③ 必红。 */
+{
+  const b6lines = [
+    '镜头1·@首帧画面·画面左侧是@甲 画面右侧是@乙。',
+    '然后 摄像机往画面右方向摇 拍摄@甲。',
+    '缓慢拉远。',
+    '随便写点什么。'
+  ];
+  const rows = await evalJS('__b6Probe(' + JSON.stringify(b6lines) + ')');
+  const firsts = rows.map((r) => r.first);
+  const regions = rows.map((r) => r.region);
+  const regionAllAnchor = regions.every((r) => r === 'anchor');
+  t('B6 气泡按当前行内容排组（★anchor 块：行内命中可把区外组拉进池并置顶；无命中退回本节兜底）',
+    regionAllAnchor && eq(firsts, ['起手式', '镜头句', '运镜', '起手式']),
+    '四行 region=' + JSON.stringify(regions) + ' 四行实测首组=' + JSON.stringify(firsts));
+}
+
 /* ═══════════════════ 汇总 ═══════════════════ */
 const PASS = R.filter((x) => x.pass).length;
 const FAIL = R.length - PASS;
 for (const x of R) {
   console.log((x.pass ? '✅ ' : '❌ ') + x.name + (x.detail ? '   〔' + x.detail + '〕' : ''));
 }
-console.log('v7.21 组合计 ' + PASS + '/' + R.length + '（标签 初/补 与分组 A×6 + 项目总览面板 B×5）');
+console.log('v7.21 组合计 ' + PASS + '/' + R.length + '（标签 初/补 与分组 A×6 + 项目总览面板 B×5 + 灵感气泡 B6×1）');
 process.exit(FAIL === 0 ? 0 : 19);

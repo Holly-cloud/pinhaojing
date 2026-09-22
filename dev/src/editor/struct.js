@@ -30,7 +30,11 @@ function structLineMark(line){
   }
   return null;
 }
-/* 逐行解析：返回与 lines 等长的 [{region, label}]（region = 区，label = 给状态栏看的节名） */
+/* 逐行解析：返回与 lines 等长的 [{region, label}]（region = **区（含段落延续）**，label = 给状态栏看的节名）。
+   ★用途分离（勿混淆）：本函数是**状态机**——从全文第一行往下累积 region，region 表示「**区（含段落延续）**」，
+     专供 `structExemptMask`（逗号豁免掩码）消费：`风格：` 起 → `硬性要求：` / 块尾 止 的续行据此豁免。
+     它与 `structAt` 的「**行级节判定**」是**两个不同用途**——structAt 只看光标所在行本身、与上下文无关，
+     故二者对同一行**不必一致、也不应一致**（后者恒定行级，前者含段落延续）。 */
 function structMap(text){
   var lines = String(text).split('\n'), out = [], i, ln, mk, region = 'anchor', label = '起手式', styleOn = false;
   for(i = 0; i < lines.length; i++){
@@ -62,14 +66,38 @@ function structMap(text){
   }
   return out;
 }
-/* 光标处结构：返回 {region, label}（文本空 / 越界均安全） */
+/* 光标处结构：返回 {region, label}——**两个字段来源不同、职责不同**（务必分清）：
+     · label  = 「**光标这一行像什么**」——**行级**、只按本行**行首特征**判定（供状态栏显示「节名」）。
+                 命中即按下面这张**行级映射表**取名；**未命中（含空行）→ '判断中'**（判不出就不敲定）。
+                   ^画面开始      → '画面开始'
+                   ^画面结束      → '画面结束'
+                   ^风格[:：]     → '风格包'
+                   ^硬性要求[:：] → '硬性要求'
+                   ^【(.+?)】     → '风格包 · <属性名>'
+                   ^镜头\\s*N     → '分镜 镜头N'   （★不要求前文有「画面开始」）
+     · region = 「**这一段处于哪个区**」——**段落延续**（与 structMap 逐字同源，含段落延续语义）；
+                 供灵感气泡兜底、`#` 候选置顶、逗号豁免掩码等**按区**工作的地方消费。
+   换言之：label 行级（看这一行），region 段落延续（看这一段）——同一行二者**不必一致**。
+   无副作用、纯函数；文本空 / 越界均安全。 */
 function structAt(text, caret){
-  var lines = String(text).split('\n');
-  var head = String(text).slice(0, Math.max(0, caret | 0));
+  var str = String(text);
+  var lines = str.split('\n');
+  var head = str.slice(0, Math.max(0, caret | 0));
   var idx = head.split('\n').length - 1;
+  if(idx < 0) idx = 0;
   if(idx > lines.length - 1) idx = lines.length - 1;
-  var map = structMap(text);
-  return map[idx] || { region: 'anchor', label: '起手式' };
+  var map = structMap(text);                                   /* ★region：段落延续（原语义，不改 structMap） */
+  var region = (map[idx] && map[idx].region) ? map[idx].region : 'anchor';
+  var line = lines[idx] == null ? '' : lines[idx];
+  var mk = structLineMark(line), label;                        /* ★label：行级、只看本行行首特征 */
+  if(!mk) label = '判断中';
+  else if(mk.kind === 'mark') label = mk.name;                 /* 画面开始 / 画面结束 */
+  else if(mk.kind === 'shot') label = '分镜 ' + mk.name;        /* 镜头N → 一律「分镜」 */
+  else if(mk.kind === 'style') label = '风格包';
+  else if(mk.kind === 'tail') label = '硬性要求';
+  else if(mk.kind === 'para') label = '风格包 · ' + mk.name;
+  else label = '判断中';
+  return { region: region, label: label };
 }
 /* 整篇结构摘要（供后续检查器/侧栏用；最小版只在状态栏用得上单点查询） */
 function structSummary(text){

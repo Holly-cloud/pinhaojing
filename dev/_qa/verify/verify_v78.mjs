@@ -168,19 +168,22 @@ t('H0 夹具前置：经真实导入路径（FileReader）载入 v7.8 风格包�
   impFixture ? `导入 ${JSON.stringify(impFixture)}` : 'null');
 
 
-/* ---------- H1 结构层：逐行节判定无歧义 ---------- */
+/* ---------- H1 结构层：**行级**节判定（只看当前行行首特征，与位置无关） ---------- */
 const h1 = await evalJS(`(() => {
   var txt = ${JSON.stringify(FIX)};
-  var map = structMap(txt);
-  var pick = function(i){ return map[i].label; };
-  return { n: map.length, labels: map.map(function(m){ return m.label; }), l0: pick(0), l2: pick(2), l3: pick(3), l4: pick(4), l6: pick(6), l7: pick(7), l8: pick(8), l10: pick(10),
-           shot: structMap('画面开始：\\n镜头2·{{node:x}}首帧画面·画面左侧是甲。')[1].label,
-           anchorShot: structMap('镜头1·{{node:x}}首帧画面·画面左侧是甲。')[0].label };
+  var lines = txt.split('\\n');
+  var starts = []; var p = 0;
+  for(var i = 0; i < lines.length; i++){ starts.push(p); p += lines[i].length + 1; }
+  var at = function(i){ return structAt(txt, starts[i]).label; };
+  return { n: lines.length, labels: lines.map(function(_, i){ return at(i); }),
+           l0: at(0), l2: at(2), l3: at(3), l4: at(4), l6: at(6), l7: at(7), l8: at(8), l10: at(10),
+           shot: structAt('画面开始：\\n镜头2·{{node:x}}首帧画面·画面左侧是甲。', '画面开始：\\n'.length).label,
+           anchorShot: structAt('镜头1·{{node:x}}首帧画面·画面左侧是甲。', 0).label };
 })()`);
-t('H1 结构层逐行判定（起手式/画面开始/叙事正文/画面结束/风格包·属性/硬性要求 + 起手式区的镜头N 不误判为分镜）',
-  h1.l0 === '起手式' && h1.l2 === '画面开始' && h1.l3 === '叙事正文' && h1.l4 === '画面结束'
+t('H1 结构层行级判定（只按当前行行首特征：画面开始/画面结束/风格包·属性/硬性要求；**无标记行 → 判断中**；「镜头N」行一律判「分镜」，不再要求前文有「画面开始」）',
+  h1.l0 === '判断中' && h1.l2 === '画面开始' && h1.l3 === '判断中' && h1.l4 === '画面结束'
   && h1.l6 === '风格包' && h1.l7 === ('风格包 · ' + FIX_LABELS[0]) && h1.l8 === ('风格包 · ' + FIX_LABELS[2]) && h1.l10 === '硬性要求'
-  && h1.shot === '分镜 镜头2' && h1.anchorShot === '起手式',
+  && h1.shot === '分镜 镜头2' && h1.anchorShot === '分镜 镜头1',
   `实测 ${JSON.stringify(h1.labels)}`);
 
 /* ---------- H2 状态栏「节」随光标走 ---------- */
@@ -194,7 +197,7 @@ const h2 = await evalJS(`(() => {
   ta.setSelectionRange(lineStart(10) + 2, lineStart(10) + 2); hlRefresh(); out.tail = document.getElementById('stStruct').textContent;
   return out;
 })()`);
-t('H2 状态栏「节」随光标显示当前结构', h2.style === ('风格包 · ' + FIX_LABELS[0]) && h2.body === '叙事正文' && h2.tail === '硬性要求',
+t('H2 状态栏「节」随光标显示当前行级结构（无标记行 → 判断中）', h2.style === ('风格包 · ' + FIX_LABELS[0]) && h2.body === '判断中' && h2.tail === '硬性要求',
   `风格行=${h2.style} 叙事行=${h2.body} 硬性行=${h2.tail}`);
 
 /* ---------- H3 `#` 触发气泡 + 结构置顶（叙事区 → 镜头句组在前） ---------- */

@@ -434,7 +434,7 @@ function wdOnInput(){
      · 动效全部 CSS（入场 160ms 交错 35ms / 换节旧群淡出 120ms / hover 120ms / 折叠 200ms），
        prefers-reduced-motion 下按既有降级先例直切显隐（见 55-write.css 末尾）。
    ================================================================= */
-var wdBbl = { fold: false, region: '', page: 0, dimTimer: 0, swapTimer: 0 };   /* 会话态：不持久 */
+var wdBbl = { fold: false, region: '', line: null, page: 0, dimTimer: 0, swapTimer: 0 };   /* 会话态：不持久（line = 上次刷新的当前行原文，v7.21c 用于「同行不重播」） */
 var WDB_PAGE = 8;        /* 每批气泡数（口径 6-8，取 8） */
 var WDB_POOL_MAX = 40;   /* 池上限（与 cmplBuildGroupItems 单组上限等大） */
 
@@ -451,22 +451,117 @@ function projSyncIdentity(){
   if(btn) btn.title = '项目：切换 / 新建 / 重命名 / 删除';
 }
 
-/* 气泡池：本节相关组（cmplBuildGroups 已按本节置顶排序）在前，条目扁平；无本节专属组 → 取最前几组兜底 */
-function wdBubblePool(region){
-  var groups = cmplBuildGroups(region), rel = [], i, j, items, out = [];
-  for(i = 0; i < groups.length; i++){ if(groups[i].score === 0) rel.push(groups[i]); }
-  if(!rel.length) rel = groups.slice(0, 4);
-  for(i = 0; i < rel.length; i++){
-    items = cmplBuildGroupItems(rel[i].group);
-    for(j = 0; j < items.length; j++){
-      if(out.length >= WDB_POOL_MAX) return out;
-      out.push(items[j]);
-    }
+/* 行内候选词：按分隔符 / 空白切分；**丢弃长度 < 2 的词**，但**保留以 '@' 开头的片段**（关键锚点）。
+   ★v7.21c 方案 D：切词前先**剥离行首「镜头N」序号**——镜头序号是**伪 token**（任何镜头行都会切出它，
+     却不携带“这行在写什么”的信息），且恰是起手式组样板 `镜头N·首帧画面·…` / `镜头1·…` 的**子串**
+     → 必然误命中起手式组（曾致 v7.20 C4 红）。剥离后 `镜头1 摇镜测试。` → token `摇镜测试`（无命中 → 兜底），
+     `镜头1·@首帧画面·…` → token `@首帧画面`（仍正确命中起手式）。
+   ★**只剥离 shot 这一种**：`【属性名】`(para) 有语义（命中「风格包」正确）、`风格：`/`硬性要求：`/`画面开始·结束`
+     皆不剥离（其命中语义正确，最小改动）。
+   ★复用 `structLineMark()` 判型，纯文本切分，不写领域词表（E6）。 */
+var WDB_TOK_RE = /[·，。、；：！？,.!?;:（）()「」【】\s]+/;
+function wdBubbleLineTokens(line){
+  var s = String(line == null ? '' : line);
+  var mk = structLineMark(s);
+  if(mk && mk.kind === 'shot') s = s.replace(/^\s*镜头\s*\d+\s*/, '');   /* 剥离行首「镜头N」序号（仅 shot） */
+  var parts = s.split(WDB_TOK_RE), out = [], i, t;
+  for(i = 0; i < parts.length; i++){
+    t = parts[i];
+    if(!t) continue;
+    if(t.charAt(0) === '@'){ out.push(t); continue; }   /* @ 锚点：即便很短也保留 */
+    if(t.length >= 2) out.push(t);
   }
   return out;
 }
+/* 该组是否「被某个行内词命中」：词出现在该组任一条目的 label 或 body 里 → 是。 */
+function wdBubbleGroupHit(items, tok){
+  for(var i = 0; i < items.length; i++){
+    var it = items[i];
+    if(it.label != null && String(it.label).indexOf(tok) >= 0) return true;
+    if(it.body != null && String(it.body).indexOf(tok) >= 0) return true;
+  }
+  return false;
+}
+/* 取光标所在行原文（与 structAt 同源的「索引推进」；空文本 / 越界均安全） */
+function wdBubbleLineAt(text, caret){
+  var str = String(text == null ? '' : text), lines = str.split('\n');
+  var head = str.slice(0, Math.max(0, caret | 0));
+  var idx = head.split('\n').length - 1;
+  if(idx < 0) idx = 0;
+  if(idx > lines.length - 1) idx = lines.length - 1;
+  return lines[idx] == null ? '' : lines[idx];
+}
 
-/* 刷新：只在写作台；空态/无候选 → 整体隐藏；同节 → 不重播（换节/首现 → 旧群淡出后新群交错淡入） */
+/* 气泡候选组集合 = (**本节（region）相关组**) ∪ (**行内命中组**)——★并集（v7.21c 修正，修「anchor 块内行内容匹配无效」缺口）：
+   ① 本节相关组 = 旧行为的「置顶组」（CMPL_GROUP_HINT[g] === region）；无 → 兜底「前 4 组」。
+   ② 行内命中组 = 命中数 > 0 的组（**可能落在区外**）→ 一并并入，可被置顶。
+   排序：命中数降序 → 本节相关组优先 → 原组序（稳定）。
+   目标（Holly 口径）：气泡贴合「光标当下这一行在写什么」——
+     · ★起手式块（块内无「画面开始：」→ region 恒 = anchor，本节相关组只有 1 个「起手式」）里写
+       「然后 摄像机往右摇 拍摄」→ 命中**区外**的「镜头句」组 → 并入并置顶（**原缺口：旧实现只在区内排，故拿不到运镜灵感**）；
+     · 写「首帧画面 / 站位」类锚定行 → 「起手式」组在前；
+     · 写「全景」类景别行 / 「缓慢拉远」类运镜行 → 「景别」/「运镜」组在前；
+     · 行内判不出（无命中）→ 组集合与组序**均不变**，与既有按 region 的行为**逐字一致**。
+   ★E6：**零领域词表**——只拿行内词去匹配 cmplActive() 里**已有的**组/条目，不手写任何内容词。
+   ★池取法（WDB_POOL_MAX / 每批 8 条 / 「换一批」逻辑）一律不动；命中组落在**区内**时，结果与旧实现相同。 */
+var wdBblPoolCache = { key: '\u0000', out: null };   /* 轻量缓存：同一行（同 region / 同活跃表）不重复计算 */
+function wdBubblePool(region, line){
+  var groups = cmplGroupOrder(), itemsOf = {}, rel = [], i, j, g;
+  for(i = 0; i < groups.length; i++){ itemsOf[groups[i]] = cmplBuildGroupItems(groups[i]); }
+  var all = cmplActive(), ks = [];
+  for(i = 0; i < all.length; i++) ks.push(all[i].key || '');
+  var key = String(region == null ? '' : region) + '\u0000' + ks.join(',') + '\u0000' + String(line == null ? '' : line);
+  if(line != null && wdBblPoolCache.key === key && wdBblPoolCache.out) return wdBblPoolCache.out;
+
+  /* ① 本节（region）相关组 = 既有「置顶组」（与旧行为逐字一致）；无 → 既有兜底「前 4 组」 */
+  var regOn = {};
+  for(i = 0; i < groups.length; i++){
+    g = groups[i];
+    if(CMPL_GROUP_HINT[g] === region){ rel.push(g); regOn[g] = 1; }
+  }
+  if(!rel.length) rel = groups.slice(0, 4);
+
+  /* ② 并入「行内命中组」：命中组可能在区外（如 anchor 块里写「然后…摇」命中 body 的「镜头句」组）→ 拉进并置顶。
+        无命中 → rel 保持①（≡ 旧行为，逐字一致）。 */
+  var toks = wdBubbleLineTokens(line), hitsOf = {}, ordOf = {}, anyHit = false;
+  if(toks.length){
+    for(i = 0; i < groups.length; i++){
+      g = groups[i]; ordOf[g] = i;
+      var h = 0;
+      for(j = 0; j < toks.length; j++){ if(wdBubbleGroupHit(itemsOf[g], toks[j])) h++; }
+      hitsOf[g] = h; if(h > 0) anyHit = true;
+    }
+    if(anyHit){
+      for(i = 0; i < groups.length; i++){
+        g = groups[i];
+        if(hitsOf[g] > 0 && rel.indexOf(g) < 0) rel.push(g);   /* 区外命中组 → 并入 */
+      }
+    }
+  }
+  /* ③ 排序：命中数降序 → 本节相关组优先 → 原组序（稳定）；无命中 → rel 原序不动（≡ 旧行为） */
+  if(anyHit && rel.length > 1){
+    rel = rel.slice().sort(function(a, b){
+      var d = (hitsOf[b] || 0) - (hitsOf[a] || 0);
+      if(d) return d;
+      var ra = regOn[a] ? 0 : 1, rb = regOn[b] ? 0 : 1;
+      if(ra !== rb) return ra - rb;
+      return (ordOf[a] || 0) - (ordOf[b] || 0);
+    });
+  }
+  var out = [];
+  for(i = 0; i < rel.length; i++){
+    var arr = itemsOf[rel[i]] || [];
+    for(j = 0; j < arr.length; j++){
+      if(out.length >= WDB_POOL_MAX) break;
+      out.push(arr[j]);
+    }
+    if(out.length >= WDB_POOL_MAX) break;
+  }
+  if(line != null){ wdBblPoolCache.key = key; wdBblPoolCache.out = out; }
+  return out;
+}
+
+/* 刷新：只在写作台；空态/无候选 → 整体隐藏；**同节同行** → 不重播（换节/换行/首现 → 旧群淡出后新群交错淡入） */
 function wdBubbleRefresh(){
   var desk = document.getElementById('writeDesk');
   if(!desk || desk.classList.contains('hide')) return;   /* 只在写作台（画布内联与放大弹窗不放） */
@@ -475,10 +570,12 @@ function wdBubbleRefresh(){
   var ta = hostDesk.el('ta');
   if(!ta || ta.disabled){ wdBubbleHide(); return; }
   var st = structAt(ta.value, ta.selectionStart);
-  var pool = wdBubblePool(st.region);
-  if(!pool.length){ wdBubbleHide(); wdBbl.region = st.region; wdBbl.page = 0; return; }
-  if(st.region === wdBbl.region && !box.classList.contains('hide')) return;
+  var lineText = wdBubbleLineAt(ta.value, ta.selectionStart);
+  var pool = wdBubblePool(st.region, lineText);   /* v7.21c：按「当前行内容」排组 */
+  if(!pool.length){ wdBubbleHide(); wdBbl.region = st.region; wdBbl.line = lineText; wdBbl.page = 0; return; }
+  if(st.region === wdBbl.region && lineText === wdBbl.line && !box.classList.contains('hide')) return;
   wdBbl.region = st.region;
+  wdBbl.line = lineText;
   wdBbl.page = 0;
   wdBubbleSwap(pool);
 }

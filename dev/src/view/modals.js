@@ -612,7 +612,7 @@ document.addEventListener('click', function(e){
         Escape 关层仍走 interact/keys.js 的 closeTopLayer() 单点归口（本模块只被其调用，**不新增任何监听**；
         左栏联动用**元素级** click + 事件委托，不新增任何 document/window 级事件绑定）。 */
 var MAP_GATE_TOTAL = 16;     /* 闸门道数 */
-var MAP_ASSERT_TOTAL = 313;  /* 常驻断言合计（14 个套件；不含 [1] 构建 / [2] 等价性两道工装闸门）
+var MAP_ASSERT_TOTAL = 314;  /* 常驻断言合计（14 个套件；不含 [1] 构建 / [2] 等价性两道工装闸门）
                                  ★由 verify_v721 的 B3 断言交叉校验：与 run-gate 各套件期望之和必须相等 */
 
 /* 三档「代码完善度」的人话文案（值域 done | pending | plan） */
@@ -642,7 +642,7 @@ var MAP_FEATURES = [
   { group: '项目与界面', name: '一个文件放多个项目', desc: '可切换、新建、改名、删除',
     ver: 'v7.18', where: 'core/store.js · view/modals.js', cover: 'M 组 9 + V 组 4 条', state: 'done' },
   { group: '项目与界面', name: '项目名常显 + 写作灵感气泡', desc: '顶栏常显项目名；气泡随文段推荐词',
-    ver: 'v7.20', where: 'view/write.js · styles/55-write.css', cover: 'v7.20 组 18 条', state: 'done' },
+    ver: 'v7.20', where: 'view/write.js · styles/55-write.css', cover: 'v7.20 组 18 + v7.21 组 1 条', state: 'done' },
   { group: '项目与界面', name: '项目总览面板', desc: '就是这个面板本身',
     ver: 'v7.21', where: 'view/modals.js · index.html', cover: 'v7.21 组 5 条', state: 'done' }
 ];
