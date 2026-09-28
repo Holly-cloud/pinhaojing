@@ -262,7 +262,14 @@
       "canvasData": {
         "x": 0,
         "y": 1119,
-        "group": 3
+        "group": 3,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-e3372032",
+          "measuredAt": 1790608470871
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-design-tokens.html",
@@ -278,7 +285,14 @@
       "canvasData": {
         "x": 480,
         "y": 1119,
-        "group": 3
+        "group": 3,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-6c9f1b04",
+          "measuredAt": 1790608470871
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-interaction-states.html",
@@ -294,10 +308,65 @@
       "canvasData": {
         "x": 960,
         "y": 1119,
-        "group": 3
+        "group": 3,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-b54e9212",
+          "measuredAt": 1790608470871
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-dark-mode.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-responsive",
+      "title": "响应式适配",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1759082040000,
+      "canvasData": {
+        "x": 1440,
+        "y": 1119,
+        "group": 3
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-responsive.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-motion",
+      "title": "动效规范",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1759082100000,
+      "canvasData": {
+        "x": 0,
+        "y": 1492,
+        "group": 4
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-motion.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-shortcuts",
+      "title": "快捷键速查",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1759082160000,
+      "canvasData": {
+        "x": 480,
+        "y": 1492,
+        "group": 4
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-shortcuts.html",
         "interactions": []
       }
     }

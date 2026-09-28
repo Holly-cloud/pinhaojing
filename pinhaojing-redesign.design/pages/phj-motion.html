@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>动效规范 · Motion System | 拼好镜设计系统</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary-50: #FFFBEB; --primary-100: #FEF3C7; --primary-200: #FDE68A;
+    --primary-300: #FCD34D; --primary-400: #FBBF24; --primary-500: #F59E0B;
+    --primary-600: #D97706; --primary-700: #B45309; --primary-800: #92400E; --primary-900: #78350F;
+    --secondary-500: #14B8A6; --secondary-700: #0F766E;
+    --accent-500: #F43F5E; --accent-600: #E11D48;
+    --bg-canvas: #FBF7F0; --bg-surface: #FFFFFF; --bg-sidebar: #F5EFE6;
+    --bg-muted: #EDE6DA; --border-subtle: #E5DDD0; --border-strong: #D4C9B8;
+    --text-ink: #1C1917; --text-primary: #292524; --text-secondary: #78716C;
+    --text-tertiary: #A8A29E; --text-inverse: #FFFBEB;
+    --success: #059669; --warning: #D97706; --error: #DC2626;
+    --font-display: "Fraunces", Georgia, "Noto Serif SC", serif;
+    --font-sans: "Space Grotesk", "Inter", system-ui, "Microsoft YaHei", sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    --shadow-sm: 0 1px 2px rgba(120, 53, 15, 0.06), 0 1px 3px rgba(120, 53, 15, 0.04);
+    --shadow-md: 0 4px 12px rgba(120, 53, 15, 0.08), 0 2px 4px rgba(120, 53, 15, 0.05);
+    --shadow-lg: 0 12px 32px rgba(120, 53, 15, 0.10), 0 4px 8px rgba(120, 53, 15, 0.05);
+    --shadow-xl: 0 24px 56px rgba(120, 53, 15, 0.12);
+    --shadow-2xl: 0 40px 80px rgba(120, 53, 15, 0.18);
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
+    --duration-fast: 100ms;
+    --duration-base: 200ms;
+    --duration-slow: 350ms;
+    --duration-slower: 500ms;
+    --duration-slowest: 700ms;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in: cubic-bezier(0.64, 0, 0.78, 0);
+    --ease-in-out: cubic-bezier(0.64, 0, 0.36, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1440px;
+    height: 900px;
+    overflow: hidden;
+    background: var(--bg-canvas);
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Header */
+  .page-header {
+    padding: 28px 48px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-canvas);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--primary-600);
+    margin-bottom: 6px;
+  }
+  .page-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-ink);
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+  .page-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    letter-spacing: 0.02em;
+  }
+
+  /* Scrollable content */
+  .content {
+    height: calc(900px - 92px);
+    overflow-y: auto;
+    padding: 28px 48px 48px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) var(--bg-muted);
+  }
+  .content::-webkit-scrollbar { width: 6px; }
+  .content::-webkit-scrollbar-track { background: var(--bg-muted); border-radius: 3px; }
+  .content::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+  /* Section */
+  .section {
+    margin-bottom: 36px;
+  }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-ink);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::before {
+    content: "";
+    width: 3px;
+    height: 18px;
+    background: var(--primary-500);
+    border-radius: 2px;
+  }
+
+  /* Section 1: Principles */
+  .principles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .principle-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .principle-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--primary-100);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    color: var(--primary-700);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .principle-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-ink);
+    margin-bottom: 2px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .principle-title span {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .principle-body {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+  .principle-body p { margin-bottom: 4px; }
+  .principle-body p:last-child { margin-bottom: 0; }
+
+  /* Section 2: Easing Curves */
+  .easing-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .easing-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    box-shadow: var(--shadow-sm);
+  }
+  .easing-graph {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+    position: relative;
+    background: var(--primary-50);
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+  }
+  .easing-graph svg {
+    width: 100%;
+    height: 100%;
+  }
+  .easing-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .easing-name {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-ink);
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .easing-name .badge {
+    font-family: var(--font-sans);
+    font-size: 9px;
+    font-weight: 500;
+    padding: 1px 6px;
+    background: var(--primary-100);
+    color: var(--primary-700);
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .easing-value {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--primary-700);
+    background: var(--primary-50);
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 6px;
+  }
+  .easing-desc {
+    font-size: 12px;
+    color: var(--text-primary);
+    margin-bottom: 3px;
+  }
+  .easing-usecase {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+  .easing-usecase strong {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* Section 3: Durations */
+  .durations-list {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 4px 0;
+    box-shadow: var(--shadow-sm);
+  }
+  .duration-row {
+    display: grid;
+    grid-template-columns: 160px 1fr 80px 200px;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .duration-row:last-child { border-bottom: none; }
+  .duration-token {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--primary-700);
+  }
+  .duration-bar-wrap {
+    height: 20px;
+    background: var(--bg-muted);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .duration-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-300), var(--primary-500));
+    border-radius: 4px;
+    transition: width var(--duration-slow) var(--ease-out);
+  }
+  .duration-ms {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-ink);
+    text-align: right;
+  }
+  .duration-usecase {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  /* Section 4: Motion Types */
+  .motion-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .motion-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    box-shadow: var(--shadow-sm);
+  }
+  .motion-preview {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+    background: var(--primary-50);
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .motion-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .motion-name {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-ink);
+    margin-bottom: 4px;
+  }
+  .motion-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+  .motion-token {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-tertiary);
+  }
+  .motion-token span {
+    color: var(--primary-700);
+    background: var(--primary-50);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* Motion preview animations */
+  .fade-box {
+    width: 36px;
+    height: 36px;
+    background: var(--primary-500);
+    border-radius: 6px;
+    animation: fadeDemo 2s var(--ease-in-out) infinite;
+  }
+  @keyframes fadeDemo {
+    0%, 100% { opacity: 0.15; }
+    50% { opacity: 1; }
+  }
+
+  .slide-box {
+    width: 36px;
+    height: 36px;
+    background: var(--primary-500);
+    border-radius: 6px;
+    animation: slideDemo 2s var(--ease-out) infinite;
+  }
+  @keyframes slideDemo {
+    0% { transform: translateY(28px); opacity: 0; }
+    40%, 70% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-28px); opacity: 0; }
+  }
+
+  .scale-box {
+    width: 36px;
+    height: 36px;
+    background: var(--primary-500);
+    border-radius: 6px;
+    animation: scaleDemo 2s var(--ease-spring) infinite;
+  }
+  @keyframes scaleDemo {
+    0%, 100% { transform: scale(0.4); opacity: 0.3; }
+    50% { transform: scale(1); opacity: 1; }
+  }
+
+  .bounce-btn {
+    width: 44px;
+    height: 28px;
+    background: var(--primary-500);
+    border-radius: 6px;
+    animation: bounceDemo 1.5s var(--ease-spring) infinite;
+  }
+  @keyframes bounceDemo {
+    0%, 100% { transform: scale(1); }
+    30% { transform: scale(0.88); }
+    50% { transform: scale(1.06); }
+    70% { transform: scale(0.97); }
+    85% { transform: scale(1.02); }
+  }
+
+  /* Section 5: Transition Properties */
+  .props-list {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 4px 0;
+    box-shadow: var(--shadow-sm);
+  }
+  .prop-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 120px;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .prop-row:last-child { border-bottom: none; }
+  .prop-name {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-ink);
+  }
+  .prop-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .prop-rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+  .rating-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--border-strong);
+  }
+  .rating-dot.active { background: var(--success); }
+  .rating-dot.warning { background: var(--warning); }
+  .rating-dot.error { background: var(--error); }
+  .rating-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: 48px;
+    text-align: right;
+  }
+  .rating-label.best { color: var(--success); }
+  .rating-label.good { color: var(--warning); }
+  .rating-label.avoid { color: var(--error); }
+
+  /* Decorative marks */
+  .deco-mark {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    position: relative;
+  }
+  .deco-mark::before,
+  .deco-mark::after {
+    content: "";
+    position: absolute;
+    background: var(--primary-500);
+    border-radius: 1px;
+  }
+  .deco-mark::before {
+    width: 2px; height: 10px; left: 4px; top: 0;
+  }
+  .deco-mark::after {
+    width: 10px; height: 2px; left: 0; top: 4px;
+  }
+</style>
+</head>
+<body>
+  <div class="page-header">
+    <div class="eyebrow">Motion System</div>
+    <h1 class="page-title">动效规范</h1>
+    <div class="page-subtitle">节奏 · 缓动 · 过渡</div>
+  </div>
+
+  <div class="content">
+    <!-- Section 1: Principles -->
+    <div class="section">
+      <h2 class="section-title">设计原则</h2>
+      <div class="principles-grid">
+        <div class="principle-card">
+          <div class="principle-icon">
+            <span class="deco-mark"></span>
+          </div>
+          <div class="principle-title">克制 <span>Restraint</span></div>
+          <div class="principle-body">
+            <p>动效服务于功能，不为动而动。</p>
+            <p>快速响应，短暂精炼，避免干扰创作。</p>
+          </div>
+        </div>
+        <div class="principle-card">
+          <div class="principle-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 12 Q6 2 14 4" stroke="#B45309" stroke-width="2" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="principle-title">自然 <span>Natural</span></div>
+          <div class="principle-body">
+            <p>模拟物理世界的加速与减速。</p>
+            <p>弹性与惯性，有机而不机械。</p>
+          </div>
+        </div>
+        <div class="principle-card">
+          <div class="principle-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="4" cy="8" r="2.5" fill="#B45309"/>
+              <circle cx="12" cy="8" r="2.5" fill="#B45309"/>
+              <path d="M6.5 8 H9.5" stroke="#B45309" stroke-width="1.5" stroke-dasharray="2 2"/>
+            </svg>
+          </div>
+          <div class="principle-title">连贯 <span>Continuity</span></div>
+          <div class="principle-body">
+            <p>元素之间有轨迹关联。</p>
+            <p>过渡有方向感，用户知道从哪来到哪去。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Easing Curves -->
+    <div class="section">
+      <h2 class="section-title">缓动曲线 · Easing</h2>
+      <div class="easing-grid">
+        <div class="easing-card">
+          <div class="easing-graph">
+            <svg viewBox="0 0 80 80" preserveAspectRatio="none">
+              <line x1="4" y1="76" x2="76" y2="76" stroke="#FCD34D" stroke-width="1" opacity="0.5"/>
+              <line x1="4" y1="4" x2="4" y2="76" stroke="#FCD34D" stroke-width="1" opacity="0.5"/>
+              <path d="M4 76 C 20 16, 32 8, 76 4" stroke="#D97706" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <circle cx="76" cy="4" r="3" fill="#F59E0B"/>
+            </svg>
+          </div>
+          <div class="easing-info">
+            <div class="easing-name">Ease Out <span class="badge">Default</span></div>
+            <div class="easing-value">cubic-bezier(0.22, 1, 0.36, 1)</div>
+            <div class="easing-desc">快速进入，缓慢结束</div>
+            <div class="easing-usecase"><strong>适用：</strong>元素入场、按钮悬停</div>
+          </div>
+        </div>
+
+        <div class="easing-card">
+          <div class="easing-graph">
+            <svg viewBox="0 0 80 80" preserveAspectRatio="none">
+              <line x1="4" y1="76" x2="76" y2="76" stroke="#FCD34D" stroke-width="1" opacity="0.5"/>
+              <line x1="4" y1="4" x2="4" y2="76" stroke="#FCD34D" stroke-width="1" opacity="0.5"/>
+              <path d="M4 76 C 52 76, 60 64, 76 4" stroke="#D97706" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <circle cx="76" cy="4" r="3" fill="#F59E0B"/>
+            </svg>
+          </div>
+          <div class="easing-info">
+            <div class="easing-name">Ease In</div>
+            <div class="easing-value">cubic-bezier(0.64, 0, 0.78, 0)</div>
+            <div class="easing-desc">缓慢开始，加速离开</div>
+            <div class="easing-usecase"><strong>适用：</strong>元素退场、折叠收起</div>
+          </div>
+        </div>
+
+        <div class="easing-card">
+          <div class="easing-graph">
+            <svg viewBox="0 0 80 80" preserveAspectRatio="none">
+              <line x1="4" y1="76" x2="76" y2="76" stroke="#FCD34D" stroke-width="1" opacity="0.5"/>
+              <line x1="4" y1="4" x2="4" y2="76" stroke="#FCD34D" stroke-width="1" opacity="0.5"/>
+              <path d="M4 76 C 52 76, 28 4, 76 4" stroke="#D97706" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <circle cx="76" cy="4" r="3" fill="#F59E0B"/>
+            </svg>
+          </div>
+          <div class="easing-info">
+            <div class="easing-name">Ease In Out</div>
+            <div class="easing-value">cubic-bezier(0.64, 0, 0.36, 1)</div>
+            <div class="easing-desc">对称缓动，柔和平稳</div>
+            <div class="easing-usecase"><strong>适用：</strong>视图切换、模态框转换</div>
+          </div>
+        </div>
+
+        <div class="easing-card">
+          <div class="easing-graph">
+            <svg viewBox="0 0 80 80" preserveAspectRatio="none">
+              <line x1="4" y1="76" x2="76" y2="76" stroke="#FCD34D" stroke-width="1" opacity="0.5"/>
+              <line x1="4" y1="4" x2="4" y2="76" stroke="#FCD34D" stroke-width="1" opacity="0.5"/>
+              <path d="M4 76 C 28 -8, 52 -4, 76 4" stroke="#D97706" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <circle cx="76" cy="4" r="3" fill="#F59E0B"/>
+            </svg>
+          </div>
+          <div class="easing-info">
+            <div class="easing-name">Spring / Bounce</div>
+            <div class="easing-value">cubic-bezier(0.34, 1.56, 0.64, 1)</div>
+            <div class="easing-desc">轻微弹性，活泼友好</div>
+            <div class="easing-usecase"><strong>适用：</strong>按钮按下、气泡出现</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Durations -->
+    <div class="section">
+      <h2 class="section-title">时长 · Duration</h2>
+      <div class="durations-list">
+        <div class="duration-row">
+          <div class="duration-token">--duration-fast</div>
+          <div class="duration-bar-wrap">
+            <div class="duration-bar" style="width: 14%"></div>
+          </div>
+          <div class="duration-ms">100ms</div>
+          <div class="duration-usecase">微交互、hover 反馈</div>
+        </div>
+        <div class="duration-row">
+          <div class="duration-token">--duration-base</div>
+          <div class="duration-bar-wrap">
+            <div class="duration-bar" style="width: 29%"></div>
+          </div>
+          <div class="duration-ms">200ms</div>
+          <div class="duration-usecase">标准过渡、按钮状态</div>
+        </div>
+        <div class="duration-row">
+          <div class="duration-token">--duration-slow</div>
+          <div class="duration-bar-wrap">
+            <div class="duration-bar" style="width: 50%"></div>
+          </div>
+          <div class="duration-ms">350ms</div>
+          <div class="duration-usecase">面板展开、视图切换</div>
+        </div>
+        <div class="duration-row">
+          <div class="duration-token">--duration-slower</div>
+          <div class="duration-bar-wrap">
+            <div class="duration-bar" style="width: 71%"></div>
+          </div>
+          <div class="duration-ms">500ms</div>
+          <div class="duration-usecase">模态框入场、页面切换</div>
+        </div>
+        <div class="duration-row">
+          <div class="duration-token">--duration-slowest</div>
+          <div class="duration-bar-wrap">
+            <div class="duration-bar" style="width: 100%"></div>
+          </div>
+          <div class="duration-ms">700ms</div>
+          <div class="duration-usecase">大型过渡、装饰动画</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Motion Types -->
+    <div class="section">
+      <h2 class="section-title">动效类型</h2>
+      <div class="motion-grid">
+        <div class="motion-card">
+          <div class="motion-preview">
+            <div class="fade-box"></div>
+          </div>
+          <div class="motion-info">
+            <div class="motion-name">Fade In / Out</div>
+            <div class="motion-desc">淡入淡出，用于模态框背景、遮罩层</div>
+            <div class="motion-token"><span>opacity</span> · ease-in-out · 200ms</div>
+          </div>
+        </div>
+
+        <div class="motion-card">
+          <div class="motion-preview">
+            <div class="slide-box"></div>
+          </div>
+          <div class="motion-info">
+            <div class="motion-name">Slide Up / Down</div>
+            <div class="motion-desc">滑动进入，用于面板、抽屉、Toast</div>
+            <div class="motion-token"><span>transform: translateY</span> · ease-out · 350ms</div>
+          </div>
+        </div>
+
+        <div class="motion-card">
+          <div class="motion-preview">
+            <div class="scale-box"></div>
+          </div>
+          <div class="motion-info">
+            <div class="motion-name">Scale In / Out</div>
+            <div class="motion-desc">缩放进入，用于弹窗、气泡、工具提示</div>
+            <div class="motion-token"><span>transform: scale</span> · spring · 350ms</div>
+          </div>
+        </div>
+
+        <div class="motion-card">
+          <div class="motion-preview">
+            <div class="bounce-btn"></div>
+          </div>
+          <div class="motion-info">
+            <div class="motion-name">Micro-bounce</div>
+            <div class="motion-desc">微弹反馈，用于按钮点击、选中态</div>
+            <div class="motion-token"><span>transform: scale</span> · spring · 200ms</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: Transition Properties -->
+    <div class="section">
+      <h2 class="section-title">可动画属性</h2>
+      <div class="props-list">
+        <div class="prop-row">
+          <div class="prop-name">transform</div>
+          <div class="prop-desc">位移、缩放、旋转（GPU 加速，性能最佳）</div>
+          <div class="prop-rating">
+            <div class="rating-dot active"></div>
+            <div class="rating-dot active"></div>
+            <div class="rating-dot active"></div>
+            <span class="rating-label best">Best</span>
+          </div>
+        </div>
+        <div class="prop-row">
+          <div class="prop-name">opacity</div>
+          <div class="prop-desc">透明度变化（GPU 加速，性能优秀）</div>
+          <div class="prop-rating">
+            <div class="rating-dot active"></div>
+            <div class="rating-dot active"></div>
+            <div class="rating-dot active"></div>
+            <span class="rating-label best">Best</span>
+          </div>
+        </div>
+        <div class="prop-row">
+          <div class="prop-name">filter</div>
+          <div class="prop-desc">模糊、阴影变化（谨慎使用，性能开销较大）</div>
+          <div class="prop-rating">
+            <div class="rating-dot warning"></div>
+            <div class="rating-dot warning"></div>
+            <div class="rating-dot"></div>
+            <span class="rating-label good">Good</span>
+          </div>
+        </div>
+        <div class="prop-row">
+          <div class="prop-name">background-color</div>
+          <div class="prop-desc">颜色过渡（尽量避免，会触发重绘，性能较低）</div>
+          <div class="prop-rating">
+            <div class="rating-dot error"></div>
+            <div class="rating-dot"></div>
+            <div class="rating-dot"></div>
+            <span class="rating-label avoid">Avoid</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拼好镜 · 快捷键面板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,400&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary-50: #FFFBEB; --primary-100: #FEF3C7; --primary-200: #FDE68A;
+    --primary-300: #FCD34D; --primary-400: #FBBF24; --primary-500: #F59E0B;
+    --primary-600: #D97706; --primary-700: #B45309; --primary-800: #92400E; --primary-900: #78350F;
+    --secondary-500: #14B8A6; --secondary-700: #0F766E;
+    --accent-500: #F43F5E; --accent-600: #E11D48;
+    --bg-canvas: #FBF7F0; --bg-surface: #FFFFFF; --bg-sidebar: #F5EFE6;
+    --bg-muted: #EDE6DA; --border-subtle: #E5DDD0; --border-strong: #D4C9B8;
+    --text-ink: #1C1917; --text-primary: #292524; --text-secondary: #78716C;
+    --text-tertiary: #A8A29E; --text-inverse: #FFFBEB;
+    --success: #059669; --error: #DC2626;
+    --font-display: "Fraunces", Georgia, "Noto Serif SC", serif;
+    --font-sans: "Space Grotesk", "Inter", system-ui, "Microsoft YaHei", sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    --shadow-sm: 0 1px 2px rgba(120, 53, 15, 0.06), 0 1px 3px rgba(120, 53, 15, 0.04);
+    --shadow-md: 0 4px 12px rgba(120, 53, 15, 0.08), 0 2px 4px rgba(120, 53, 15, 0.05);
+    --shadow-lg: 0 12px 32px rgba(120, 53, 15, 0.10), 0 4px 8px rgba(120, 53, 15, 0.05);
+    --shadow-xl: 0 24px 56px rgba(120, 53, 15, 0.12);
+    --shadow-2xl: 0 40px 80px rgba(120, 53, 15, 0.18);
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 1440px;
+    height: 900px;
+    overflow: hidden;
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== 背景画布 ===== */
+  body {
+    position: relative;
+    background-color: var(--bg-canvas);
+    background-image:
+      radial-gradient(circle, rgba(120, 53, 15, 0.08) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: 0 0;
+  }
+
+  /* ===== 暗色遮罩 ===== */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(28, 25, 23, 0.35);
+    backdrop-filter: blur(2px);
+    z-index: 1;
+  }
+
+  /* ===== 快捷键面板 ===== */
+  .shortcuts-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 760px;
+    height: 620px;
+    background: var(--bg-surface);
+    border-radius: 14px;
+    box-shadow: var(--shadow-2xl);
+    border: 1px solid var(--border-strong);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    z-index: 2;
+  }
+
+  /* 书脊左侧装饰条 */
+  .shortcuts-panel::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(
+      180deg,
+      var(--primary-300) 0%,
+      var(--primary-500) 50%,
+      var(--primary-700) 100%
+    );
+    z-index: 3;
+  }
+
+  /* ===== 面板头部 ===== */
+  .panel-header {
+    height: 64px;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0 28px 0 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: baseline;
+  }
+
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-ink);
+    letter-spacing: -0.01em;
+  }
+
+  .panel-subtitle {
+    margin-left: 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* 搜索框 */
+  .search-box {
+    position: relative;
+    width: 200px;
+    height: 36px;
+  }
+
+  .search-box .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: var(--text-tertiary);
+    pointer-events: none;
+  }
+
+  .search-box input {
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background: var(--bg-sidebar);
+    padding: 0 12px 0 36px;
+    font-size: 13px;
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .search-box input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .search-box input:focus {
+    border-color: var(--primary-400);
+    background: var(--bg-surface);
+  }
+
+  /* 关闭按钮 */
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 18px;
+    line-height: 1;
+    transition: all 0.15s ease;
+  }
+
+  .close-btn:hover {
+    background: var(--bg-sidebar);
+    color: var(--text-ink);
+    border-color: var(--border-strong);
+  }
+
+  /* ===== 分类标签 ===== */
+  .category-tabs {
+    height: 44px;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0 28px 0 36px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .tab-item {
+    position: relative;
+    padding: 0 10px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+
+  .tab-item:hover {
+    color: var(--text-primary);
+  }
+
+  .tab-item.active {
+    color: var(--primary-600);
+    font-weight: 600;
+  }
+
+  .tab-item.active::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 10px;
+    right: 10px;
+    height: 2px;
+    background: var(--primary-500);
+    border-radius: 2px 2px 0 0;
+  }
+
+  /* ===== 快捷键内容区 ===== */
+  .shortcuts-content {
+    flex: 1;
+    padding: 20px 28px 20px 36px;
+    overflow-y: auto;
+  }
+
+  /* 滚动条样式 */
+  .shortcuts-content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .shortcuts-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .shortcuts-content::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 3px;
+  }
+
+  .shortcuts-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+  }
+
+  .shortcut-group {
+    margin-bottom: 20px;
+  }
+
+  .shortcut-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .group-heading {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-ink);
+    margin-bottom: 8px;
+    letter-spacing: -0.005em;
+  }
+
+  .shortcut-list {
+    list-style: none;
+  }
+
+  .shortcut-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .shortcut-item:last-child {
+    border-bottom: none;
+  }
+
+  .shortcut-action {
+    font-size: 13px;
+    color: var(--text-primary);
+  }
+
+  .shortcut-keys {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* 按键样式 */
+  kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 26px;
+    padding: 0 8px;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-strong);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  kbd.modifier {
+    min-width: auto;
+    padding: 0 10px;
+  }
+
+  .key-plus {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    margin: 0 2px;
+    font-weight: 500;
+  }
+
+  .key-slash {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    margin: 0 4px;
+    font-weight: 500;
+  }
+
+  /* ===== 面板底部 ===== */
+  .panel-footer {
+    height: 48px;
+    border-top: 1px solid var(--border-subtle);
+    padding: 0 28px 0 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .footer-left {
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+
+  .footer-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  /* Vim 模式开关 */
+  .vim-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .vim-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 32px;
+    height: 20px;
+    border-radius: var(--radius-full);
+    background: var(--bg-muted);
+    border: 1px solid var(--border-strong);
+    transition: all 0.2s ease;
+  }
+
+  .toggle-switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--bg-surface);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+  }
+
+  .esc-hint {
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+
+  .esc-hint kbd {
+    min-width: auto;
+    height: 20px;
+    padding: 0 6px;
+    font-size: 10px;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+  <div class="overlay"></div>
+
+  <div class="shortcuts-panel">
+
+    <!-- 头部 -->
+    <div class="panel-header">
+      <div class="header-left">
+        <span class="panel-title">快捷键</span>
+        <span class="panel-subtitle">按 ? 随时唤起此面板</span>
+      </div>
+      <div class="header-right">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" placeholder="搜索快捷键..." readonly>
+        </div>
+        <div class="close-btn">&times;</div>
+      </div>
+    </div>
+
+    <!-- 分类标签 -->
+    <div class="category-tabs">
+      <div class="tab-item active">全部</div>
+      <div class="tab-item">画布</div>
+      <div class="tab-item">块操作</div>
+      <div class="tab-item">拼接</div>
+      <div class="tab-item">写作台</div>
+      <div class="tab-item">通用</div>
+    </div>
+
+    <!-- 快捷键内容 -->
+    <div class="shortcuts-content">
+
+      <!-- 画布导航 -->
+      <div class="shortcut-group">
+        <div class="group-heading">画布导航</div>
+        <ul class="shortcut-list">
+          <li class="shortcut-item">
+            <span class="shortcut-action">平移画布</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Space</kbd>
+              <span class="key-plus">+</span>
+              <kbd>拖拽</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">放大</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>+</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">缩小</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>-</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">适应视图</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>0</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">切换网格</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>'</kbd>
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 块操作 -->
+      <div class="shortcut-group">
+        <div class="group-heading">块操作</div>
+        <ul class="shortcut-list">
+          <li class="shortcut-item">
+            <span class="shortcut-action">新建块</span>
+            <span class="shortcut-keys">
+              <kbd>N</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">编辑块</span>
+            <span class="shortcut-keys">
+              <kbd>Enter</kbd>
+              <span class="key-slash">/</span>
+              <kbd>双击</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">删除块</span>
+            <span class="shortcut-keys">
+              <kbd>Delete</kbd>
+              <span class="key-slash">/</span>
+              <kbd>⌫</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">复制块</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>D</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">克隆并拖拽</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Alt</kbd>
+              <span class="key-plus">+</span>
+              <kbd>拖拽</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">批量选择</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>右键</kbd>
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 拼接 -->
+      <div class="shortcut-group">
+        <div class="group-heading">拼接</div>
+        <ul class="shortcut-list">
+          <li class="shortcut-item">
+            <span class="shortcut-action">切换拼模式</span>
+            <span class="shortcut-keys">
+              <kbd>S</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">拼入当前块</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>Enter</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">清空拼接栏</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd class="modifier">Shift</kbd>
+              <span class="key-plus">+</span>
+              <kbd>Delete</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">上移单元</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>↑</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">下移单元</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>↓</kbd>
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 写作台 -->
+      <div class="shortcut-group">
+        <div class="group-heading">写作台</div>
+        <ul class="shortcut-list">
+          <li class="shortcut-item">
+            <span class="shortcut-action">切换写作台</span>
+            <span class="shortcut-keys">
+              <kbd>W</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">下一段</span>
+            <span class="shortcut-keys">
+              <kbd>Tab</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">上一段</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Shift</kbd>
+              <span class="key-plus">+</span>
+              <kbd>Tab</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">聚焦编辑器</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>E</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">生成灵感</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>I</kbd>
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 通用 -->
+      <div class="shortcut-group">
+        <div class="group-heading">通用</div>
+        <ul class="shortcut-list">
+          <li class="shortcut-item">
+            <span class="shortcut-action">撤销</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>Z</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">重做</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd class="modifier">Shift</kbd>
+              <span class="key-plus">+</span>
+              <kbd>Z</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">复制</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>C</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">粘贴</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>V</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">全选</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>A</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">搜索</span>
+            <span class="shortcut-keys">
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>F</kbd>
+            </span>
+          </li>
+          <li class="shortcut-item">
+            <span class="shortcut-action">快捷键面板</span>
+            <span class="shortcut-keys">
+              <kbd>?</kbd>
+              <span class="key-slash">/</span>
+              <kbd class="modifier">Ctrl</kbd>
+              <span class="key-plus">+</span>
+              <kbd>/</kbd>
+            </span>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- 底部 -->
+    <div class="panel-footer">
+      <div class="footer-left">共 32 个快捷键</div>
+      <div class="footer-right">
+        <div class="vim-toggle">
+          <span class="vim-label">开启 Vim 模式</span>
+          <div class="toggle-switch"></div>
+        </div>
+        <div class="esc-hint"><kbd>Esc</kbd>关闭</div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
