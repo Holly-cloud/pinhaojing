@@ -1,0 +1,241 @@
+{
+  "project": {
+    "resolvedLane": "library_bound",
+    "selectedIntentWorkflowRead": true,
+    "contextRequirementsLoaded": [
+      {
+        "path": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\colors_and_type.css",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\components.css",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\SKILL.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\README.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\css.json",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\components\\index.json",
+        "readStatus": "loaded",
+        "bodyRead": true
+      }
+    ],
+    "contextReadScope": "library-bound full extraction",
+    "validationRunDiscipline": "workspace-validation-then-readiness",
+    "lowValueCallWatchdog": {
+      "noProgressNextAction": "move-to-readiness"
+    }
+  },
+  "designSource": {
+    "libraryIdentity": {
+      "name": "Apple",
+      "id": "dl_builtin_apple",
+      "version": 0,
+      "scope": "builtin-global",
+      "path": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple",
+      "versionSource": "metadata.json"
+    },
+    "brandPrefix": "apple",
+    "cssPath": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\colors_and_type.css",
+    "actualTokenNameReference": [
+      "--apple-primary",
+      "--apple-primary-foreground",
+      "--apple-background",
+      "--apple-foreground",
+      "--apple-secondary",
+      "--apple-secondary-foreground",
+      "--apple-muted",
+      "--apple-muted-foreground",
+      "--apple-accent",
+      "--apple-accent-foreground",
+      "--apple-destructive",
+      "--apple-destructive-foreground",
+      "--apple-success",
+      "--apple-success-foreground",
+      "--apple-border",
+      "--apple-ring",
+      "--apple-card",
+      "--apple-card-foreground",
+      "--apple-sidebar",
+      "--apple-sidebar-foreground",
+      "--font-sans",
+      "--font-mono",
+      "--radius",
+      "--shadow-sm",
+      "--shadow-md",
+      "--shadow-lg",
+      "--shadow-xl",
+      "--shadow-2xl",
+      "--spacing"
+    ],
+    "designDecisionSummary": "Content-first, whitespace-driven, restrained Apple-inspired redesign. Clean white cards with 1px borders and whisper-light shadows replace heavy glassmorphism. Pill-shaped buttons, 1.2rem radius, DM Sans typography. Background is clean #f2f2f7 instead of multi-color radial gradients.",
+    "componentIndexSummary": [
+      {
+        "slug": "button",
+        "name": "Button",
+        "usage": "Topbar actions, modal actions, splice panel actions - all pill-shaped"
+      },
+      {
+        "slug": "card",
+        "name": "Card",
+        "usage": "Canvas blocks, splice items, template units, modal surfaces"
+      },
+      {
+        "slug": "input",
+        "name": "Input",
+        "usage": "Modal inputs, search fields, template name inputs"
+      },
+      {
+        "slug": "navigation",
+        "name": "Navigation",
+        "usage": "Top bar with view switch, project selector"
+      }
+    ],
+    "uiKitSummary": "website UI kit used as layout reference for density and content flow",
+    "allowedComponents": [
+      "button",
+      "card",
+      "input",
+      "navigation",
+      "product-grid",
+      "comparison-table"
+    ],
+    "forbiddenInventedComponents": [],
+    "styleConstraints": {
+      "radiusMax": "1.2rem",
+      "spacingBase": "0.24rem",
+      "fontSizeBody": "14px",
+      "controlHeightDefault": "40px"
+    },
+    "iconAssets": {
+      "source": "assets/icons",
+      "projectIconDir": "assets/icons/apple",
+      "libraryKey": "dl_builtin_apple",
+      "renderMethod": "css-mask",
+      "pathTemplate": "../assets/icons/apple/{name}.svg",
+      "availableNames": [
+        "arrow-down",
+        "arrow-left",
+        "arrow-right",
+        "arrow-up",
+        "box",
+        "check",
+        "chevron-down",
+        "chevron-left",
+        "chevron-right",
+        "chevron-up",
+        "chevrons-down-up",
+        "chevrons-up-down",
+        "circle-alert",
+        "circle-check",
+        "circle-minus",
+        "circle-pause",
+        "circle-play",
+        "circle-plus",
+        "circle-question-mark",
+        "external-link",
+        "file",
+        "folder-open",
+        "folder",
+        "funnel",
+        "grip",
+        "heart",
+        "house",
+        "mail",
+        "map-pin",
+        "message-circle-more",
+        "mouse-pointer-click",
+        "pen-line",
+        "send-horizontal",
+        "star",
+        "tag",
+        "thumbs-down",
+        "thumbs-up",
+        "trash-2",
+        "triangle-alert",
+        "user"
+      ],
+      "totalCount": 40,
+      "coloringRule": "currentColor by default; override with Library token when needed"
+    },
+    "productContext": {
+      "kitType": "app",
+      "productType": "consumer imaging product ecosystem — video prompt composition tool"
+    }
+  },
+  "pages": [
+    {
+      "nodeId": "page-phj-canvas",
+      "htmlSrc": "pages/phj-canvas.html",
+      "brandPrefix": "apple",
+      "tokenFidelity": "strict",
+      "componentPlan": [
+        {
+          "slug": "button",
+          "contractKind": "legacy-json",
+          "previewFile": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\preview\\component-button.html",
+          "contractFile": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\components\\button.json"
+        },
+        {
+          "slug": "card",
+          "contractKind": "legacy-json",
+          "previewFile": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\preview\\component-card.html",
+          "contractFile": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\components\\card.json"
+        },
+        {
+          "slug": "input",
+          "contractKind": "legacy-json",
+          "previewFile": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\preview\\component-input.html",
+          "contractFile": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\components\\input.json"
+        },
+        {
+          "slug": "navigation",
+          "contractKind": "legacy-json",
+          "previewFile": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\preview\\component-navigation.html",
+          "contractFile": "c:\\Users\\Holly\\.trae-cn\\design_libraries\\Apple\\components\\navigation.json"
+        }
+      ],
+      "themeMode": "light",
+      "componentCssMode": "off",
+      "status": "completed"
+    }
+  ],
+  "expectedDispatches": [
+    {
+      "nodeId": "page-phj-canvas",
+      "status": "completed",
+      "completedAt": "2026-09-28T17:00:00+08:00"
+    }
+  ],
+  "styleContinuityAnchors": {
+    "colorSystem": "Apple HIG system colors - brand blue #007AFF, neutral grays, system green/red for states",
+    "shapeSystem": "1.2rem base radius, pill-shaped buttons, soft card corners, 1px borders",
+    "typographySystem": "DM Sans for interface, JetBrains Mono for code, 14px body with 1.55 line-height",
+    "spacingSystem": "0.24rem base, practical scale of 4/8/12/16/24/32/48/64",
+    "componentLanguage": "Restrained Apple Store style - capsule CTAs, quiet card surfaces, border-first definition",
+    "surfaceAndDepth": "Whisper-light shadows, 1px borders primary elevation, deeper shadows only for overlays and modals",
+    "imageryAndIconography": "Content-first, minimal decoration, iconography via SVG mask with currentColor",
+    "interactionTone": "cubic-bezier(0.32, 0.72, 0, 1) easing, 150-250ms timing, subtle press and hover feedback"
+  },
+  "completionEvidence": {
+    "libraryIdentityVerified": true,
+    "tokenEvidencePresent": true,
+    "componentConformanceEvidence": true,
+    "validationResult": "pending",
+    "pageNodeIds": ["page-phj-canvas"]
+  }
+}

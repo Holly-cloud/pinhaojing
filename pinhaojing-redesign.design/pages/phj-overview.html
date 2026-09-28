@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>拼好镜 · 项目总览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Primary — warm amber */
+    --primary-50: #FFFBEB; --primary-100: #FEF3C7; --primary-200: #FDE68A;
+    --primary-300: #FCD34D; --primary-400: #FBBF24; --primary-500: #F59E0B;
+    --primary-600: #D97706; --primary-700: #B45309; --primary-800: #92400E; --primary-900: #78350F;
+    /* Secondary — deep teal */
+    --secondary-500: #14B8A6; --secondary-700: #0F766E;
+    /* Accent — rose */
+    --accent-500: #F43F5E; --accent-600: #E11D48;
+    /* Warm neutrals */
+    --bg-canvas: #FBF7F0; --bg-surface: #FFFFFF; --bg-sidebar: #F5EFE6;
+    --bg-muted: #EDE6DA; --border-subtle: #E5DDD0; --border-strong: #D4C9B8;
+    /* Text */
+    --text-ink: #1C1917; --text-primary: #292524; --text-secondary: #78716C;
+    --text-tertiary: #A8A29E; --text-inverse: #FFFBEB;
+    /* Semantic */
+    --success: #059669; --warning: #D97706; --error: #DC2626;
+    /* Typography */
+    --font-display: "Fraunces", "Playfair Display", Georgia, "Noto Serif SC", serif;
+    --font-sans: "Space Grotesk", "Inter", system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    /* Shadows — warm-toned */
+    --shadow-sm: 0 1px 2px rgba(120, 53, 15, 0.06), 0 1px 3px rgba(120, 53, 15, 0.04);
+    --shadow-md: 0 4px 12px rgba(120, 53, 15, 0.08), 0 2px 4px rgba(120, 53, 15, 0.05);
+    --shadow-lg: 0 12px 32px rgba(120, 53, 15, 0.10), 0 4px 8px rgba(120, 53, 15, 0.05);
+    --shadow-xl: 0 24px 56px rgba(120, 53, 15, 0.12);
+    --shadow-2xl: 0 40px 80px rgba(120, 53, 15, 0.18);
+    /* Radius */
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
+    /* Motion */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    width: 1440px;
+    height: 900px;
+    background: var(--bg-canvas);
+    position: relative;
+  }
+
+  /* 背景纹理层 */
+  body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(251, 191, 36, 0.06) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(217, 119, 6, 0.04) 0%, transparent 50%);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* 背景装饰点阵 */
+  body::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(180, 83, 9, 0.08) 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: 0.5;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* ========== 总览面板 ========== */
+  .ov-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 1000px;
+    height: 700px;
+    background: var(--bg-surface);
+    border-radius: 12px;
+    box-shadow: var(--shadow-2xl);
+    border: 1px solid var(--border-strong);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    z-index: 2;
+  }
+
+  /* 左侧书脊装饰条 */
+  .ov-panel::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--primary-400) 0%, var(--primary-600) 100%);
+    z-index: 10;
+  }
+
+  /* 顶部琥珀渐变线 */
+  .ov-panel::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-400) 0%, var(--primary-600) 50%, var(--primary-400) 100%);
+    z-index: 10;
+  }
+
+  /* ========== 面板头部 ========== */
+  .ov-header {
+    height: 72px;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 5;
+  }
+
+  .ov-header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  .ov-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-ink);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  .ov-version-badge {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary-700);
+    background: var(--primary-100);
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  .ov-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+
+  .ov-close-btn {
+    height: 34px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s var(--ease-out);
+  }
+
+  .ov-close-btn:hover {
+    border-color: var(--primary-300);
+    color: var(--primary-600);
+    background: var(--primary-50);
+  }
+
+  /* ========== 面板主体 ========== */
+  .ov-body {
+    flex: 1;
+    padding: 32px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    position: relative;
+    z-index: 5;
+  }
+
+  .ov-body::-webkit-scrollbar {
+    width: 6px;
+  }
+  .ov-body::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 3px;
+  }
+  .ov-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* ========== 分组列 ========== */
+  .ov-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ov-group-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .ov-group-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+  }
+
+  .ov-group-icon svg {
+    width: 20px;
+    height: 20px;
+    stroke: #ffffff;
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .ov-group-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ov-group-name {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-ink);
+    line-height: 1.2;
+    letter-spacing: -0.005em;
+  }
+
+  .ov-group-desc {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+  }
+
+  /* ========== 功能列表 ========== */
+  .ov-feature-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ov-feature {
+    padding: 10px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: transparent;
+    border-left: 2px solid var(--border-subtle);
+    transition: all 0.2s var(--ease-out);
+  }
+
+  .ov-feature:hover {
+    background: var(--primary-50);
+    border-left-color: var(--primary-400);
+  }
+
+  /* 状态指示器 */
+  .ov-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .ov-status-square {
+    width: 6px;
+    height: 6px;
+    border-radius: 1px;
+    flex-shrink: 0;
+  }
+
+  .ov-status-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .ov-status--done .ov-status-square {
+    background: var(--primary-500);
+  }
+  .ov-status--done .ov-status-label {
+    color: var(--primary-700);
+  }
+
+  .ov-status--progress .ov-status-square {
+    background: transparent;
+    border: 1.5px solid var(--primary-500);
+    width: 6px;
+    height: 6px;
+  }
+  .ov-status--progress .ov-status-label {
+    color: var(--primary-600);
+  }
+
+  .ov-status--planned .ov-status-square {
+    background: transparent;
+    border: 1.5px solid var(--text-tertiary);
+    width: 6px;
+    height: 6px;
+  }
+  .ov-status--planned .ov-status-label {
+    color: var(--text-tertiary);
+  }
+
+  /* 功能内容 */
+  .ov-feature-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ov-feature-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.4;
+    letter-spacing: -0.005em;
+  }
+
+  .ov-feature-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    line-height: 1.5;
+    letter-spacing: 0.005em;
+  }
+
+  /* ========== 面板底部 ========== */
+  .ov-footer {
+    height: 64px;
+    border-top: 1px solid var(--border-subtle);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 5;
+  }
+
+  .ov-stats {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .ov-stats span {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .ov-stats span:not(:last-child)::after {
+    content: "·";
+    margin: 0 10px;
+    color: var(--text-tertiary);
+    font-weight: 400;
+  }
+
+  .ov-stats .ov-stat-version {
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+    font-size: 12px;
+  }
+
+  .ov-primary-btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.01em;
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s var(--ease-out);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ov-primary-btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .ov-primary-btn:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-1px);
+  }
+
+  .ov-primary-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+  }
+</style>
+</head>
+<body>
+
+<div class="ov-panel">
+  <!-- 头部 -->
+  <div class="ov-header">
+    <div class="ov-header-left">
+      <h1 class="ov-title">项目总览</h1>
+      <span class="ov-version-badge">v7.21</span>
+      <span class="ov-subtitle">拼好镜 · 提示词拼贴工作台</span>
+    </div>
+    <button class="ov-close-btn">关闭</button>
+  </div>
+
+  <!-- 主体 -->
+  <div class="ov-body">
+    <!-- 第一列：写作 -->
+    <div class="ov-group">
+      <div class="ov-group-header">
+        <div class="ov-group-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+        </div>
+        <div class="ov-group-text">
+          <div class="ov-group-name">写作</div>
+          <div class="ov-group-desc">大纲、编辑器与灵感辅助</div>
+        </div>
+      </div>
+      <ul class="ov-feature-list">
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">写作台：大纲 + 编辑器</div>
+            <div class="ov-feature-desc">按顺序排列提示词，逐条编辑</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">灵感气泡群补全</div>
+            <div class="ov-feature-desc">实时建议，悬浮选择上屏</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">大纲拖拽排序</div>
+            <div class="ov-feature-desc">不影响画布位置</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">编辑器彩色高亮</div>
+            <div class="ov-feature-desc">语法着色，补全词标记</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">标签分组（初/补）</div>
+            <div class="ov-feature-desc">初稿与补充分段管理</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--progress">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">进行中</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">多项目切换</div>
+            <div class="ov-feature-desc">多个项目独立管理</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--planned">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">规划中</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">导出 Markdown</div>
+            <div class="ov-feature-desc">一键导出文档</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 第二列：画布 -->
+    <div class="ov-group">
+      <div class="ov-group-header">
+        <div class="ov-group-icon">
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+          </svg>
+        </div>
+        <div class="ov-group-text">
+          <div class="ov-group-name">画布</div>
+          <div class="ov-group-desc">自由排布与视觉化组织</div>
+        </div>
+      </div>
+      <ul class="ov-feature-list">
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">自由排布与拖拽</div>
+            <div class="ov-feature-desc">无限画布，自由摆放</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">划选与多选操作</div>
+            <div class="ov-feature-desc">批量选择、移动、删除</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">画布缩放</div>
+            <div class="ov-feature-desc">25%–400%，以光标为基准</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">一键整理对齐</div>
+            <div class="ov-feature-desc">自动排列，视角归零</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">拼接光线连接</div>
+            <div class="ov-feature-desc">可视化块与拼接关系</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">图片块支持</div>
+            <div class="ov-feature-desc">粘贴图片，视觉参考</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--planned">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">规划中</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">画布网格吸附</div>
+            <div class="ov-feature-desc">对齐辅助线</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 第三列：项目与界面 -->
+    <div class="ov-group">
+      <div class="ov-group-header">
+        <div class="ov-group-icon">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </div>
+        <div class="ov-group-text">
+          <div class="ov-group-name">项目与界面</div>
+          <div class="ov-group-desc">设置、模板与全局配置</div>
+        </div>
+      </div>
+      <ul class="ov-feature-list">
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">项目总览面板</div>
+            <div class="ov-feature-desc">功能与开发状态总览</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">补全配置 / 片段库</div>
+            <div class="ov-feature-desc">浏览、编辑、新增片段</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">模板定制系统</div>
+            <div class="ov-feature-desc">多模板单元，自由组合</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">导入 / 导出 JSON</div>
+            <div class="ov-feature-desc">数据备份与迁移</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--done">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">已完成</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">快捷键系统</div>
+            <div class="ov-feature-desc">高效操作支持</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--progress">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">进行中</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">暗色模式</div>
+            <div class="ov-feature-desc">深色主题适配</div>
+          </div>
+        </li>
+        <li class="ov-feature">
+          <div class="ov-status ov-status--planned">
+            <span class="ov-status-square"></span>
+            <span class="ov-status-label">规划中</span>
+          </div>
+          <div class="ov-feature-content">
+            <div class="ov-feature-name">多语言支持</div>
+            <div class="ov-feature-desc">国际化</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 底部 -->
+  <div class="ov-footer">
+    <div class="ov-stats">
+      <span>12 个分镜块</span>
+      <span>5 条拼接</span>
+      <span>3 个模板</span>
+      <span class="ov-stat-version">v7.21</span>
+    </div>
+    <button class="ov-primary-btn">开始创作</button>
+  </div>
+</div>
+
+</body>
+</html>

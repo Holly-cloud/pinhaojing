@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>拼好镜 · 片段库</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   拼好镜 · 片段库 · Editorial Creative Studio
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Primary — warm amber */
+  --primary-50: #FFFBEB; --primary-100: #FEF3C7; --primary-200: #FDE68A;
+  --primary-300: #FCD34D; --primary-400: #FBBF24; --primary-500: #F59E0B;
+  --primary-600: #D97706; --primary-700: #B45309; --primary-800: #92400E; --primary-900: #78350F;
+  /* Secondary — deep teal */
+  --secondary-500: #14B8A6; --secondary-700: #0F766E;
+  /* Accent — rose */
+  --accent-500: #F43F5E; --accent-600: #E11D48;
+  /* Warm neutrals */
+  --bg-canvas: #FBF7F0; --bg-surface: #FFFFFF; --bg-sidebar: #F5EFE6;
+  --bg-muted: #EDE6DA; --border-subtle: #E5DDD0; --border-strong: #D4C9B8;
+  /* Text */
+  --text-ink: #1C1917; --text-primary: #292524; --text-secondary: #78716C;
+  --text-tertiary: #A8A29E; --text-inverse: #FFFBEB;
+  /* Semantic */
+  --success: #059669; --error: #DC2626;
+  /* Typography */
+  --font-display: "Fraunces", "Playfair Display", Georgia, "Noto Serif SC", serif;
+  --font-sans: "Space Grotesk", "Inter", system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+  /* Shadows — warm-toned */
+  --shadow-sm: 0 1px 2px rgba(120, 53, 15, 0.06), 0 1px 3px rgba(120, 53, 15, 0.04);
+  --shadow-md: 0 4px 12px rgba(120, 53, 15, 0.08), 0 2px 4px rgba(120, 53, 15, 0.05);
+  --shadow-lg: 0 12px 32px rgba(120, 53, 15, 0.10), 0 4px 8px rgba(120, 53, 15, 0.05);
+  --shadow-xl: 0 24px 56px rgba(120, 53, 15, 0.12);
+  --shadow-2xl: 0 40px 80px rgba(120, 53, 15, 0.18);
+  /* Radius */
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 1440px;
+  height: 900px;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--text-primary);
+  background: var(--bg-canvas);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   背景层
+   ═══════════════════════════════════════════════════════════════ */
+
+.canvas-bg {
+  position: fixed;
+  top: 0; left: 0;
+  width: 1440px;
+  height: 900px;
+  background: var(--bg-canvas);
+  overflow: hidden;
+}
+
+/* 琥珀色调叠加层 — 暖色模糊效果 */
+.canvas-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(251, 191, 36, 0.08);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 1;
+}
+
+/* 背景画布内容 — 隐约的块轮廓 */
+.canvas-leftpanel {
+  position: absolute;
+  top: 0; left: 0;
+  width: 220px;
+  height: 900px;
+  background: rgba(255, 255, 255, 0.5);
+  border-right: 1px solid rgba(212, 201, 184, 0.4);
+  opacity: 0.6;
+}
+
+.canvas-left-row {
+  height: 36px;
+  margin: 8px 16px;
+  background: rgba(120, 53, 15, 0.04);
+  border-radius: 8px;
+}
+
+.canvas-left-row.first { margin-top: 80px; }
+
+.canvas-toolbar {
+  position: absolute;
+  top: 24px; left: 50%;
+  transform: translateX(-50%);
+  width: 420px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  border: 1px solid rgba(212, 201, 184, 0.4);
+  opacity: 0.6;
+}
+
+.canvas-placeholder {
+  position: absolute;
+  top: 80px; left: 260px;
+  width: 920px;
+  height: 640px;
+  border: 1.5px dashed rgba(120, 53, 15, 0.08);
+  border-radius: 12px;
+  opacity: 0.5;
+}
+
+.canvas-block {
+  position: absolute;
+  background: rgba(120, 53, 15, 0.04);
+  border-radius: 8px;
+  opacity: 0.5;
+}
+
+.canvas-block.b1 { top: 120px; left: 300px; width: 280px; height: 180px; }
+.canvas-block.b2 { top: 120px; left: 620px; width: 200px; height: 180px; }
+.canvas-block.b3 { top: 330px; left: 300px; width: 200px; height: 140px; }
+.canvas-block.b4 { top: 330px; left: 530px; width: 290px; height: 140px; }
+.canvas-block.b5 { top: 500px; left: 300px; width: 520px; height: 160px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   配置窗口
+   ═══════════════════════════════════════════════════════════════ */
+
+.cfg-window {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 960px;
+  height: 680px;
+  background: var(--bg-surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow-2xl);
+  border: 1px solid var(--border-strong);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+/* 顶部琥珀色装饰线 */
+.cfg-window::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-400), var(--primary-600));
+  z-index: 2;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   窗口头部
+   ═══════════════════════════════════════════════════════════════ */
+
+.cfg-header {
+  height: 64px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* 左侧琥珀色书脊装饰条 */
+.cfg-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--primary-400), var(--primary-700));
+}
+
+.cfg-header-left {
+  display: flex;
+  align-items: baseline;
+}
+
+.cfg-header-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-ink);
+  letter-spacing: -0.01em;
+}
+
+.cfg-header-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: 12px;
+  font-weight: 400;
+}
+
+.cfg-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cfg-search {
+  width: 200px;
+  height: 36px;
+  background: var(--bg-muted);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 14px 0 36px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  outline: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2378716C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 14px center;
+  transition: all 0.2s var(--ease-out);
+}
+
+.cfg-search::placeholder {
+  color: var(--text-secondary);
+}
+
+.cfg-search:focus {
+  border-color: var(--primary-300);
+  background-color: var(--bg-surface);
+}
+
+.cfg-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 300;
+  transition: all 0.2s var(--ease-out);
+  font-family: var(--font-sans);
+}
+
+.cfg-close-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  background: var(--bg-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   窗口主体
+   ═══════════════════════════════════════════════════════════════ */
+
+.cfg-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── 左侧分组栏 ─────────────────────────────────────────────── */
+
+.cfg-groups {
+  width: 240px;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-strong);
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.cfg-groups-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding: 4px 12px 12px;
+  letter-spacing: 0.08em;
+}
+
+.cfg-group-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cfg-group-item {
+  padding: 10px 14px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+  margin-bottom: 2px;
+}
+
+.cfg-group-item:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.cfg-group-item.active {
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--primary-100);
+  padding: 9px 13px;
+}
+
+/* 竖条指示器 */
+.cfg-group-indicator {
+  width: 2px;
+  height: 16px;
+  border-radius: 1px;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.cfg-group-item.active .cfg-group-indicator {
+  background: linear-gradient(180deg, var(--primary-400), var(--primary-600));
+}
+
+.cfg-group-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cfg-group-name {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.cfg-group-item.active .cfg-group-name {
+  color: var(--text-ink);
+  font-weight: 600;
+}
+
+.cfg-group-count {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.cfg-group-drag {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  opacity: 0;
+  transition: opacity 0.2s var(--ease-out);
+  cursor: grab;
+  line-height: 1;
+}
+
+.cfg-group-item:hover .cfg-group-drag {
+  opacity: 1;
+}
+
+.cfg-new-group {
+  margin-top: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--primary-600);
+  cursor: pointer;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: background 0.2s var(--ease-out);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cfg-new-group:hover {
+  background: var(--primary-50);
+}
+
+/* ── 右侧片段列表 ───────────────────────────────────────────── */
+
+.cfg-items {
+  flex: 1;
+  padding: 28px 32px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.cfg-items-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.cfg-items-title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.cfg-items-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+
+.cfg-items-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-ink);
+  margin-top: 4px;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.cfg-items-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.cfg-items-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cfg-btn {
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s var(--ease-out);
+}
+
+.cfg-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.cfg-btn-primary {
+  background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+  border-color: transparent;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.cfg-btn-primary:hover {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+  color: #ffffff;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* 片段卡片网格 */
+.cfg-fragment-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.cfg-fragment-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 200ms var(--ease-out);
+  cursor: pointer;
+}
+
+.cfg-fragment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-200);
+}
+
+.cfg-fragment-tag-row {
+  display: flex;
+  align-items: center;
+}
+
+.cfg-fragment-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  background: var(--primary-50);
+  color: var(--primary-700);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  border-radius: 4px;
+}
+
+.cfg-fragment-tag-label {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cfg-fragment-content {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cfg-fragment-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 2px;
+}
+
+.cfg-fragment-usage {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.cfg-fragment-edit {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: color 0.2s var(--ease-out);
+  opacity: 0;
+}
+
+.cfg-fragment-card:hover .cfg-fragment-edit {
+  opacity: 1;
+}
+
+.cfg-fragment-edit:hover {
+  color: var(--primary-600);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   窗口底部
+   ═══════════════════════════════════════════════════════════════ */
+
+.cfg-footer {
+  height: 56px;
+  border-top: 1px solid var(--border-subtle);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.cfg-footer-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cfg-footer-hint kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  box-shadow: 0 1px 0 var(--border-subtle);
+}
+
+.cfg-footer-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.cfg-footer .cfg-btn {
+  height: 36px;
+  padding: 0 16px;
+}
+
+.cfg-footer .cfg-btn-primary {
+  height: 40px;
+  padding: 0 24px;
+  font-size: 14px;
+  box-shadow: var(--shadow-md);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   滚动条样式
+   ═══════════════════════════════════════════════════════════════ */
+
+.cfg-items::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cfg-items::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cfg-items::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+.cfg-items::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+</style>
+</head>
+<body>
+
+<!-- 背景画布层 -->
+<div class="canvas-bg">
+  <div class="canvas-toolbar"></div>
+  <div class="canvas-leftpanel">
+    <div class="canvas-left-row first"></div>
+    <div class="canvas-left-row"></div>
+    <div class="canvas-left-row"></div>
+    <div class="canvas-left-row"></div>
+    <div class="canvas-left-row"></div>
+    <div class="canvas-left-row"></div>
+    <div class="canvas-left-row"></div>
+    <div class="canvas-left-row"></div>
+  </div>
+  <div class="canvas-placeholder"></div>
+  <div class="canvas-block b1"></div>
+  <div class="canvas-block b2"></div>
+  <div class="canvas-block b3"></div>
+  <div class="canvas-block b4"></div>
+  <div class="canvas-block b5"></div>
+  <div class="canvas-overlay"></div>
+</div>
+
+<!-- 配置窗口 -->
+<div class="cfg-window">
+
+  <!-- 窗口头部 -->
+  <div class="cfg-header">
+    <div class="cfg-header-left">
+      <span class="cfg-header-title">片段库</span>
+      <span class="cfg-header-subtitle">补全配置 · 编辑后自动保存</span>
+    </div>
+    <div class="cfg-header-right">
+      <input type="text" class="cfg-search" placeholder="搜索片段..." readonly>
+      <button class="cfg-close-btn" aria-label="关闭">&times;</button>
+    </div>
+  </div>
+
+  <!-- 窗口主体 -->
+  <div class="cfg-body">
+
+    <!-- 左侧分组栏 -->
+    <div class="cfg-groups">
+      <div class="cfg-groups-label">分组</div>
+      <div class="cfg-group-list">
+
+        <div class="cfg-group-item active">
+          <span class="cfg-group-indicator"></span>
+          <div class="cfg-group-info">
+            <span class="cfg-group-name">光影效果</span>
+            <span class="cfg-group-count">12 条</span>
+          </div>
+          <span class="cfg-group-drag">⠿</span>
+        </div>
+
+        <div class="cfg-group-item">
+          <span class="cfg-group-indicator"></span>
+          <div class="cfg-group-info">
+            <span class="cfg-group-name">镜头语言</span>
+            <span class="cfg-group-count">8 条</span>
+          </div>
+          <span class="cfg-group-drag">⠿</span>
+        </div>
+
+        <div class="cfg-group-item">
+          <span class="cfg-group-indicator"></span>
+          <div class="cfg-group-info">
+            <span class="cfg-group-name">胶片质感</span>
+            <span class="cfg-group-count">6 条</span>
+          </div>
+          <span class="cfg-group-drag">⠿</span>
+        </div>
+
+        <div class="cfg-group-item">
+          <span class="cfg-group-indicator"></span>
+          <div class="cfg-group-info">
+            <span class="cfg-group-name">构图法则</span>
+            <span class="cfg-group-count">9 条</span>
+          </div>
+          <span class="cfg-group-drag">⠿</span>
+        </div>
+
+        <div class="cfg-group-item">
+          <span class="cfg-group-indicator"></span>
+          <div class="cfg-group-info">
+            <span class="cfg-group-name">风格流派</span>
+            <span class="cfg-group-count">15 条</span>
+          </div>
+          <span class="cfg-group-drag">⠿</span>
+        </div>
+
+        <div class="cfg-group-item">
+          <span class="cfg-group-indicator"></span>
+          <div class="cfg-group-info">
+            <span class="cfg-group-name">质量词</span>
+            <span class="cfg-group-count">4 条</span>
+          </div>
+          <span class="cfg-group-drag">⠿</span>
+        </div>
+
+      </div>
+      <div class="cfg-new-group">+ 新建分组</div>
+    </div>
+
+    <!-- 右侧片段列表 -->
+    <div class="cfg-items">
+      <div class="cfg-items-header">
+        <div class="cfg-items-title-wrap">
+          <span class="cfg-items-eyebrow">光影效果</span>
+          <div class="cfg-items-title">光线与氛围</div>
+          <div class="cfg-items-desc">12 个片段 · 描述光线方向、质感与氛围</div>
+        </div>
+        <div class="cfg-items-actions">
+          <button class="cfg-btn cfg-btn-primary">+ 新增片段</button>
+          <button class="cfg-btn">重置分组</button>
+        </div>
+      </div>
+
+      <div class="cfg-fragment-grid">
+
+        <div class="cfg-fragment-card">
+          <div class="cfg-fragment-tag-row">
+            <span class="cfg-fragment-tag">#逆光</span>
+            <span class="cfg-fragment-tag-label">触发词</span>
+          </div>
+          <div class="cfg-fragment-content">逆光拍摄，金色边缘光，半透明轮廓，镜头光晕</div>
+          <div class="cfg-fragment-meta">
+            <span class="cfg-fragment-usage">使用 24 次</span>
+            <span class="cfg-fragment-edit">✎</span>
+          </div>
+        </div>
+
+        <div class="cfg-fragment-card">
+          <div class="cfg-fragment-tag-row">
+            <span class="cfg-fragment-tag">#侧光</span>
+            <span class="cfg-fragment-tag-label">触发词</span>
+          </div>
+          <div class="cfg-fragment-content">柔和侧光，明暗过渡自然，伦勃朗光效，立体感强</div>
+          <div class="cfg-fragment-meta">
+            <span class="cfg-fragment-usage">使用 18 次</span>
+            <span class="cfg-fragment-edit">✎</span>
+          </div>
+        </div>
+
+        <div class="cfg-fragment-card">
+          <div class="cfg-fragment-tag-row">
+            <span class="cfg-fragment-tag">#顶光</span>
+            <span class="cfg-fragment-tag-label">触发词</span>
+          </div>
+          <div class="cfg-fragment-content">顶光直射，强烈阴影，戏剧性对比，正午阳光</div>
+          <div class="cfg-fragment-meta">
+            <span class="cfg-fragment-usage">使用 12 次</span>
+            <span class="cfg-fragment-edit">✎</span>
+          </div>
+        </div>
+
+        <div class="cfg-fragment-card">
+          <div class="cfg-fragment-tag-row">
+            <span class="cfg-fragment-tag">#环境光</span>
+            <span class="cfg-fragment-tag-label">触发词</span>
+          </div>
+          <div class="cfg-fragment-content">环境光反射，多色光溢彩，霓虹氛围，赛博朋克</div>
+          <div class="cfg-fragment-meta">
+            <span class="cfg-fragment-usage">使用 31 次</span>
+            <span class="cfg-fragment-edit">✎</span>
+          </div>
+        </div>
+
+        <div class="cfg-fragment-card">
+          <div class="cfg-fragment-tag-row">
+            <span class="cfg-fragment-tag">#体积光</span>
+            <span class="cfg-fragment-tag-label">触发词</span>
+          </div>
+          <div class="cfg-fragment-content">丁达尔效应，体积光束，晨雾漫射，空气透视</div>
+          <div class="cfg-fragment-meta">
+            <span class="cfg-fragment-usage">使用 9 次</span>
+            <span class="cfg-fragment-edit">✎</span>
+          </div>
+        </div>
+
+        <div class="cfg-fragment-card">
+          <div class="cfg-fragment-tag-row">
+            <span class="cfg-fragment-tag">#窗户光</span>
+            <span class="cfg-fragment-tag-label">触发词</span>
+          </div>
+          <div class="cfg-fragment-content">窗户柔光，方向性，工作室质感，明暗层次</div>
+          <div class="cfg-fragment-meta">
+            <span class="cfg-fragment-usage">使用 15 次</span>
+            <span class="cfg-fragment-edit">✎</span>
+          </div>
+        </div>
+
+        <div class="cfg-fragment-card">
+          <div class="cfg-fragment-tag-row">
+            <span class="cfg-fragment-tag">#背光</span>
+            <span class="cfg-fragment-tag-label">触发词</span>
+          </div>
+          <div class="cfg-fragment-content">背光剪影，轮廓分明，情绪氛围，神秘感觉</div>
+          <div class="cfg-fragment-meta">
+            <span class="cfg-fragment-usage">使用 16 次</span>
+            <span class="cfg-fragment-edit">✎</span>
+          </div>
+        </div>
+
+        <div class="cfg-fragment-card">
+          <div class="cfg-fragment-tag-row">
+            <span class="cfg-fragment-tag">#漫射</span>
+            <span class="cfg-fragment-tag-label">触发词</span>
+          </div>
+          <div class="cfg-fragment-content">漫射柔光，阴天光感，无硬阴影，均匀照明</div>
+          <div class="cfg-fragment-meta">
+            <span class="cfg-fragment-usage">使用 22 次</span>
+            <span class="cfg-fragment-edit">✎</span>
+          </div>
+        </div>
+
+        <div class="cfg-fragment-card">
+          <div class="cfg-fragment-tag-row">
+            <span class="cfg-fragment-tag">#反光板</span>
+            <span class="cfg-fragment-tag-label">触发词</span>
+          </div>
+          <div class="cfg-fragment-content">反光板补光，阴影柔化，肤色自然，人像利器</div>
+          <div class="cfg-fragment-meta">
+            <span class="cfg-fragment-usage">使用 7 次</span>
+            <span class="cfg-fragment-edit">✎</span>
+          </div>
+        </div>
+
+        <div class="cfg-fragment-card">
+          <div class="cfg-fragment-tag-row">
+            <span class="cfg-fragment-tag">#烛光</span>
+            <span class="cfg-fragment-tag-label">触发词</span>
+          </div>
+          <div class="cfg-fragment-content">烛光暖调，温暖颗粒，intimate 氛围，低照度</div>
+          <div class="cfg-fragment-meta">
+            <span class="cfg-fragment-usage">使用 11 次</span>
+            <span class="cfg-fragment-edit">✎</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 窗口底部 -->
+  <div class="cfg-footer">
+    <div class="cfg-footer-hint">
+      编辑器输入 <kbd>#</kbd> 触发补全
+    </div>
+    <div class="cfg-footer-actions">
+      <button class="cfg-btn">恢复默认</button>
+      <button class="cfg-btn cfg-btn-primary">完成</button>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

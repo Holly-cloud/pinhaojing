@@ -1,0 +1,102 @@
+{
+  "data": [
+    {
+      "id": "page-phj-canvas",
+      "title": "画布视图",
+      "type": "page",
+      "version": 2,
+      "createdAt": 1759081200000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-ae4d10bd",
+          "measuredAt": 1790602069903
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-canvas.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-write",
+      "title": "写作台",
+      "type": "page",
+      "version": 2,
+      "createdAt": 1759081260000,
+      "canvasData": {
+        "x": 480,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-67cb05ec",
+          "measuredAt": 1790602069903
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-write.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-library",
+      "title": "片段库 · 补全配置",
+      "type": "page",
+      "version": 2,
+      "createdAt": 1759081320000,
+      "canvasData": {
+        "x": 960,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-b154cfa4",
+          "measuredAt": 1790602069903
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-library.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-overview",
+      "title": "项目总览",
+      "type": "page",
+      "version": 2,
+      "createdAt": 1759081380000,
+      "canvasData": {
+        "x": 1440,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-7d457872",
+          "measuredAt": 1790602069903
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-overview.html",
+        "interactions": []
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "拼好镜 · 编辑室创意版",
+    "visualEditorEnabled": false
+  }
+}
