@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440, initial-scale=1.0">
+<title>拼好镜 · 图片块与多选态</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary-50: #FFFBEB; --primary-100: #FEF3C7; --primary-200: #FDE68A;
+  --primary-300: #FCD34D; --primary-400: #FBBF24; --primary-500: #F59E0B;
+  --primary-600: #D97706; --primary-700: #B45309; --primary-800: #92400E; --primary-900: #78350F;
+  --secondary-500: #14B8A6; --secondary-700: #0F766E;
+  --accent-500: #F43F5E; --accent-600: #E11D48;
+  --bg-canvas: #FBF7F0; --bg-surface: #FFFFFF; --bg-sidebar: #F5EFE6;
+  --bg-muted: #EDE6DA; --border-subtle: #E5DDD0; --border-strong: #D4C9B8;
+  --text-ink: #1C1917; --text-primary: #292524; --text-secondary: #78716C;
+  --text-tertiary: #A8A29E; --text-inverse: #FFFBEB;
+  --success: #059669; --error: #DC2626;
+  --font-display: "Fraunces", "Playfair Display", Georgia, "Noto Serif SC", serif;
+  --font-sans: "Space Grotesk", "Inter", system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+  --shadow-sm: 0 1px 2px rgba(120, 53, 15, 0.06), 0 1px 3px rgba(120, 53, 15, 0.04);
+  --shadow-md: 0 4px 12px rgba(120, 53, 15, 0.08), 0 2px 4px rgba(120, 53, 15, 0.05);
+  --shadow-lg: 0 12px 32px rgba(120, 53, 15, 0.10), 0 4px 8px rgba(120, 53, 15, 0.05);
+  --shadow-xl: 0 24px 56px rgba(120, 53, 15, 0.12);
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 1440px;
+  height: 900px;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Page Background ===== */
+.page-bg {
+  position: fixed;
+  inset: 0;
+  width: 1440px;
+  height: 900px;
+  background: var(--bg-canvas);
+  overflow: hidden;
+}
+
+.page-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(180, 83, 9, 0.08) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: 0 0;
+  opacity: 0.6;
+}
+
+.page-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.04) 0%, rgba(217, 119, 6, 0.03) 50%, rgba(251, 191, 36, 0.02) 100%);
+  pointer-events: none;
+}
+
+/* ===== Page Title ===== */
+.page-title {
+  position: absolute;
+  top: 32px;
+  left: 48px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-ink);
+  letter-spacing: -0.01em;
+  z-index: 5;
+}
+.page-title span {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  margin-left: 12px;
+  font-family: var(--font-sans);
+  letter-spacing: 0.02em;
+}
+
+/* ===== Section Divider ===== */
+.section-divider {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-subtle);
+  z-index: 1;
+}
+
+/* ===== Section Header ===== */
+.section-header {
+  position: absolute;
+  left: 80px;
+  z-index: 5;
+}
+.section-header .section-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-ink);
+  letter-spacing: -0.01em;
+}
+.section-header .section-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  letter-spacing: 0.01em;
+}
+
+/* Top section */
+.section-top .section-header {
+  top: 90px;
+}
+
+/* Bottom section */
+.section-bottom .section-header {
+  top: calc(50% + 50px);
+}
+
+/* ===== Image Canvas Area ===== */
+.canvas-area {
+  position: absolute;
+  background: var(--bg-canvas);
+  border-radius: var(--radius-lg);
+  z-index: 2;
+}
+
+/* Top canvas - Image Blocks showcase */
+.canvas-top {
+  top: 150px;
+  left: 80px;
+  right: 80px;
+  height: calc(50% - 190px);
+  min-height: 280px;
+}
+
+/* Bottom canvas - Multi-select showcase */
+.canvas-bottom {
+  top: calc(50% + 110px);
+  left: 80px;
+  right: 80px;
+  bottom: 60px;
+}
+
+/* ===== Image Block Base ===== */
+.img-block {
+  position: absolute;
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  cursor: default;
+}
+
+.img-block::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(28, 25, 23, 0.3) 100%);
+  pointer-events: none;
+}
+
+/* Image texture details */
+.img-texture {
+  position: absolute;
+  inset: 0;
+  opacity: 0.15;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.1) 2px,
+      rgba(255, 255, 255, 0.1) 4px
+    );
+  pointer-events: none;
+}
+
+.img-noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.08;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.4) 0.5px, transparent 1px),
+    radial-gradient(circle at 70% 60%, rgba(0,0,0,0.2) 0.5px, transparent 1px),
+    radial-gradient(circle at 40% 80%, rgba(255,255,255,0.3) 0.5px, transparent 1px);
+  background-size: 8px 8px, 12px 12px, 6px 6px;
+  pointer-events: none;
+}
+
+/* Image caption */
+.img-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px 12px 10px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  background: linear-gradient(180deg, transparent 0%, rgba(28, 25, 23, 0.6) 100%);
+  z-index: 2;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Drag handle */
+.drag-handle {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary-400);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+  z-index: 3;
+}
+
+/* Delete button */
+.delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(244, 63, 94, 0.9);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  cursor: default;
+}
+
+/* Pin badge */
+.pin-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(251, 191, 36, 0.95);
+  color: var(--primary-900);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  box-shadow: 0 2px 8px rgba(120, 53, 15, 0.25);
+  font-family: var(--font-display);
+}
+
+/* ===== Block 1: Portrait (left) ===== */
+.img-block-1 {
+  width: 220px;
+  height: 280px;
+  left: 60px;
+  top: 30px;
+  background: linear-gradient(180deg, #FDE68A 0%, #F59E0B 30%, #B45309 70%, #78350F 100%);
+}
+
+.img-block-1 .img-silhouette {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 180px;
+  background: linear-gradient(180deg, rgba(120, 53, 15, 0.0) 0%, rgba(120, 53, 15, 0.3) 40%, rgba(28, 25, 23, 0.5) 100%);
+  border-radius: 50% 50% 0 0 / 30% 30% 0 0;
+  z-index: 1;
+}
+
+.img-block-1 .img-horizon {
+  position: absolute;
+  top: 55%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(120, 53, 15, 0.3);
+  z-index: 1;
+}
+
+.img-block-1 .img-sun {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #FFFBEB 0%, #FDE68A 40%, transparent 70%);
+  z-index: 1;
+}
+
+/* ===== Block 2: Landscape (center, selected) ===== */
+.img-block-2 {
+  width: 320px;
+  height: 200px;
+  left: 50%;
+  top: 60px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #FDE68A 0%, #FBBF24 20%, #14B8A6 50%, #0F766E 100%);
+  border: 2px solid var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2), var(--shadow-lg);
+}
+
+.img-block-2 .img-mountain {
+  position: absolute;
+  bottom: 35%;
+  left: 0;
+  right: 0;
+  height: 60px;
+  z-index: 1;
+}
+.img-block-2 .img-mountain::before,
+.img-block-2 .img-mountain::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+.img-block-2 .img-mountain::before {
+  left: 10%;
+  border-width: 0 50px 50px 50px;
+  border-color: transparent transparent rgba(15, 118, 110, 0.6) transparent;
+}
+.img-block-2 .img-mountain::after {
+  right: 5%;
+  border-width: 0 70px 60px 70px;
+  border-color: transparent transparent rgba(15, 118, 110, 0.5) transparent;
+}
+
+.img-block-2 .img-mist {
+  position: absolute;
+  bottom: 30%;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background: linear-gradient(180deg, rgba(255, 251, 235, 0.3) 0%, rgba(255, 251, 235, 0.1) 100%);
+  z-index: 2;
+  filter: blur(4px);
+}
+
+.img-block-2 .img-sunrise {
+  position: absolute;
+  top: 15%;
+  right: 25%;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #FFFBEB 0%, #FCD34D 50%, transparent 70%);
+  z-index: 1;
+}
+
+/* Selection indicator for block 2 */
+.img-block-2 .select-indicator {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 26px;
+  height: 26px;
+  background: var(--primary-500);
+  border-radius: 6px 0 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 4;
+  box-shadow: 0 2px 6px rgba(120, 53, 15, 0.2);
+}
+
+/* Corner resize handles for selected */
+.img-block-2 .resize-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--primary-500);
+  border: 1.5px solid #fff;
+  border-radius: 2px;
+  z-index: 4;
+  box-shadow: 0 1px 3px rgba(120, 53, 15, 0.2);
+}
+.resize-handle.tl { top: -5px; left: -5px; }
+.resize-handle.tr { top: -5px; right: -5px; }
+.resize-handle.bl { bottom: -5px; left: -5px; }
+.resize-handle.br { bottom: -5px; right: -5px; }
+
+/* ===== Block 3: Square (right, hover state) ===== */
+.img-block-3 {
+  width: 200px;
+  height: 200px;
+  right: 60px;
+  top: 50px;
+  background: linear-gradient(135deg, #F43F5E 0%, #F59E0B 50%, #FDE68A 100%);
+  border: 1.5px solid var(--primary-400);
+  box-shadow: var(--shadow-lg);
+}
+
+.img-block-3 .img-wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  z-index: 1;
+  background: linear-gradient(180deg, transparent 0%, rgba(120, 53, 15, 0.15) 100%);
+  border-radius: 50% 50% 0 0 / 30% 30% 0 0;
+  transform: translateY(20%);
+}
+
+.img-block-3 .img-circle {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 251, 235, 0.6) 0%, rgba(253, 230, 138, 0.3) 50%, transparent 70%);
+  z-index: 1;
+}
+
+/* Hover toolbar for block 3 */
+.hover-toolbar {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(28, 25, 23, 0.75);
+  backdrop-filter: blur(4px);
+  border-radius: 6px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 3;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.hover-toolbar .tb-btn {
+  font-size: 11px;
+  font-weight: 500;
+  color: #fff;
+  cursor: default;
+  padding: 2px 4px;
+  white-space: nowrap;
+}
+.hover-toolbar .tb-btn.pin {
+  color: var(--primary-300);
+  font-weight: 600;
+}
+.hover-toolbar .tb-btn.delete {
+  color: #FDA4AF;
+}
+.hover-toolbar .tb-divider {
+  width: 1px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ===== Multi-Select Section ===== */
+.ms-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* Selection marquee */
+.selection-marquee {
+  position: absolute;
+  top: 20px;
+  left: 40px;
+  width: 620px;
+  height: 240px;
+  border: 1.5px dashed var(--primary-400);
+  background: rgba(251, 191, 36, 0.08);
+  border-radius: 4px;
+  z-index: 1;
+}
+
+.selection-marquee .mq-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--primary-500);
+  border-radius: 2px;
+  z-index: 2;
+}
+.mq-handle.tl { top: -5px; left: -5px; }
+.mq-handle.tr { top: -5px; right: -5px; }
+.mq-handle.bl { bottom: -5px; left: -5px; }
+.mq-handle.br { bottom: -5px; right: -5px; }
+
+/* Text block base */
+.text-block {
+  position: absolute;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  z-index: 2;
+  max-width: 280px;
+}
+
+/* Selected text block */
+.text-block.selected {
+  border: 2px solid var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15), var(--shadow-lg);
+  background: linear-gradient(180deg, #FFFEF9 0%, #FFFBEB 100%);
+}
+
+.text-block.selected .tb-select-badge {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 24px;
+  height: 24px;
+  background: var(--primary-500);
+  border-radius: 6px 0 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  z-index: 3;
+}
+
+.text-block.selected .tb-resize {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  background: var(--primary-500);
+  border: 1.5px solid #fff;
+  border-radius: 2px;
+  z-index: 3;
+  box-shadow: 0 1px 3px rgba(120, 53, 15, 0.2);
+}
+.tb-resize.tl { top: -5px; left: -5px; }
+.tb-resize.tr { top: -5px; right: -5px; }
+.tb-resize.bl { bottom: -5px; left: -5px; }
+.tb-resize.br { bottom: -5px; right: -5px; }
+
+/* Text block positions */
+.text-block-1 {
+  top: 40px;
+  left: 80px;
+  width: 260px;
+}
+
+.text-block-2 {
+  top: 40px;
+  left: 370px;
+  width: 240px;
+}
+
+.text-block-3 {
+  top: 150px;
+  left: 120px;
+  width: 250px;
+}
+
+.text-block-4 {
+  top: 100px;
+  right: 80px;
+  width: 260px;
+  border-style: dashed;
+}
+
+/* Block number tag */
+.block-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  background: var(--bg-muted);
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.text-block.selected .block-tag {
+  background: var(--primary-100);
+  color: var(--primary-700);
+}
+
+/* ===== Batch Action Bar ===== */
+.batch-bar {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow-xl);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 10;
+}
+
+.batch-bar .batch-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding-right: 8px;
+  margin-right: 4px;
+  border-right: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.batch-bar .batch-count strong {
+  color: var(--primary-700);
+  font-weight: 600;
+}
+
+.batch-btn {
+  font-size: 12px;
+  font-family: var(--font-sans);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: default;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.15s var(--ease-out);
+}
+
+.batch-btn.primary {
+  background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-600) 100%);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.batch-btn.secondary {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.batch-btn.danger {
+  background: transparent;
+  color: var(--accent-600);
+}
+
+.batch-btn.ghost {
+  background: transparent;
+  color: var(--text-tertiary);
+}
+
+/* ===== Footer Note ===== */
+.footer-note {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+  z-index: 5;
+}
+
+/* ===== Decorative Elements ===== */
+.section-label-chip {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--primary-700);
+  background: var(--primary-100);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  letter-spacing: 0.02em;
+  z-index: 5;
+}
+
+.label-top {
+  top: 96px;
+  right: 100px;
+}
+
+.label-bottom {
+  top: calc(50% + 56px);
+  right: 100px;
+}
+</style>
+</head>
+<body>
+
+<div class="page-bg"></div>
+
+<!-- Page Title -->
+<div class="page-title">
+  图片块与多选态
+  <span>Image Blocks &amp; Multi-Select · 组件展示</span>
+</div>
+
+<!-- Section Divider -->
+<div class="section-divider"></div>
+
+<!-- ===== Section 1: Image Blocks (Top) ===== -->
+<div class="section-top">
+  <div class="section-header">
+    <div class="section-title">图片块</div>
+    <div class="section-subtitle">Image Blocks · 直接拖拽、无边框展示</div>
+  </div>
+  <div class="section-label-chip label-top">3 种状态</div>
+
+  <div class="canvas-area canvas-top">
+    <!-- Block 1: Portrait image (left) -->
+    <div class="img-block img-block-1">
+      <div class="img-sun"></div>
+      <div class="img-horizon"></div>
+      <div class="img-silhouette"></div>
+      <div class="img-texture"></div>
+      <div class="img-noise"></div>
+      <div class="delete-btn">×</div>
+      <div class="drag-handle"></div>
+      <div class="img-caption">海边女孩 · 日落</div>
+    </div>
+
+    <!-- Block 2: Landscape image (center, selected) -->
+    <div class="img-block img-block-2">
+      <div class="select-indicator">✓</div>
+      <div class="resize-handle tl"></div>
+      <div class="resize-handle tr"></div>
+      <div class="resize-handle bl"></div>
+      <div class="resize-handle br"></div>
+      <div class="pin-badge">拼</div>
+      <div class="img-sunrise"></div>
+      <div class="img-mountain"></div>
+      <div class="img-mist"></div>
+      <div class="img-texture"></div>
+      <div class="img-noise"></div>
+      <div class="img-caption">山野晨雾</div>
+    </div>
+
+    <!-- Block 3: Square image (right, hover state) -->
+    <div class="img-block img-block-3">
+      <div class="img-circle"></div>
+      <div class="img-wave"></div>
+      <div class="img-texture"></div>
+      <div class="img-noise"></div>
+      <div class="hover-toolbar">
+        <span class="tb-btn pin">拼</span>
+        <span class="tb-divider"></span>
+        <span class="tb-btn">复制</span>
+        <span class="tb-divider"></span>
+        <span class="tb-btn delete">×</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Section 2: Multi-Select State (Bottom) ===== -->
+<div class="section-bottom">
+  <div class="section-header">
+    <div class="section-title">多选操作态</div>
+    <div class="section-subtitle">Ctrl+右键多选 · 批量操作</div>
+  </div>
+  <div class="section-label-chip label-bottom">3 已选中</div>
+
+  <div class="canvas-area canvas-bottom">
+    <div class="ms-canvas">
+      <!-- Selection marquee -->
+      <div class="selection-marquee">
+        <div class="mq-handle tl"></div>
+        <div class="mq-handle tr"></div>
+        <div class="mq-handle bl"></div>
+        <div class="mq-handle br"></div>
+      </div>
+
+      <!-- Selected block 1 -->
+      <div class="text-block selected text-block-1">
+        <div class="tb-select-badge">✓</div>
+        <div class="tb-resize tl"></div>
+        <div class="tb-resize tr"></div>
+        <div class="tb-resize bl"></div>
+        <div class="tb-resize br"></div>
+        <span class="block-tag">01</span>一个穿白色连衣裙的女孩站在海边礁石上
+      </div>
+
+      <!-- Selected block 2 -->
+      <div class="text-block selected text-block-2">
+        <div class="tb-select-badge">✓</div>
+        <div class="tb-resize tl"></div>
+        <div class="tb-resize tr"></div>
+        <div class="tb-resize bl"></div>
+        <div class="tb-resize br"></div>
+        <span class="block-tag">02</span>日落时分金色阳光从背后洒下
+      </div>
+
+      <!-- Selected block 3 -->
+      <div class="text-block selected text-block-3">
+        <div class="tb-select-badge">✓</div>
+        <div class="tb-resize tl"></div>
+        <div class="tb-resize tr"></div>
+        <div class="tb-resize bl"></div>
+        <div class="tb-resize br"></div>
+        <span class="block-tag">03</span>电影感画面，2.39:1 宽幅比例
+      </div>
+
+      <!-- Unselected block 4 (outside marquee) -->
+      <div class="text-block text-block-4">
+        <span class="block-tag">04</span>f/1.4 大光圈，柯达 Portra 400 胶片质感
+      </div>
+
+      <!-- Batch action floating bar -->
+      <div class="batch-bar">
+        <span class="batch-count">已选 <strong>3</strong> 个块</span>
+        <button class="batch-btn primary">批量拼入</button>
+        <button class="batch-btn secondary">批量复制</button>
+        <button class="batch-btn danger">批量删除</button>
+        <button class="batch-btn ghost">取消选择</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer-note">Editorial Creative Studio · Pin Hao Jing Design System</div>
+
+</body>
+</html>

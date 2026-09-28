@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>拼好镜 · 语料体检</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   拼好镜 · 语料体检 · Editorial Creative Studio
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --primary-50: #FFFBEB; --primary-100: #FEF3C7; --primary-200: #FDE68A;
+  --primary-300: #FCD34D; --primary-400: #FBBF24; --primary-500: #F59E0B;
+  --primary-600: #D97706; --primary-700: #B45309; --primary-800: #92400E; --primary-900: #78350F;
+  --secondary-500: #14B8A6; --secondary-700: #0F766E;
+  --accent-500: #F43F5E; --accent-600: #E11D48;
+  --bg-canvas: #FBF7F0; --bg-surface: #FFFFFF; --bg-sidebar: #F5EFE6;
+  --bg-muted: #EDE6DA; --border-subtle: #E5DDD0; --border-strong: #D4C9B8;
+  --text-ink: #1C1917; --text-primary: #292524; --text-secondary: #78716C;
+  --text-tertiary: #A8A29E; --text-inverse: #FFFBEB;
+  --success: #059669; --warning: #D97706; --error: #DC2626;
+  --font-display: "Fraunces", "Playfair Display", Georgia, "Noto Serif SC", serif;
+  --font-sans: "Space Grotesk", "Inter", system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+  --shadow-sm: 0 1px 2px rgba(120, 53, 15, 0.06), 0 1px 3px rgba(120, 53, 15, 0.04);
+  --shadow-md: 0 4px 12px rgba(120, 53, 15, 0.08), 0 2px 4px rgba(120, 53, 15, 0.05);
+  --shadow-lg: 0 12px 32px rgba(120, 53, 15, 0.10), 0 4px 8px rgba(120, 53, 15, 0.05);
+  --shadow-xl: 0 24px 56px rgba(120, 53, 15, 0.12);
+  --shadow-2xl: 0 40px 80px rgba(120, 53, 15, 0.18);
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 1440px;
+  height: 900px;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--text-primary);
+  background: var(--bg-canvas);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   背景层
+   ═══════════════════════════════════════════════════════════════ */
+
+.canvas-bg {
+  position: fixed;
+  top: 0; left: 0;
+  width: 1440px;
+  height: 900px;
+  background: var(--bg-canvas);
+  overflow: hidden;
+}
+
+.canvas-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(28, 25, 23, 0.25);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 1;
+}
+
+.canvas-leftpanel {
+  position: absolute;
+  top: 0; left: 0;
+  width: 220px;
+  height: 900px;
+  background: rgba(255, 255, 255, 0.4);
+  border-right: 1px solid rgba(212, 201, 184, 0.3);
+  opacity: 0.5;
+}
+
+.canvas-left-row {
+  height: 36px;
+  margin: 8px 16px;
+  background: rgba(120, 53, 15, 0.04);
+  border-radius: 8px;
+}
+
+.canvas-left-row.first { margin-top: 80px; }
+
+.canvas-toolbar {
+  position: absolute;
+  top: 24px; left: 50%;
+  transform: translateX(-50%);
+  width: 420px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+  border: 1px solid rgba(212, 201, 184, 0.3);
+  opacity: 0.5;
+}
+
+.canvas-placeholder {
+  position: absolute;
+  top: 80px; left: 260px;
+  width: 920px;
+  height: 640px;
+  border: 1.5px dashed rgba(120, 53, 15, 0.06);
+  border-radius: 12px;
+  opacity: 0.4;
+}
+
+.canvas-block {
+  position: absolute;
+  background: rgba(120, 53, 15, 0.03);
+  border-radius: 8px;
+  opacity: 0.4;
+}
+
+.canvas-block.b1 { top: 120px; left: 300px; width: 280px; height: 180px; }
+.canvas-block.b2 { top: 120px; left: 620px; width: 200px; height: 180px; }
+.canvas-block.b3 { top: 330px; left: 300px; width: 200px; height: 140px; }
+.canvas-block.b4 { top: 330px; left: 530px; width: 290px; height: 140px; }
+.canvas-block.b5 { top: 500px; left: 300px; width: 520px; height: 160px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   体检窗口
+   ═══════════════════════════════════════════════════════════════ */
+
+.health-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 780px;
+  height: 640px;
+  background: var(--bg-surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow-2xl);
+  border: 1px solid var(--border-strong);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+/* 左侧书脊装饰条 */
+.health-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--primary-400), var(--primary-700));
+  z-index: 2;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   窗口头部
+   ═══════════════════════════════════════════════════════════════ */
+
+.modal-header {
+  height: 60px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 24px 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-ink);
+  letter-spacing: -0.01em;
+}
+
+.modal-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 10px;
+  background: var(--primary-50);
+  color: var(--primary-600);
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 999px;
+}
+
+.modal-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Tab 切换 */
+.tab-switch {
+  display: flex;
+  background: var(--bg-muted);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.tab-item {
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+
+.tab-item.active {
+  background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.modal-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 300;
+  transition: all 0.2s var(--ease-out);
+  font-family: var(--font-sans);
+}
+
+.modal-close-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  background: var(--bg-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   窗口主体
+   ═══════════════════════════════════════════════════════════════ */
+
+.modal-body {
+  flex: 1;
+  padding: 24px 24px 24px 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── 健康度评分卡 ───────────────────────────────────────────── */
+
+.health-score-card {
+  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+  border: 1px solid var(--primary-200);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* 圆环进度 */
+.score-ring {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--primary-400) 0deg,
+    var(--primary-500) 180deg,
+    var(--primary-600) 295.2deg,
+    var(--primary-100) 295.2deg,
+    var(--primary-50) 360deg
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.score-ring-inner {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1px 2px rgba(120, 53, 15, 0.04);
+}
+
+.score-number {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-ink);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.score-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+.score-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.score-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-ink);
+}
+
+.score-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.score-metrics {
+  display: flex;
+  gap: 20px;
+  margin-top: 12px;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.metric-value {
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.metric-value.success { color: var(--success); }
+.metric-value.warning { color: var(--warning); }
+.metric-value.amber { color: var(--primary-600); }
+.metric-value.muted { color: var(--text-secondary); }
+
+.metric-arrow {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* ── 通用区块样式 ───────────────────────────────────────────── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-ink);
+}
+
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 8px;
+  background: #FFF1F2;
+  color: var(--accent-600);
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 999px;
+}
+
+.section-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.section-btn {
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border: 1px solid #FECDD3;
+  background: #ffffff;
+  color: var(--accent-600);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s var(--ease-out);
+}
+
+.section-btn:hover {
+  background: #FFF1F2;
+}
+
+/* ── 重复片段检测 ───────────────────────────────────────────── */
+
+.duplicate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.duplicate-group {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.dup-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary-500);
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.dup-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.dup-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.dup-preview {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.dup-action {
+  font-size: 11px;
+  color: var(--primary-600);
+  flex-shrink: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 500;
+  align-self: center;
+}
+
+/* ── 分类覆盖率 ─────────────────────────────────────────────── */
+
+.coverage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.coverage-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.coverage-label {
+  width: 70px;
+  font-size: 12px;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.coverage-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-muted);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.coverage-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-400), var(--primary-600));
+  border-radius: 4px;
+}
+
+.coverage-count {
+  width: 55px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+/* ── 长度分布 ───────────────────────────────────────────────── */
+
+.length-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 120px;
+  padding: 0 10px;
+  position: relative;
+}
+
+.length-chart::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 24px;
+  background-image:
+    linear-gradient(to bottom, transparent calc(25% - 0.5px), var(--border-subtle) calc(25% - 0.5px), var(--border-subtle) calc(25% + 0.5px), transparent calc(25% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(50% - 0.5px), var(--border-subtle) calc(50% - 0.5px), var(--border-subtle) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(75% - 0.5px), var(--border-subtle) calc(75% - 0.5px), var(--border-subtle) calc(75% + 0.5px), transparent calc(75% + 0.5px));
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.length-bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.length-bar {
+  width: 20px;
+  background: linear-gradient(180deg, var(--primary-400), var(--primary-600));
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+}
+
+.length-bar.h30 { height: 30px; }
+.length-bar.h60 { height: 60px; }
+.length-bar.h85 { height: 85px; }
+.length-bar.h70 { height: 70px; }
+.length-bar.h45 { height: 45px; }
+.length-bar.h20 { height: 20px; }
+
+.length-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   窗口底部
+   ═══════════════════════════════════════════════════════════════ */
+
+.modal-footer {
+  height: 52px;
+  border-top: 1px solid var(--border-subtle);
+  padding: 0 24px 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.footer-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.footer-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.footer-btn {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s var(--ease-out);
+}
+
+.footer-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.footer-btn-primary {
+  background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+  border-color: transparent;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.footer-btn-primary:hover {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+  color: #ffffff;
+  box-shadow: var(--shadow-md);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   滚动条样式
+   ═══════════════════════════════════════════════════════════════ */
+
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+</style>
+</head>
+<body>
+
+<!-- 背景画布层 -->
+<div class="canvas-bg">
+  <div class="canvas-toolbar"></div>
+  <div class="canvas-leftpanel">
+    <div class="canvas-left-row first"></div>
+    <div class="canvas-left-row"></div>
+    <div class="canvas-left-row"></div>
+    <div class="canvas-left-row"></div>
+    <div class="canvas-left-row"></div>
+    <div class="canvas-left-row"></div>
+    <div class="canvas-left-row"></div>
+    <div class="canvas-left-row"></div>
+  </div>
+  <div class="canvas-placeholder"></div>
+  <div class="canvas-block b1"></div>
+  <div class="canvas-block b2"></div>
+  <div class="canvas-block b3"></div>
+  <div class="canvas-block b4"></div>
+  <div class="canvas-block b5"></div>
+  <div class="canvas-overlay"></div>
+</div>
+
+<!-- 体检窗口 -->
+<div class="health-modal">
+
+  <!-- 窗口头部 -->
+  <div class="modal-header">
+    <div class="modal-header-left">
+      <span class="modal-title">语料体检</span>
+      <span class="modal-badge">人物 · 场景分类</span>
+    </div>
+    <div class="modal-header-right">
+      <div class="tab-switch">
+        <div class="tab-item">片段</div>
+        <div class="tab-item active">体检</div>
+      </div>
+      <button class="modal-close-btn" aria-label="关闭">&times;</button>
+    </div>
+  </div>
+
+  <!-- 窗口主体 -->
+  <div class="modal-body">
+
+    <!-- 健康度评分卡 -->
+    <div class="health-score-card">
+      <div class="score-ring">
+        <div class="score-ring-inner">
+          <span class="score-number">82</span>
+          <span class="score-label">健康度</span>
+        </div>
+      </div>
+      <div class="score-details">
+        <div class="score-title">语料库整体健康良好</div>
+        <div class="score-subtitle">共 156 个片段 · 覆盖 12 个分类</div>
+        <div class="score-metrics">
+          <div class="metric-item">
+            <span class="metric-label">重复率</span>
+            <span class="metric-value success"><span class="metric-arrow">↓</span>3.2%</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">覆盖率</span>
+            <span class="metric-value warning"><span class="metric-arrow">↑</span>78%</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">分类均衡</span>
+            <span class="metric-value amber">中等</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">平均长度</span>
+            <span class="metric-value muted">48 字</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 重复片段检测 -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <span class="section-title">重复片段</span>
+          <span class="section-badge">5 组</span>
+        </div>
+        <button class="section-btn">一键去重</button>
+      </div>
+      <div class="duplicate-list">
+        <div class="duplicate-group">
+          <span class="dup-dot"></span>
+          <div class="dup-content">
+            <div class="dup-title">第 1 组 · 3 个片段重复</div>
+            <div class="dup-preview">日落时分的金色阳光从背后洒下来，在头发周围形成柔和光晕...</div>
+          </div>
+          <span class="dup-action">查看 3 个 →</span>
+        </div>
+        <div class="duplicate-group">
+          <span class="dup-dot"></span>
+          <div class="dup-content">
+            <div class="dup-title">第 2 组 · 2 个片段重复</div>
+            <div class="dup-preview">逆光拍摄产生的镜头光晕，温暖的颗粒感，胶片电影质感...</div>
+          </div>
+          <span class="dup-action">查看 2 个 →</span>
+        </div>
+        <div class="duplicate-group">
+          <span class="dup-dot"></span>
+          <div class="dup-content">
+            <div class="dup-title">第 3 组 · 2 个片段重复</div>
+            <div class="dup-preview">电影级构图，三分法原则，前景与背景层次分明...</div>
+          </div>
+          <span class="dup-action">查看 2 个 →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分类覆盖率 -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <span class="section-title">分类覆盖率</span>
+        </div>
+        <span class="section-subtitle">12 / 15 分类</span>
+      </div>
+      <div class="coverage-list">
+        <div class="coverage-item">
+          <span class="coverage-label">人物描写</span>
+          <div class="coverage-bar-wrap">
+            <div class="coverage-bar" style="width: 95%"></div>
+          </div>
+          <span class="coverage-count">42 个</span>
+        </div>
+        <div class="coverage-item">
+          <span class="coverage-label">场景环境</span>
+          <div class="coverage-bar-wrap">
+            <div class="coverage-bar" style="width: 88%"></div>
+          </div>
+          <span class="coverage-count">36 个</span>
+        </div>
+        <div class="coverage-item">
+          <span class="coverage-label">光影效果</span>
+          <div class="coverage-bar-wrap">
+            <div class="coverage-bar" style="width: 72%"></div>
+          </div>
+          <span class="coverage-count">28 个</span>
+        </div>
+        <div class="coverage-item">
+          <span class="coverage-label">构图镜头</span>
+          <div class="coverage-bar-wrap">
+            <div class="coverage-bar" style="width: 65%"></div>
+          </div>
+          <span class="coverage-count">24 个</span>
+        </div>
+        <div class="coverage-item">
+          <span class="coverage-label">情绪氛围</span>
+          <div class="coverage-bar-wrap">
+            <div class="coverage-bar" style="width: 45%"></div>
+          </div>
+          <span class="coverage-count">16 个</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 长度分布 -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <span class="section-title">长度分布</span>
+        </div>
+        <span class="section-subtitle">平均 48 字</span>
+      </div>
+      <div class="length-chart">
+        <div class="length-bar-group">
+          <div class="length-bar h30"></div>
+          <span class="length-label">短</span>
+        </div>
+        <div class="length-bar-group">
+          <div class="length-bar h60"></div>
+          <span class="length-label">中短</span>
+        </div>
+        <div class="length-bar-group">
+          <div class="length-bar h85"></div>
+          <span class="length-label">中等</span>
+        </div>
+        <div class="length-bar-group">
+          <div class="length-bar h70"></div>
+          <span class="length-label">中长</span>
+        </div>
+        <div class="length-bar-group">
+          <div class="length-bar h45"></div>
+          <span class="length-label">长</span>
+        </div>
+        <div class="length-bar-group">
+          <div class="length-bar h20"></div>
+          <span class="length-label">超长</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 窗口底部 -->
+  <div class="modal-footer">
+    <div class="footer-hint">上次体检：2 小时前</div>
+    <div class="footer-actions">
+      <button class="footer-btn">导出报告</button>
+      <button class="footer-btn footer-btn-primary">重新体检</button>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

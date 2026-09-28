@@ -9,7 +9,14 @@
       "canvasData": {
         "x": 0,
         "y": 0,
-        "group": 0
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-ae4d10bd",
+          "measuredAt": 1790605832434
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-canvas.html",
@@ -23,9 +30,16 @@
       "version": 2,
       "createdAt": 1759081260000,
       "canvasData": {
-        "x": 1480,
+        "x": 480,
         "y": 0,
-        "group": 0
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-67cb05ec",
+          "measuredAt": 1790605832434
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-write.html",
@@ -39,9 +53,16 @@
       "version": 2,
       "createdAt": 1759081320000,
       "canvasData": {
-        "x": 0,
-        "y": 960,
-        "group": 0
+        "x": 960,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-b154cfa4",
+          "measuredAt": 1790605832434
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-library.html",
@@ -55,9 +76,16 @@
       "version": 2,
       "createdAt": 1759081380000,
       "canvasData": {
-        "x": 1480,
-        "y": 960,
-        "group": 0
+        "x": 1440,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-7d457872",
+          "measuredAt": 1790605832434
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-overview.html",
@@ -71,8 +99,8 @@
       "version": 1,
       "createdAt": 1759081440000,
       "canvasData": {
-        "x": 2960,
-        "y": 0,
+        "x": 0,
+        "y": 373,
         "group": 1
       },
       "devMetadata": {
@@ -87,8 +115,8 @@
       "version": 1,
       "createdAt": 1759081500000,
       "canvasData": {
-        "x": 4440,
-        "y": 0,
+        "x": 480,
+        "y": 373,
         "group": 1
       },
       "devMetadata": {
@@ -103,8 +131,8 @@
       "version": 1,
       "createdAt": 1759081560000,
       "canvasData": {
-        "x": 2960,
-        "y": 960,
+        "x": 960,
+        "y": 373,
         "group": 1
       },
       "devMetadata": {
@@ -119,18 +147,66 @@
       "version": 1,
       "createdAt": 1759081620000,
       "canvasData": {
-        "x": 4440,
-        "y": 960,
+        "x": 1440,
+        "y": 373,
         "group": 1
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-empty-states.html",
         "interactions": []
       }
+    },
+    {
+      "id": "page-phj-splice-mode",
+      "title": "拼模式激活态",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1759081680000,
+      "canvasData": {
+        "x": 0,
+        "y": 746,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-splice-mode.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-image-multiselect",
+      "title": "图片块与多选态",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1759081740000,
+      "canvasData": {
+        "x": 480,
+        "y": 746,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-image-multiselect.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-corpus-health",
+      "title": "语料体检视图",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1759081800000,
+      "canvasData": {
+        "x": 960,
+        "y": 746,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-corpus-health.html",
+        "interactions": []
+      }
     }
   ],
   "config": {
-    "autoLayout": false,
+    "autoLayout": true,
     "deviceType": "desktop",
     "projectName": "拼好镜 · 编辑室创意版"
   }

@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440, initial-scale=1.0">
+<title>拼好镜 · 拼模式激活态</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary-50: #FFFBEB; --primary-100: #FEF3C7; --primary-200: #FDE68A;
+    --primary-300: #FCD34D; --primary-400: #FBBF24; --primary-500: #F59E0B;
+    --primary-600: #D97706; --primary-700: #B45309; --primary-800: #92400E; --primary-900: #78350F;
+    --secondary-500: #14B8A6; --secondary-700: #0F766E;
+    --accent-500: #F43F5E; --accent-600: #E11D48;
+    --bg-canvas: #FBF7F0; --bg-surface: #FFFFFF; --bg-sidebar: #F5EFE6;
+    --bg-muted: #EDE6DA; --border-subtle: #E5DDD0; --border-strong: #D4C9B8;
+    --text-ink: #1C1917; --text-primary: #292524; --text-secondary: #78716C;
+    --text-tertiary: #A8A29E; --text-inverse: #FFFBEB;
+    --success: #059669; --error: #DC2626;
+    --font-display: "Fraunces", "Playfair Display", Georgia, "Noto Serif SC", serif;
+    --font-sans: "Space Grotesk", "Inter", system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    --shadow-sm: 0 1px 2px rgba(120, 53, 15, 0.06), 0 1px 3px rgba(120, 53, 15, 0.04);
+    --shadow-md: 0 4px 12px rgba(120, 53, 15, 0.08), 0 2px 4px rgba(120, 53, 15, 0.05);
+    --shadow-lg: 0 12px 32px rgba(120, 53, 15, 0.10), 0 4px 8px rgba(120, 53, 15, 0.05);
+    --shadow-xl: 0 24px 56px rgba(120, 53, 15, 0.12);
+    --shadow-2xl: 0 40px 80px rgba(120, 53, 15, 0.18);
+    --shadow-glow-amber: 0 0 24px rgba(251, 191, 36, 0.35), 0 0 48px rgba(251, 191, 36, 0.15);
+    --shadow-glow-soft: 0 0 16px rgba(251, 191, 36, 0.25);
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 1440px;
+    height: 900px;
+    overflow: hidden;
+    font-family: var(--font-sans);
+    background: var(--bg-canvas);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ===== Page Background (warm amber tint for splice mode) ===== */
+  .page-bg {
+    position: absolute;
+    inset: 0;
+    width: 1440px;
+    height: 900px;
+    background: var(--bg-canvas);
+    overflow: hidden;
+    z-index: 0;
+  }
+
+  /* Dot grid pattern */
+  .page-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(180, 83, 9, 0.09) 1px, transparent 1px);
+    background-size: 22px 22px;
+    opacity: 0.7;
+  }
+
+  /* Warm amber tint overlay - splice mode active */
+  .page-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(251, 191, 36, 0.07) 0%, transparent 55%),
+      radial-gradient(ellipse at 70% 60%, rgba(245, 158, 11, 0.05) 0%, transparent 50%),
+      linear-gradient(180deg, rgba(255, 251, 235, 0.3) 0%, rgba(251, 247, 240, 0) 100%);
+    pointer-events: none;
+  }
+
+  /* ===== Page Header Label ===== */
+  .page-header {
+    position: absolute;
+    top: 24px;
+    left: 32px;
+    z-index: 200;
+  }
+
+  .page-header-title {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-ink);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  .page-header-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    font-weight: 400;
+  }
+
+  /* ===== App Scene Container ===== */
+  .app-scene {
+    position: absolute;
+    top: 72px;
+    left: 32px;
+    right: 32px;
+    bottom: 32px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-2xl);
+    z-index: 10;
+  }
+
+  /* ===== Top Bar (simplified) ===== */
+  .topbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 50;
+  }
+
+  .topbar-logo {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-ink);
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .topbar-logo-mark {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--font-display);
+  }
+
+  .mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--bg-muted);
+    border-radius: var(--radius-full);
+    padding: 3px;
+  }
+
+  .mode-pill {
+    padding: 6px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s var(--ease-out);
+  }
+
+  .mode-pill.active {
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    color: white;
+    font-weight: 600;
+    box-shadow: var(--shadow-glow-soft);
+  }
+
+  .topbar-right-icons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .topbar-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .topbar-icon:hover {
+    background: var(--bg-muted);
+    color: var(--text-primary);
+  }
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-300), var(--primary-500));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* ===== Main Content Area ===== */
+  .main-area {
+    position: absolute;
+    top: 48px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+  }
+
+  /* ===== Canvas Area (left) ===== */
+  .canvas-area {
+    flex: 1;
+    background: var(--bg-canvas);
+    background-image: radial-gradient(circle, rgba(212, 201, 184, 0.5) 1px, transparent 1px);
+    background-size: 20px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Splice mode warm tint on canvas */
+  .canvas-area::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 60% 50%, rgba(251, 191, 36, 0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ===== Prompt Blocks on Canvas ===== */
+  .block {
+    position: absolute;
+    min-width: 200px;
+    max-width: 260px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+    z-index: 5;
+    transition: all 0.25s var(--ease-out);
+  }
+
+  .block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px 6px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .block-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--primary-100);
+    color: var(--primary-700);
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .block-pin-badge {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(120, 53, 15, 0.2);
+  }
+
+  .block-body {
+    padding: 10px 12px;
+  }
+
+  .block-text {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .block-meta {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .block-meta-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+  }
+
+  /* Block positions */
+  .block-1 { top: 40px; left: 50px; max-width: 240px; }
+  .block-2 { top: 30px; left: 360px; max-width: 220px; }
+  .block-3 { top: 200px; left: 80px; max-width: 230px; }
+  .block-4 { top: 220px; left: 400px; max-width: 250px; }
+
+  /* Draggable highlighted block */
+  .block-draggable {
+    border-color: var(--primary-300);
+    box-shadow: var(--shadow-md), 0 0 0 3px rgba(251, 191, 36, 0.15), 0 0 20px rgba(251, 191, 36, 0.12);
+    cursor: grab;
+  }
+
+  .block-draggable::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 10px;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    pointer-events: none;
+  }
+
+  /* Drag ghost - semi-transparent, mid-air */
+  .drag-ghost {
+    position: absolute;
+    top: 180px;
+    left: 560px;
+    min-width: 220px;
+    max-width: 240px;
+    background: var(--bg-surface);
+    border: 1px solid var(--primary-300);
+    border-radius: 8px;
+    box-shadow: var(--shadow-xl), 0 0 30px rgba(251, 191, 36, 0.2);
+    opacity: 0.85;
+    transform: scale(1.05) rotate(-2deg);
+    z-index: 30;
+    cursor: grabbing;
+  }
+
+  .drag-ghost .block-header {
+    border-bottom-color: var(--primary-200);
+  }
+
+  .drag-cursor {
+    position: absolute;
+    top: -12px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    background: var(--text-ink);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 11px;
+    box-shadow: var(--shadow-md);
+    z-index: 40;
+  }
+
+  .drag-cursor::before {
+    content: "";
+    position: absolute;
+    bottom: -4px;
+    right: -2px;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-top: 6px solid var(--text-ink);
+    transform: rotate(15deg);
+  }
+
+  /* ===== Connection Lines (magical flow) ===== */
+  .connection-lines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  .conn-line {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      var(--primary-300) 20%,
+      var(--primary-400) 50%,
+      var(--primary-500) 80%,
+      transparent 100%);
+    opacity: 0.5;
+    transform-origin: left center;
+  }
+
+  .conn-line::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(251, 191, 36, 0.4) 30%,
+      rgba(245, 158, 11, 0.6) 60%,
+      transparent 100%);
+    filter: blur(2px);
+  }
+
+  /* Dotted flow particles along line */
+  .conn-dots {
+    position: absolute;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    z-index: 5;
+  }
+
+  .conn-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--primary-400);
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+  }
+
+  .conn-dot.small { width: 3px; height: 3px; opacity: 0.7; }
+  .conn-dot.tiny { width: 2px; height: 2px; opacity: 0.5; }
+
+  /* Connection line 1: from block-2 to unit 2 (active target) */
+  .conn-line-1 {
+    top: 115px;
+    left: 580px;
+    width: 340px;
+    transform: rotate(3deg);
+  }
+
+  .conn-dots-1 {
+    top: 108px;
+    left: 620px;
+    width: 280px;
+    transform: rotate(3deg);
+  }
+
+  /* Connection line 2: from drag ghost to unit 2 */
+  .conn-line-2 {
+    top: 290px;
+    left: 780px;
+    width: 160px;
+    transform: rotate(-1deg);
+    opacity: 0.7;
+  }
+
+  .conn-dots-2 {
+    top: 283px;
+    left: 800px;
+    width: 120px;
+    transform: rotate(-1deg);
+  }
+
+  /* Connection line 3: from block-4 to unit 2 (curved feel) */
+  .conn-line-3 {
+    top: 340px;
+    left: 650px;
+    width: 280px;
+    transform: rotate(-4deg);
+    opacity: 0.4;
+  }
+
+  .conn-dots-3 {
+    top: 333px;
+    left: 680px;
+    width: 220px;
+    transform: rotate(-4deg);
+  }
+
+  /* ===== Splice Bar (right side) ===== */
+  .splice-bar {
+    width: 300px;
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border-strong);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 10;
+  }
+
+  .splice-bar-header {
+    padding: 16px 18px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .splice-bar-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .splice-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    background: var(--primary-100);
+    color: var(--primary-700);
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+  }
+
+  .splice-bar-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .splice-units {
+    flex: 1;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+  }
+
+  /* ===== Template Unit - Base ===== */
+  .splice-unit {
+    position: relative;
+    border-radius: var(--radius-md);
+    padding: 14px;
+    transition: all 0.3s var(--ease-out);
+  }
+
+  .unit-number {
+    position: absolute;
+    top: -8px;
+    left: 12px;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+  }
+
+  .unit-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-ink);
+    margin-top: 4px;
+  }
+
+  .unit-subtitle {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  /* Unit 1: FILLED */
+  .unit-filled {
+    background: var(--primary-50);
+    border: 1px solid var(--primary-200);
+  }
+
+  .unit-filled .unit-number {
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    color: white;
+  }
+
+  .unit-filled-content {
+    margin-top: 10px;
+    background: var(--bg-surface);
+    border: 1px solid var(--primary-200);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 11px;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+
+  .unit-filled-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--primary-700);
+    font-weight: 500;
+  }
+
+  .check-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary-500);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  /* Unit 2: ACTIVE TARGET - glowing, pulsing */
+  .unit-active {
+    background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+    border: 2px solid var(--primary-400);
+    box-shadow: var(--shadow-glow-amber);
+    padding: 16px 14px;
+    margin: 4px -2px;
+  }
+
+  /* Outer dashed ring for pulse effect */
+  .unit-active::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border: 1px dashed var(--primary-400);
+    border-radius: 14px;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  /* Second outer ring */
+  .unit-active::after {
+    content: "";
+    position: absolute;
+    inset: -12px;
+    border: 1px dashed var(--primary-300);
+    border-radius: 18px;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .unit-active .unit-number {
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    color: white;
+    box-shadow: var(--shadow-glow-soft);
+    top: -10px;
+  }
+
+  .unit-active-dropzone {
+    margin-top: 12px;
+    border: 2px dashed var(--primary-400);
+    border-radius: 8px;
+    padding: 16px 12px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  .dropzone-icon {
+    width: 32px;
+    height: 32px;
+    margin: 0 auto 6px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-300), var(--primary-500));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    box-shadow: var(--shadow-glow-soft);
+  }
+
+  .dropzone-text {
+    font-size: 12px;
+    color: var(--primary-700);
+    font-weight: 500;
+  }
+
+  .dropzone-hint {
+    font-size: 10px;
+    color: var(--primary-600);
+    margin-top: 2px;
+    opacity: 0.7;
+  }
+
+  /* Unit 3: EMPTY */
+  .unit-empty {
+    background: var(--bg-surface);
+    border: 1px dashed var(--border-strong);
+  }
+
+  .unit-empty .unit-number {
+    background: var(--bg-muted);
+    color: var(--text-tertiary);
+  }
+
+  .unit-empty-placeholder {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    border-radius: 6px;
+    background: var(--bg-canvas);
+    color: var(--text-tertiary);
+    font-size: 18px;
+    font-weight: 300;
+  }
+
+  /* ===== Floating Particles / Magic Dust ===== */
+  .particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 25;
+  }
+
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+  }
+
+  /* Particles around active unit */
+  .p1 { top: 140px; left: 755px; width: 5px; height: 5px; background: var(--primary-400); opacity: 0.8; box-shadow: 0 0 8px rgba(251, 191, 36, 0.8); }
+  .p2 { top: 175px; left: 740px; width: 3px; height: 3px; background: var(--primary-300); opacity: 0.6; box-shadow: 0 0 6px rgba(251, 191, 36, 0.5); }
+  .p3 { top: 210px; left: 760px; width: 4px; height: 4px; background: var(--primary-500); opacity: 0.7; box-shadow: 0 0 8px rgba(245, 158, 11, 0.7); }
+  .p4 { top: 250px; left: 745px; width: 2px; height: 2px; background: var(--primary-300); opacity: 0.5; }
+  .p5 { top: 280px; left: 770px; width: 3px; height: 3px; background: var(--primary-400); opacity: 0.6; box-shadow: 0 0 6px rgba(251, 191, 36, 0.6); }
+
+  /* Particles near drag ghost */
+  .p6 { top: 160px; left: 530px; width: 4px; height: 4px; background: var(--primary-400); opacity: 0.5; box-shadow: 0 0 6px rgba(251, 191, 36, 0.5); }
+  .p7 { top: 250px; left: 510px; width: 3px; height: 3px; background: var(--primary-300); opacity: 0.4; }
+  .p8 { top: 290px; left: 545px; width: 2px; height: 2px; background: var(--primary-500); opacity: 0.5; }
+
+  /* Particles near draggable block */
+  .p9 { top: 20px; left: 340px; width: 3px; height: 3px; background: var(--primary-400); opacity: 0.5; box-shadow: 0 0 6px rgba(251, 191, 36, 0.5); }
+  .p10 { top: 110px; left: 570px; width: 2px; height: 2px; background: var(--primary-300); opacity: 0.4; }
+
+  /* ===== Bottom Info Bar ===== */
+  .bottom-info {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 20;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--primary-200);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--primary-500);
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+  }
+
+  .status-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--primary-700);
+  }
+
+  .hint-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  /* ===== Template label at bottom right of splice bar ===== */
+  .splice-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .template-name {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<!-- Page Background -->
+<div class="page-bg"></div>
+
+<!-- Page Header Label -->
+<div class="page-header">
+  <div class="page-header-title">拼模式激活</div>
+  <div class="page-header-sub">S 键切换 · 拖拽块到右侧单元拼入</div>
+</div>
+
+<!-- App Scene -->
+<div class="app-scene">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="topbar-logo-mark">拼</div>
+      拼好镜
+    </div>
+    <div class="mode-toggle">
+      <div class="mode-pill">创作模式</div>
+      <div class="mode-pill active">拼模式</div>
+    </div>
+    <div class="topbar-right-icons">
+      <div class="topbar-icon">⟲</div>
+      <div class="topbar-icon">⟳</div>
+      <div class="topbar-icon">⋯</div>
+      <div class="avatar">镜</div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-area">
+
+    <!-- Canvas Area -->
+    <div class="canvas-area">
+
+      <!-- Connection Lines -->
+      <div class="connection-lines">
+        <div class="conn-line conn-line-1"></div>
+        <div class="conn-dots conn-dots-1">
+          <div class="conn-dot tiny"></div>
+          <div class="conn-dot small"></div>
+          <div class="conn-dot"></div>
+          <div class="conn-dot small"></div>
+          <div class="conn-dot tiny"></div>
+          <div class="conn-dot small"></div>
+          <div class="conn-dot"></div>
+          <div class="conn-dot small"></div>
+          <div class="conn-dot tiny"></div>
+          <div class="conn-dot small"></div>
+          <div class="conn-dot"></div>
+          <div class="conn-dot small"></div>
+          <div class="conn-dot tiny"></div>
+        </div>
+
+        <div class="conn-line conn-line-2"></div>
+        <div class="conn-dots conn-dots-2">
+          <div class="conn-dot"></div>
+          <div class="conn-dot small"></div>
+          <div class="conn-dot"></div>
+          <div class="conn-dot small"></div>
+          <div class="conn-dot tiny"></div>
+          <div class="conn-dot small"></div>
+          <div class="conn-dot"></div>
+        </div>
+
+        <div class="conn-line conn-line-3"></div>
+        <div class="conn-dots conn-dots-3">
+          <div class="conn-dot tiny"></div>
+          <div class="conn-dot small"></div>
+          <div class="conn-dot tiny"></div>
+          <div class="conn-dot small"></div>
+          <div class="conn-dot"></div>
+          <div class="conn-dot small"></div>
+          <div class="conn-dot tiny"></div>
+          <div class="conn-dot small"></div>
+          <div class="conn-dot tiny"></div>
+          <div class="conn-dot small"></div>
+        </div>
+      </div>
+
+      <!-- Blocks on canvas -->
+      <div class="block block-1">
+        <div class="block-header">
+          <span class="block-tag">场景描写</span>
+          <span class="block-pin-badge">拼</span>
+        </div>
+        <div class="block-body">
+          <div class="block-text">清晨的阳光透过薄纱窗帘，在木地板上投下斑驳的光影，空气中弥漫着淡淡的咖啡香气……</div>
+          <div class="block-meta">
+            <span>48字</span>
+            <span class="block-meta-dot"></span>
+            <span>暖色调</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="block block-2 block-draggable">
+        <div class="block-header">
+          <span class="block-tag">人物特写</span>
+          <span class="block-pin-badge">拼</span>
+        </div>
+        <div class="block-body">
+          <div class="block-text">她低头浅笑，睫毛在脸颊投下淡淡的阴影，指尖轻轻划过书页的边缘……</div>
+          <div class="block-meta">
+            <span>36字</span>
+            <span class="block-meta-dot"></span>
+            <span>柔光</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="block block-3">
+        <div class="block-header">
+          <span class="block-tag">环境氛围</span>
+          <span class="block-pin-badge">拼</span>
+        </div>
+        <div class="block-body">
+          <div class="block-text">老式留声机缓缓旋转，悠扬的爵士乐充满整个房间，时间仿佛在此刻静止……</div>
+          <div class="block-meta">
+            <span>42字</span>
+            <span class="block-meta-dot"></span>
+            <span>复古</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="block block-4 block-draggable">
+        <div class="block-header">
+          <span class="block-tag">情绪表达</span>
+          <span class="block-pin-badge">拼</span>
+        </div>
+        <div class="block-body">
+          <div class="block-text">窗外的雨淅淅沥沥，玻璃上滑落的水珠像是谁的眼泪，无声地诉说着心事……</div>
+          <div class="block-meta">
+            <span>45字</span>
+            <span class="block-meta-dot"></span>
+            <span>忧伤</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drag Ghost (mid-air, being dragged) -->
+      <div class="drag-ghost">
+        <div class="drag-cursor">✋</div>
+        <div class="block-header">
+          <span class="block-tag">人物特写</span>
+          <span class="block-pin-badge">拼</span>
+        </div>
+        <div class="block-body">
+          <div class="block-text">她低头浅笑，睫毛在脸颊投下淡淡的阴影，指尖轻轻划过书页的边缘……</div>
+          <div class="block-meta">
+            <span>36字</span>
+            <span class="block-meta-dot"></span>
+            <span>柔光</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Particles -->
+      <div class="particles">
+        <div class="particle p1"></div>
+        <div class="particle p2"></div>
+        <div class="particle p3"></div>
+        <div class="particle p4"></div>
+        <div class="particle p5"></div>
+        <div class="particle p6"></div>
+        <div class="particle p7"></div>
+        <div class="particle p8"></div>
+        <div class="particle p9"></div>
+        <div class="particle p10"></div>
+      </div>
+
+      <!-- Bottom Info Bar -->
+      <div class="bottom-info">
+        <div class="status-pill">
+          <div class="status-dot"></div>
+          <span class="status-text">拼模式已开启</span>
+        </div>
+        <span class="hint-text">拖拽提示词块到右侧单元即可拼入 · 按 Esc 退出</span>
+      </div>
+
+    </div>
+
+    <!-- Splice Bar -->
+    <div class="splice-bar">
+      <div class="splice-bar-header">
+        <div class="splice-bar-title">
+          拼接栏
+          <span class="splice-count-badge">3</span>
+        </div>
+        <div class="splice-bar-icon">⚙</div>
+      </div>
+
+      <div class="splice-units">
+
+        <!-- Unit 1: FILLED -->
+        <div class="splice-unit unit-filled">
+          <div class="unit-number">1</div>
+          <div class="unit-title">开场 · 全景建立</div>
+          <div class="unit-subtitle">奠定整体氛围基调</div>
+          <div class="unit-filled-content">
+            清晨的阳光透过薄纱窗帘，在木地板上投下斑驳的光影……
+          </div>
+          <div class="unit-filled-check">
+            <span class="check-icon">✓</span>
+            已拼入 · 场景描写
+          </div>
+        </div>
+
+        <!-- Unit 2: ACTIVE TARGET -->
+        <div class="splice-unit unit-active">
+          <div class="unit-number">2</div>
+          <div class="unit-title">主体 · 特写聚焦</div>
+          <div class="unit-subtitle">深入刻画核心细节</div>
+          <div class="unit-active-dropzone">
+            <div class="dropzone-icon">↓</div>
+            <div class="dropzone-text">拖入块 →</div>
+            <div class="dropzone-hint">将提示词块拖至此处</div>
+          </div>
+        </div>
+
+        <!-- Unit 3: EMPTY -->
+        <div class="splice-unit unit-empty">
+          <div class="unit-number">3</div>
+          <div class="unit-title" style="color: var(--text-secondary);">收尾 · 情绪留白</div>
+          <div class="unit-subtitle">余韵悠长的结尾</div>
+          <div class="unit-empty-placeholder">+</div>
+        </div>
+
+      </div>
+
+      <div class="splice-footer">
+        <span class="template-name">三段式叙事</span>
+        <span>模板</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
