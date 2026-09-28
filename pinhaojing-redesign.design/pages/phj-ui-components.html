@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拼好镜 · UI 组件展示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary-50: #FFFBEB; --primary-100: #FEF3C7; --primary-200: #FDE68A;
+  --primary-300: #FCD34D; --primary-400: #FBBF24; --primary-500: #F59E0B;
+  --primary-600: #D97706; --primary-700: #B45309; --primary-800: #92400E; --primary-900: #78350F;
+  --secondary-500: #14B8A6; --secondary-700: #0F766E;
+  --accent-500: #F43F5E; --accent-600: #E11D48;
+  --bg-canvas: #FBF7F0; --bg-surface: #FFFFFF; --bg-sidebar: #F5EFE6;
+  --bg-muted: #EDE6DA; --border-subtle: #E5DDD0; --border-strong: #D4C9B8;
+  --text-ink: #1C1917; --text-primary: #292524; --text-secondary: #78716C;
+  --text-tertiary: #A8A29E; --text-inverse: #FFFBEB;
+  --success: #059669; --error: #DC2626;
+  --font-display: "Fraunces", "Playfair Display", Georgia, "Noto Serif SC", serif;
+  --font-sans: "Space Grotesk", "Inter", system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+  --shadow-sm: 0 1px 2px rgba(120, 53, 15, 0.06), 0 1px 3px rgba(120, 53, 15, 0.04);
+  --shadow-md: 0 4px 12px rgba(120, 53, 15, 0.08), 0 2px 4px rgba(120, 53, 15, 0.05);
+  --shadow-lg: 0 12px 32px rgba(120, 53, 15, 0.10), 0 4px 8px rgba(120, 53, 15, 0.05);
+  --shadow-xl: 0 24px 56px rgba(120, 53, 15, 0.12);
+  --shadow-2xl: 0 40px 80px rgba(120, 53, 15, 0.18);
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  width: 1440px;
+  height: 900px;
+  overflow: hidden;
+  background: var(--bg-canvas);
+  font-family: var(--font-sans);
+  position: relative;
+}
+
+/* Dot grid background */
+body::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--border-subtle) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: 0 0;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Faint block silhouettes */
+.bg-silhouette {
+  position: absolute;
+  border-radius: 8px;
+  background: var(--bg-muted);
+  opacity: 0.4;
+  pointer-events: none;
+}
+.bg-silhouette.s1 { width: 180px; height: 60px; top: 80px; left: 60px; }
+.bg-silhouette.s2 { width: 120px; height: 40px; top: 160px; left: 380px; }
+.bg-silhouette.s3 { width: 260px; height: 80px; bottom: 120px; left: 80px; }
+.bg-silhouette.s4 { width: 140px; height: 50px; top: 100px; right: 420px; }
+.bg-silhouette.s5 { width: 200px; height: 70px; bottom: 80px; right: 380px; }
+.bg-silhouette.s6 { width: 100px; height: 36px; top: 320px; right: 120px; }
+
+/* Page title */
+.page-title {
+  position: absolute;
+  top: 36px;
+  left: 48px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-ink);
+  letter-spacing: -0.01em;
+}
+.page-title span {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  margin-left: 12px;
+  font-family: var(--font-sans);
+  letter-spacing: 0.02em;
+}
+
+/* Section labels */
+.section-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 14px;
+}
+
+/* ===== Section 1: Context Menu ===== */
+.section-context {
+  position: absolute;
+  left: 120px;
+  top: 180px;
+}
+
+.ctx-menu {
+  width: 220px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xl);
+  padding: 6px;
+}
+
+.ctx-item {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: default;
+  transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out);
+}
+.ctx-item:hover {
+  background: var(--primary-50);
+  color: var(--primary-700);
+}
+.ctx-item .ctx-icon {
+  width: 16px;
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.8;
+}
+.ctx-item .ctx-label {
+  flex: 1;
+}
+.ctx-item .ctx-shortcut {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.ctx-item:hover .ctx-shortcut {
+  color: var(--primary-600);
+  opacity: 0.7;
+}
+.ctx-item.danger {
+  color: var(--accent-600);
+}
+.ctx-item.danger:hover {
+  background: #FFF1F2;
+  color: var(--accent-600);
+}
+
+.ctx-separator {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 0;
+}
+
+/* Multi-select variant */
+.multi-select-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 28px;
+  margin-bottom: 12px;
+}
+.multi-select-label .ms-text {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+}
+.multi-select-label .ms-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary-700);
+  background: var(--primary-100);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+}
+
+/* ===== Section 2: Confirm Modal ===== */
+.section-modal {
+  position: absolute;
+  left: 50%;
+  top: 160px;
+  transform: translateX(-50%);
+}
+
+.confirm-modal {
+  width: 360px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: var(--shadow-2xl);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.confirm-modal::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--primary-400) 0%, var(--primary-600) 100%);
+}
+
+.modal-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--primary-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-600);
+  font-size: 24px;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-ink);
+  margin-top: 16px;
+  letter-spacing: -0.01em;
+}
+
+.modal-message {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-top: 8px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.btn {
+  font-size: 13px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: default;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  transition: all 0.15s var(--ease-out);
+}
+.btn-secondary {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+.btn-secondary:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+.btn-danger {
+  background: linear-gradient(135deg, var(--accent-500) 0%, var(--accent-600) 100%);
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.btn-danger:hover {
+  box-shadow: var(--shadow-md);
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Input modal variant */
+.input-modal-wrapper {
+  margin-top: 40px;
+}
+
+.input-modal {
+  width: 340px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: var(--shadow-xl);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.input-modal::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--primary-400) 0%, var(--primary-600) 100%);
+}
+
+.input-modal .modal-icon {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+}
+
+.modal-input {
+  width: 100%;
+  margin-top: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--primary-50);
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color 0.15s var(--ease-out);
+}
+.modal-input:focus {
+  border-color: var(--primary-400);
+}
+
+.variant-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+/* ===== Section 3: Toast Notifications ===== */
+.section-toast {
+  position: absolute;
+  right: 120px;
+  top: 180px;
+}
+
+.toast-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.toast {
+  min-width: 280px;
+  max-width: 360px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.toast-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.toast-icon.success {
+  background: #D1FAE5;
+  color: var(--success);
+}
+.toast-icon.info {
+  background: var(--primary-100);
+  color: var(--primary-600);
+}
+.toast-icon.warning {
+  background: var(--primary-100);
+  color: var(--primary-700);
+}
+.toast-icon.error {
+  background: #FEE2E2;
+  color: var(--error);
+}
+
+.toast-content {
+  flex: 1;
+  min-width: 0;
+}
+.toast-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-ink);
+  line-height: 1.4;
+}
+.toast-message {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+/* Footer note */
+.footer-note {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+}
+</style>
+</head>
+<body>
+
+<!-- Background silhouettes -->
+<div class="bg-silhouette s1"></div>
+<div class="bg-silhouette s2"></div>
+<div class="bg-silhouette s3"></div>
+<div class="bg-silhouette s4"></div>
+<div class="bg-silhouette s5"></div>
+<div class="bg-silhouette s6"></div>
+
+<!-- Page title -->
+<div class="page-title">
+  UI Components
+  <span>拼好镜 · 组件展示</span>
+</div>
+
+<!-- Section 1: Context Menu -->
+<div class="section-context">
+  <div class="section-label">右键菜单</div>
+  <div class="ctx-menu">
+    <div class="ctx-item">
+      <span class="ctx-icon">✎</span>
+      <span class="ctx-label">编辑</span>
+      <span class="ctx-shortcut">Enter</span>
+    </div>
+    <div class="ctx-item">
+      <span class="ctx-icon">⎘</span>
+      <span class="ctx-label">复制</span>
+      <span class="ctx-shortcut">Ctrl+C</span>
+    </div>
+    <div class="ctx-item">
+      <span class="ctx-icon">⎘</span>
+      <span class="ctx-label">克隆</span>
+      <span class="ctx-shortcut">Ctrl+D</span>
+    </div>
+    <div class="ctx-item">
+      <span class="ctx-icon">⠿</span>
+      <span class="ctx-label">拼入拼接栏</span>
+      <span class="ctx-shortcut">S</span>
+    </div>
+    <div class="ctx-separator"></div>
+    <div class="ctx-item">
+      <span class="ctx-icon">⇅</span>
+      <span class="ctx-label">移除空行</span>
+      <span class="ctx-shortcut"></span>
+    </div>
+    <div class="ctx-item">
+      <span class="ctx-icon">🏷</span>
+      <span class="ctx-label">更换标签</span>
+      <span class="ctx-shortcut"></span>
+    </div>
+    <div class="ctx-separator"></div>
+    <div class="ctx-item">
+      <span class="ctx-icon">↑</span>
+      <span class="ctx-label">上移一层</span>
+      <span class="ctx-shortcut"></span>
+    </div>
+    <div class="ctx-item">
+      <span class="ctx-icon">↓</span>
+      <span class="ctx-label">下移一层</span>
+      <span class="ctx-shortcut"></span>
+    </div>
+    <div class="ctx-separator"></div>
+    <div class="ctx-item danger">
+      <span class="ctx-icon">🗑</span>
+      <span class="ctx-label">删除</span>
+      <span class="ctx-shortcut">Delete</span>
+    </div>
+  </div>
+
+  <!-- Multi-select variant -->
+  <div class="multi-select-label">
+    <span class="ms-text">多选时</span>
+    <span class="ms-badge">3 个块</span>
+  </div>
+  <div class="ctx-menu">
+    <div class="ctx-item">
+      <span class="ctx-icon">⠿</span>
+      <span class="ctx-label">批量拼入</span>
+      <span class="ctx-shortcut">S</span>
+    </div>
+    <div class="ctx-item">
+      <span class="ctx-icon">⎘</span>
+      <span class="ctx-label">批量复制</span>
+      <span class="ctx-shortcut">Ctrl+C</span>
+    </div>
+    <div class="ctx-separator"></div>
+    <div class="ctx-item danger">
+      <span class="ctx-icon">🗑</span>
+      <span class="ctx-label">批量删除</span>
+      <span class="ctx-shortcut">Delete</span>
+    </div>
+  </div>
+</div>
+
+<!-- Section 2: Confirm Modal -->
+<div class="section-modal">
+  <div class="section-label">确认弹窗</div>
+  <div class="confirm-modal">
+    <div class="modal-icon">!</div>
+    <div class="modal-title">删除确认</div>
+    <div class="modal-message">确定要删除选中的 3 个提示词块吗？此操作可撤销。</div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary">取消</button>
+      <button class="btn btn-danger">删除</button>
+    </div>
+  </div>
+
+  <!-- Input modal variant -->
+  <div class="input-modal-wrapper">
+    <div class="variant-label">命名输入</div>
+    <div class="input-modal">
+      <div class="modal-icon">✎</div>
+      <div class="modal-title">重命名模板</div>
+      <input type="text" class="modal-input" value="经典三连镜">
+      <div class="modal-actions">
+        <button class="btn btn-secondary">取消</button>
+        <button class="btn btn-primary">确定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: Toast Notifications -->
+<div class="section-toast">
+  <div class="section-label">Toast 提示</div>
+  <div class="toast-stack">
+    <div class="toast">
+      <div class="toast-icon success">✓</div>
+      <div class="toast-content">
+        <div class="toast-title">已复制拼接</div>
+        <div class="toast-message">5 条提示词已复制到剪贴板</div>
+      </div>
+    </div>
+    <div class="toast">
+      <div class="toast-icon info">ℹ</div>
+      <div class="toast-content">
+        <div class="toast-title">拼模式已开启</div>
+        <div class="toast-message">拖动提示词块到右侧单元即可拼入</div>
+      </div>
+    </div>
+    <div class="toast">
+      <div class="toast-icon warning">⚠</div>
+      <div class="toast-content">
+        <div class="toast-title">画布是空的</div>
+        <div class="toast-message">双击空白处新增提示词块</div>
+      </div>
+    </div>
+    <div class="toast">
+      <div class="toast-icon error">✕</div>
+      <div class="toast-content">
+        <div class="toast-title">删除失败</div>
+        <div class="toast-message">无法删除正在编辑的块，请先关闭编辑器</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer-note">Editorial Creative Studio · Pin Hao Jing Design System</div>
+
+</body>
+</html>

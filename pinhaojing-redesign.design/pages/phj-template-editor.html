@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440, initial-scale=1.0">
+<title>拼好镜 - 模板定制</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary-50: #FFFBEB;
+    --primary-100: #FEF3C7;
+    --primary-200: #FDE68A;
+    --primary-300: #FCD34D;
+    --primary-400: #FBBF24;
+    --primary-500: #F59E0B;
+    --primary-600: #D97706;
+    --primary-700: #B45309;
+    --primary-800: #92400E;
+    --primary-900: #78350F;
+    --secondary-500: #14B8A6;
+    --secondary-700: #0F766E;
+    --accent-500: #F43F5E;
+    --accent-600: #E11D48;
+    --bg-canvas: #FBF7F0;
+    --bg-surface: #FFFFFF;
+    --bg-sidebar: #F5EFE6;
+    --bg-muted: #EDE6DA;
+    --border-subtle: #E5DDD0;
+    --border-strong: #D4C9B8;
+    --text-ink: #1C1917;
+    --text-primary: #292524;
+    --text-secondary: #78716C;
+    --text-tertiary: #A8A29E;
+    --text-inverse: #FFFBEB;
+    --success: #059669;
+    --error: #DC2626;
+    --font-display: "Fraunces", "Playfair Display", Georgia, "Noto Serif SC", serif;
+    --font-sans: "Space Grotesk", "Inter", system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    --shadow-sm: 0 1px 2px rgba(120, 53, 15, 0.06), 0 1px 3px rgba(120, 53, 15, 0.04);
+    --shadow-md: 0 4px 12px rgba(120, 53, 15, 0.08), 0 2px 4px rgba(120, 53, 15, 0.05);
+    --shadow-lg: 0 12px 32px rgba(120, 53, 15, 0.10), 0 4px 8px rgba(120, 53, 15, 0.05);
+    --shadow-xl: 0 24px 56px rgba(120, 53, 15, 0.12);
+    --shadow-2xl: 0 40px 80px rgba(120, 53, 15, 0.18);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-full: 999px;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    width: 1440px;
+    height: 900px;
+    overflow: hidden;
+    font-family: var(--font-sans);
+    background: var(--bg-canvas);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ===== Background Scene (dimmed overlay) ===== */
+  .bg-scene {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .bg-scene::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(251, 191, 36, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, rgba(20, 184, 166, 0.05) 0%, transparent 50%);
+    z-index: 0;
+  }
+
+  /* Faint grid pattern for editorial feel */
+  .bg-scene::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+      linear-gradient(rgba(120, 53, 15, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120, 53, 15, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.5;
+    z-index: 0;
+  }
+
+  /* Dimmed overlay for modal focus */
+  .bg-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(28, 25, 23, 0.35);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 1;
+  }
+
+  /* ===== Template Editor Window ===== */
+  .tpl-window {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 680px;
+    height: 620px;
+    background: var(--bg-surface);
+    border-radius: 12px;
+    box-shadow: var(--shadow-2xl);
+    border: 1px solid var(--border-strong);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+  }
+
+  /* Left book spine accent */
+  .tpl-window::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--primary-300), var(--primary-600));
+    z-index: 2;
+  }
+
+  /* ===== Window Header ===== */
+  .tpl-header {
+    height: 56px;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0 20px 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .tpl-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .tpl-header-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-ink);
+    letter-spacing: -0.01em;
+  }
+
+  .tpl-selector {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .tpl-selector select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    border-radius: 8px;
+    padding: 6px 28px 6px 10px;
+    font-size: 13px;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s var(--ease-out);
+  }
+
+  .tpl-selector select:hover {
+    border-color: var(--border-strong);
+  }
+
+  .tpl-selector::after {
+    content: '';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid var(--text-tertiary);
+    pointer-events: none;
+  }
+
+  .tpl-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-new-tpl {
+    font-size: 13px;
+    color: var(--primary-600);
+    background: var(--primary-50);
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s var(--ease-out);
+  }
+
+  .btn-new-tpl:hover {
+    background: var(--primary-100);
+  }
+
+  .btn-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 18px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s var(--ease-out);
+    font-family: var(--font-sans);
+  }
+
+  .btn-close:hover {
+    border-color: var(--accent-500);
+    color: var(--accent-500);
+    background: #FFF1F2;
+  }
+
+  /* ===== Window Body ===== */
+  .tpl-body {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .tpl-body::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .tpl-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .tpl-body::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 3px;
+  }
+
+  /* Template name input row */
+  .tpl-name-row {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tpl-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .tpl-input {
+    width: 100%;
+    border: 1px solid var(--border-subtle);
+    background: #fffdf8;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    outline: none;
+    transition: border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+  }
+
+  .tpl-input:focus {
+    border-color: var(--primary-400);
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+  }
+
+  /* Section header */
+  .tpl-section-header {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  /* Template unit card */
+  .tpl-unit-card {
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 14px;
+    position: relative;
+  }
+
+  .tpl-unit-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .unit-number-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    color: var(--text-inverse);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .unit-name-input {
+    flex: 1;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12.5px;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    outline: none;
+    transition: border-color 0.2s var(--ease-out);
+  }
+
+  .unit-name-input:focus {
+    border-color: var(--primary-400);
+  }
+
+  .unit-delete-btn {
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s var(--ease-out);
+    flex-shrink: 0;
+  }
+
+  .unit-delete-btn:hover {
+    color: var(--accent-500);
+    background: rgba(244, 63, 94, 0.08);
+  }
+
+  /* Prefix / Suffix sections */
+  .unit-prefix,
+  .unit-suffix {
+    margin-bottom: 4px;
+  }
+
+  .unit-suffix {
+    margin-bottom: 0;
+  }
+
+  .unit-chip-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .unit-chips {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .chip-amber {
+    background: var(--primary-100);
+    color: var(--primary-700);
+  }
+
+  .chip-teal {
+    background: #CCFBF1;
+    color: var(--secondary-700);
+  }
+
+  .chip-add {
+    font-size: 11px;
+    color: var(--primary-600);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 3px 4px;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    transition: color 0.2s var(--ease-out);
+  }
+
+  .chip-add:hover {
+    color: var(--primary-700);
+    text-decoration: underline;
+  }
+
+  /* Content slot area */
+  .unit-content-slot {
+    background: var(--bg-surface);
+    border: 1px dashed var(--border-strong);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+  }
+
+  .slot-placeholder {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-style: italic;
+  }
+
+  .slot-prompt-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .drag-handle {
+    color: var(--text-tertiary);
+    font-size: 14px;
+    cursor: grab;
+    line-height: 1;
+    letter-spacing: -2px;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  .prompt-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Add unit button */
+  .btn-add-unit {
+    width: 100%;
+    border: 1px dashed var(--border-strong);
+    border-radius: 10px;
+    padding: 12px;
+    background: transparent;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: all 0.2s var(--ease-out);
+    font-weight: 500;
+  }
+
+  .btn-add-unit:hover {
+    border-color: var(--primary-300);
+    color: var(--primary-600);
+    background: var(--primary-50);
+  }
+
+  /* ===== Window Footer ===== */
+  .tpl-footer {
+    height: 52px;
+    border-top: 1px solid var(--border-subtle);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    background: var(--bg-surface);
+  }
+
+  .footer-left {
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-load {
+    font-size: 12px;
+    color: var(--primary-600);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    padding: 4px 0;
+    transition: color 0.2s var(--ease-out);
+  }
+
+  .btn-load:hover {
+    color: var(--primary-700);
+    text-decoration: underline;
+  }
+
+  .footer-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-preview {
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s var(--ease-out);
+  }
+
+  .btn-preview:hover {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+
+  .btn-delete {
+    font-size: 13px;
+    color: var(--accent-600);
+    background: #FFF1F2;
+    border: 1px solid #FECDD3;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s var(--ease-out);
+  }
+
+  .btn-delete:hover {
+    background: #FFE4E6;
+    border-color: var(--accent-500);
+  }
+
+  .btn-save {
+    font-size: 13px;
+    color: var(--text-inverse);
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s var(--ease-out);
+  }
+
+  .btn-save:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+</style>
+</head>
+<body>
+
+<!-- Background Scene -->
+<div class="bg-scene"></div>
+<div class="bg-overlay"></div>
+
+<!-- Template Editor Window -->
+<div class="tpl-window">
+
+  <!-- Header -->
+  <div class="tpl-header">
+    <div class="tpl-header-left">
+      <span class="tpl-header-title">模板定制</span>
+      <div class="tpl-selector">
+        <select>
+          <option>经典三连镜</option>
+          <option>电影叙事五段式</option>
+          <option>极简双镜</option>
+          <option>情绪递进四镜</option>
+        </select>
+      </div>
+    </div>
+    <div class="tpl-header-right">
+      <button class="btn-new-tpl">+ 新建模板</button>
+      <button class="btn-close">&times;</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="tpl-body">
+
+    <!-- Template name -->
+    <div class="tpl-name-row">
+      <label class="tpl-label">模板名称</label>
+      <input type="text" class="tpl-input" value="经典三连镜">
+    </div>
+
+    <!-- Template units section -->
+    <div>
+      <div class="tpl-section-header">模板单元</div>
+
+      <!-- Unit 1 -->
+      <div class="tpl-unit-card">
+        <div class="tpl-unit-header">
+          <div class="unit-number-badge">1</div>
+          <input type="text" class="unit-name-input" value="开场 · 全景建立">
+          <button class="unit-delete-btn">&times;</button>
+        </div>
+
+        <div class="unit-prefix">
+          <div class="unit-chip-label">前缀</div>
+          <div class="unit-chips">
+            <span class="chip chip-amber">电影感画面，</span>
+            <span class="chip chip-amber">宽幅比例，</span>
+            <button class="chip-add">+ 添加前缀</button>
+          </div>
+        </div>
+
+        <div class="unit-content-slot">
+          <span class="slot-placeholder">拖入提示词块 &rarr;</span>
+        </div>
+
+        <div class="unit-suffix">
+          <div class="unit-chip-label">后缀</div>
+          <div class="unit-chips">
+            <span class="chip chip-teal">，胶片质感</span>
+            <span class="chip chip-teal">，高细节</span>
+            <button class="chip-add">+ 添加后缀</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Unit 2 -->
+      <div class="tpl-unit-card" style="margin-top: 10px;">
+        <div class="tpl-unit-header">
+          <div class="unit-number-badge">2</div>
+          <input type="text" class="unit-name-input" value="主体 · 特写聚焦">
+          <button class="unit-delete-btn">&times;</button>
+        </div>
+
+        <div class="unit-prefix">
+          <div class="unit-chip-label">前缀</div>
+          <div class="unit-chips">
+            <span class="chip chip-amber">浅景深，</span>
+            <span class="chip chip-amber">f/1.4，</span>
+            <button class="chip-add">+ 添加前缀</button>
+          </div>
+        </div>
+
+        <div class="unit-content-slot">
+          <div class="slot-prompt-preview">
+            <span class="drag-handle">&#8942;&#8942;</span>
+            <span class="prompt-text">一个穿白色连衣裙的女孩站在金色麦田中，微风拂过发梢...</span>
+          </div>
+        </div>
+
+        <div class="unit-suffix">
+          <div class="unit-chip-label">后缀</div>
+          <div class="unit-chips">
+            <span class="chip chip-teal">，发丝光</span>
+            <button class="chip-add">+ 添加后缀</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Unit 3 -->
+      <div class="tpl-unit-card" style="margin-top: 10px;">
+        <div class="tpl-unit-header">
+          <div class="unit-number-badge">3</div>
+          <input type="text" class="unit-name-input" value="收尾 · 情绪留白">
+          <button class="unit-delete-btn">&times;</button>
+        </div>
+
+        <div class="unit-prefix">
+          <div class="unit-chip-label">前缀</div>
+          <div class="unit-chips">
+            <span class="chip chip-amber">逆光剪影，</span>
+            <button class="chip-add">+ 添加前缀</button>
+          </div>
+        </div>
+
+        <div class="unit-content-slot">
+          <span class="slot-placeholder">拖入提示词块 &rarr;</span>
+        </div>
+
+        <div class="unit-suffix">
+          <div class="unit-chip-label">后缀</div>
+          <div class="unit-chips">
+            <span class="chip chip-teal">，暖色调</span>
+            <button class="chip-add">+ 添加后缀</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add unit button -->
+    <button class="btn-add-unit">+ 添加单元</button>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="tpl-footer">
+    <div class="footer-left">
+      <button class="btn-load">载入当前拼接</button>
+    </div>
+    <div class="footer-right">
+      <button class="btn-preview">预览</button>
+      <button class="btn-delete">删除模板</button>
+      <button class="btn-save">保存</button>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440, initial-scale=1.0">
+<title>拼好镜 - 块编辑器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Primary — warm amber */
+    --primary-50: #FFFBEB; --primary-100: #FEF3C7; --primary-200: #FDE68A;
+    --primary-300: #FCD34D; --primary-400: #FBBF24; --primary-500: #F59E0B;
+    --primary-600: #D97706; --primary-700: #B45309; --primary-800: #92400E; --primary-900: #78350F;
+    /* Secondary — deep teal */
+    --secondary-500: #14B8A6; --secondary-700: #0F766E;
+    /* Accent — rose */
+    --accent-500: #F43F5E; --accent-600: #E11D48;
+    /* Warm neutrals */
+    --bg-canvas: #FBF7F0; --bg-surface: #FFFFFF; --bg-sidebar: #F5EFE6;
+    --bg-muted: #EDE6DA; --border-subtle: #E5DDD0; --border-strong: #D4C9B8;
+    /* Text */
+    --text-ink: #1C1917; --text-primary: #292524; --text-secondary: #78716C;
+    --text-tertiary: #A8A29E; --text-inverse: #FFFBEB;
+    /* Semantic */
+    --success: #059669; --warning: #D97706; --error: #DC2626;
+    /* Typography */
+    --font-display: "Fraunces", "Playfair Display", Georgia, "Noto Serif SC", serif;
+    --font-sans: "Space Grotesk", "Inter", system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    /* Shadows — warm-toned */
+    --shadow-sm: 0 1px 2px rgba(120, 53, 15, 0.06), 0 1px 3px rgba(120, 53, 15, 0.04);
+    --shadow-md: 0 4px 12px rgba(120, 53, 15, 0.08), 0 2px 4px rgba(120, 53, 15, 0.05);
+    --shadow-lg: 0 12px 32px rgba(120, 53, 15, 0.10), 0 4px 8px rgba(120, 53, 15, 0.05);
+    --shadow-xl: 0 24px 56px rgba(120, 53, 15, 0.12);
+    --shadow-2xl: 0 40px 80px rgba(120, 53, 15, 0.18);
+    /* Radius */
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
+    /* Motion */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 1440px;
+    height: 900px;
+    overflow: hidden;
+    font-family: var(--font-sans);
+    background: var(--bg-canvas);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== Background Layer ===== */
+  .page-bg {
+    position: fixed;
+    inset: 0;
+    width: 1440px;
+    height: 900px;
+    background: var(--bg-canvas);
+    overflow: hidden;
+  }
+
+  /* Dot grid pattern */
+  .page-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle, rgba(180, 83, 9, 0.08) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: 0 0;
+    opacity: 0.6;
+  }
+
+  /* Warm amber tinted overlay */
+  .page-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.04) 0%, rgba(217, 119, 6, 0.03) 50%, rgba(251, 191, 36, 0.02) 100%);
+    pointer-events: none;
+  }
+
+  /* Dimmed canvas blocks in background */
+  .bg-canvas-scene {
+    position: absolute;
+    inset: 0;
+    opacity: 0.15;
+    pointer-events: none;
+  }
+
+  .bg-block {
+    position: absolute;
+    background: var(--primary-200);
+    border-radius: var(--radius-sm);
+  }
+
+  .bg-block-1 { top: 80px; left: 120px; width: 180px; height: 120px; opacity: 0.5; }
+  .bg-block-2 { top: 100px; left: 340px; width: 220px; height: 80px; background: var(--primary-100); opacity: 0.6; }
+  .bg-block-3 { top: 220px; left: 140px; width: 140px; height: 160px; opacity: 0.4; }
+  .bg-block-4 { top: 200px; left: 320px; width: 200px; height: 140px; background: var(--primary-100); opacity: 0.5; }
+  .bg-block-5 { top: 400px; left: 160px; width: 360px; height: 60px; opacity: 0.3; }
+  .bg-block-6 { top: 480px; left: 200px; width: 280px; height: 100px; background: var(--primary-100); opacity: 0.4; }
+
+  .bg-block-7 { top: 60px; right: 180px; width: 200px; height: 100px; opacity: 0.4; }
+  .bg-block-8 { top: 180px; right: 200px; width: 160px; height: 180px; background: var(--primary-100); opacity: 0.5; }
+  .bg-block-9 { top: 380px; right: 160px; width: 240px; height: 120px; opacity: 0.35; }
+  .bg-block-10 { top: 520px; right: 220px; width: 180px; height: 80px; background: var(--primary-100); opacity: 0.4; }
+
+  /* ===== Modal ===== */
+  .modal-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+
+  .modal {
+    position: relative;
+    width: 640px;
+    max-height: 720px;
+    background: var(--bg-surface);
+    border-radius: 12px;
+    box-shadow: var(--shadow-2xl);
+    border: 1px solid var(--border-strong);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Book spine accent — left amber gradient bar */
+  .modal::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--primary-400) 0%, var(--primary-600) 100%);
+    z-index: 2;
+  }
+
+  /* ===== Modal Header ===== */
+  .modal-header {
+    padding: 18px 24px 18px 28px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+  }
+
+  .tag-chip {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--primary-700);
+    background: var(--primary-100);
+    border-radius: var(--radius-full);
+    padding: 3px 10px;
+    letter-spacing: 0.02em;
+    font-family: var(--font-sans);
+  }
+
+  .modal-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-ink);
+    margin-left: 10px;
+    letter-spacing: -0.01em;
+  }
+
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s var(--ease-out);
+    font-family: var(--font-sans);
+    font-weight: 300;
+  }
+
+  .close-btn:hover {
+    background: var(--primary-50);
+    color: var(--primary-600);
+    border-color: var(--primary-200);
+  }
+
+  /* ===== Editor Body ===== */
+  .modal-body {
+    padding: 20px 24px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .blk-editor {
+    border: 1px solid var(--primary-400);
+    border-radius: var(--radius-md);
+    background: #fffdf8;
+    position: relative;
+    display: flex;
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+  }
+
+  /* Left gutter — line numbers */
+  .editor-gutter {
+    width: 48px;
+    flex-shrink: 0;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-subtle);
+    padding: 14px 0;
+    border-radius: 9px 0 0 9px;
+  }
+
+  .line-number {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-tertiary);
+    text-align: right;
+    padding-right: 12px;
+    line-height: 1.7;
+    height: 23.8px; /* match line-height of editor text */
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .line-number.active {
+    background: var(--primary-50);
+    color: var(--primary-700);
+    font-weight: 500;
+  }
+
+  /* Text area */
+  .editor-content {
+    flex: 1;
+    padding: 14px 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    overflow: hidden;
+  }
+
+  .editor-line {
+    min-height: 23.8px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .editor-line.active {
+    background: rgba(251, 191, 36, 0.06);
+    margin: 0 -16px;
+    padding: 0 16px;
+    border-left: 2px solid var(--primary-400);
+  }
+
+  /* Amber marker highlight */
+  .hl {
+    background-color: rgba(251, 191, 36, 0.25);
+    border-radius: 2px;
+    padding: 1px 0;
+  }
+
+  /* ===== Status Bar / Footer ===== */
+  .modal-footer {
+    padding: 12px 24px;
+    border-top: 1px solid var(--border-subtle);
+    background: var(--bg-sidebar);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .status-info {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-mono {
+    font-family: var(--font-mono);
+  }
+
+  .status-sep {
+    color: var(--text-tertiary);
+  }
+
+  .status-warning {
+    color: var(--primary-600);
+    font-weight: 500;
+  }
+
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-sm {
+    font-size: 12px;
+    font-family: var(--font-sans);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s var(--ease-out);
+    white-space: nowrap;
+  }
+
+  .btn-sm:hover {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+
+  .btn-primary {
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    padding: 7px 18px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-600) 100%);
+    color: #FFFFFF;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s var(--ease-out);
+    white-space: nowrap;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(180deg, #E88B00 0%, var(--primary-600) 100%);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-icon {
+    margin-right: 4px;
+    font-size: 11px;
+  }
+</style>
+</head>
+<body>
+  <div class="page-bg">
+    <!-- Dimmed canvas scene -->
+    <div class="bg-canvas-scene">
+      <div class="bg-block bg-block-1"></div>
+      <div class="bg-block bg-block-2"></div>
+      <div class="bg-block bg-block-3"></div>
+      <div class="bg-block bg-block-4"></div>
+      <div class="bg-block bg-block-5"></div>
+      <div class="bg-block bg-block-6"></div>
+      <div class="bg-block bg-block-7"></div>
+      <div class="bg-block bg-block-8"></div>
+      <div class="bg-block bg-block-9"></div>
+      <div class="bg-block bg-block-10"></div>
+    </div>
+  </div>
+
+  <div class="modal-wrapper">
+    <div class="modal">
+      <!-- Header -->
+      <div class="modal-header">
+        <div class="header-left">
+          <span class="tag-chip">场景</span>
+          <h1 class="modal-title">编辑提示词</h1>
+        </div>
+        <button class="close-btn" aria-label="关闭">×</button>
+      </div>
+
+      <!-- Editor Body -->
+      <div class="modal-body">
+        <div class="blk-editor">
+          <!-- Gutter with line numbers -->
+          <div class="editor-gutter">
+            <div class="line-number">1</div>
+            <div class="line-number">2</div>
+            <div class="line-number">3</div>
+            <div class="line-number active">4</div>
+            <div class="line-number">5</div>
+            <div class="line-number">6</div>
+          </div>
+
+          <!-- Editor content -->
+          <div class="editor-content">
+            <div class="editor-line">一个穿白色连衣裙的女孩站在海边的礁石上</div>
+            <div class="editor-line">日落时分的<span class="hl">金色阳光</span>从背后洒下来</div>
+            <div class="editor-line">在她的头发周围形成一圈柔和的光晕</div>
+            <div class="editor-line active">电影感画面，2.39:1 宽幅比例，<span class="hl">浅景深</span></div>
+            <div class="editor-line">f/1.4 大光圈，柯达 Portra 400 <span class="hl">胶片质感</span></div>
+            <div class="editor-line">海浪轻拍礁石，远处海平面橙红色</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer / Status Bar -->
+      <div class="modal-footer">
+        <div class="status-info">
+          <span class="status-mono">行 4 · 列 18</span>
+          <span class="status-sep">·</span>
+          <span>138 字</span>
+          <span class="status-sep">·</span>
+          <span class="status-warning">逗号 3 个</span>
+        </div>
+        <div class="action-buttons">
+          <button class="btn-sm">逗号转空格</button>
+          <button class="btn-sm"><span class="btn-icon">⧉</span>复制全文</button>
+          <button class="btn-primary">完成</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

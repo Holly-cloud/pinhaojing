@@ -9,14 +9,7 @@
       "canvasData": {
         "x": 0,
         "y": 0,
-        "group": 0,
-        "layoutSnapshot": {
-          "version": 1,
-          "contentHeight": 900,
-          "viewportWidth": 1440,
-          "sourceHash": "fnv1a-ae4d10bd",
-          "measuredAt": 1790602069903
-        }
+        "group": 0
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-canvas.html",
@@ -30,16 +23,9 @@
       "version": 2,
       "createdAt": 1759081260000,
       "canvasData": {
-        "x": 480,
+        "x": 1480,
         "y": 0,
-        "group": 0,
-        "layoutSnapshot": {
-          "version": 1,
-          "contentHeight": 900,
-          "viewportWidth": 1440,
-          "sourceHash": "fnv1a-67cb05ec",
-          "measuredAt": 1790602069903
-        }
+        "group": 0
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-write.html",
@@ -53,16 +39,9 @@
       "version": 2,
       "createdAt": 1759081320000,
       "canvasData": {
-        "x": 960,
-        "y": 0,
-        "group": 0,
-        "layoutSnapshot": {
-          "version": 1,
-          "contentHeight": 900,
-          "viewportWidth": 1440,
-          "sourceHash": "fnv1a-b154cfa4",
-          "measuredAt": 1790602069903
-        }
+        "x": 0,
+        "y": 960,
+        "group": 0
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-library.html",
@@ -76,27 +55,83 @@
       "version": 2,
       "createdAt": 1759081380000,
       "canvasData": {
-        "x": 1440,
-        "y": 0,
-        "group": 0,
-        "layoutSnapshot": {
-          "version": 1,
-          "contentHeight": 900,
-          "viewportWidth": 1440,
-          "sourceHash": "fnv1a-7d457872",
-          "measuredAt": 1790602069903
-        }
+        "x": 1480,
+        "y": 960,
+        "group": 0
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-overview.html",
         "interactions": []
       }
+    },
+    {
+      "id": "page-phj-block-editor",
+      "title": "块编辑器弹窗",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1759081440000,
+      "canvasData": {
+        "x": 2960,
+        "y": 0,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-block-editor.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-template-editor",
+      "title": "模板定制窗口",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1759081500000,
+      "canvasData": {
+        "x": 4440,
+        "y": 0,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-template-editor.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-ui-components",
+      "title": "UI 组件集合",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1759081560000,
+      "canvasData": {
+        "x": 2960,
+        "y": 960,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-ui-components.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-empty-states",
+      "title": "空状态集合",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1759081620000,
+      "canvasData": {
+        "x": 4440,
+        "y": 960,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-empty-states.html",
+        "interactions": []
+      }
     }
   ],
   "config": {
-    "autoLayout": true,
+    "autoLayout": false,
     "deviceType": "desktop",
-    "projectName": "拼好镜 · 编辑室创意版",
-    "visualEditorEnabled": false
+    "projectName": "拼好镜 · 编辑室创意版"
   }
 }
