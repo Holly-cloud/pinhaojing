@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拼好镜 · 交互状态全集</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary-50: #FFFBEB; --primary-100: #FEF3C7; --primary-200: #FDE68A;
+  --primary-300: #FCD34D; --primary-400: #FBBF24; --primary-500: #F59E0B;
+  --primary-600: #D97706; --primary-700: #B45309; --primary-800: #92400E; --primary-900: #78350F;
+  --secondary-500: #14B8A6; --secondary-700: #0F766E;
+  --accent-500: #F43F5E; --accent-600: #E11D48;
+  --bg-canvas: #FBF7F0; --bg-surface: #FFFFFF; --bg-sidebar: #F5EFE6;
+  --bg-muted: #EDE6DA; --border-subtle: #E5DDD0; --border-strong: #D4C9B8;
+  --text-ink: #1C1917; --text-primary: #292524; --text-secondary: #78716C;
+  --text-tertiary: #A8A29E; --text-inverse: #FFFBEB;
+  --success: #059669; --warning: #D97706; --error: #DC2626;
+  --font-display: "Fraunces", Georgia, "Noto Serif SC", serif;
+  --font-sans: "Space Grotesk", "Inter", system-ui, "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+  --shadow-sm: 0 1px 2px rgba(120, 53, 15, 0.06), 0 1px 3px rgba(120, 53, 15, 0.04);
+  --shadow-md: 0 4px 12px rgba(120, 53, 15, 0.08), 0 2px 4px rgba(120, 53, 15, 0.05);
+  --shadow-lg: 0 12px 32px rgba(120, 53, 15, 0.10), 0 4px 8px rgba(120, 53, 15, 0.05);
+  --shadow-xl: 0 24px 56px rgba(120, 53, 15, 0.12);
+  --shadow-2xl: 0 40px 80px rgba(120, 53, 15, 0.18);
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  width: 1440px;
+  height: 900px;
+  overflow: hidden;
+  background: var(--bg-canvas);
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  position: relative;
+}
+
+/* Page Header */
+.page-header {
+  padding: 28px 48px 16px;
+  position: relative;
+  z-index: 2;
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--primary-600);
+  margin-bottom: 8px;
+}
+.page-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-ink);
+  margin-bottom: 4px;
+}
+.page-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* Scrollable Content */
+.content-scroll {
+  height: calc(900px - 100px);
+  overflow-y: auto;
+  padding: 0 48px 48px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.content-scroll::-webkit-scrollbar { width: 6px; }
+.content-scroll::-webkit-scrollbar-track { background: transparent; }
+.content-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+.content-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Section Card */
+.section-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-ink);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.section-title small {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  margin-left: 8px;
+}
+
+/* Sub-section */
+.sub-section {
+  margin-bottom: 24px;
+}
+.sub-section:last-child { margin-bottom: 0; }
+.sub-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Button Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-lg { padding: 14px 28px; font-size: 16px; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+  color: var(--text-inverse);
+  box-shadow: 0 1px 2px rgba(120, 53, 15, 0.15);
+}
+.btn-primary.hover {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+  box-shadow: 0 2px 6px rgba(120, 53, 15, 0.2);
+}
+.btn-primary.active {
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+  box-shadow: inset 0 2px 4px rgba(120, 53, 15, 0.3);
+  transform: translateY(1px);
+}
+.btn-primary.disabled, .btn:disabled {
+  opacity: 0.4;
+  filter: grayscale(0.5);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+}
+.btn-secondary.hover {
+  border-color: var(--primary-400);
+  color: var(--primary-600);
+  background: var(--primary-50);
+}
+.btn-secondary.active {
+  border-color: var(--primary-500);
+  color: var(--primary-700);
+  background: var(--primary-100);
+  box-shadow: inset 0 1px 2px rgba(120, 53, 15, 0.1);
+}
+.btn-secondary.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+}
+.btn-ghost.hover {
+  background: var(--primary-50);
+  color: var(--primary-600);
+}
+.btn-ghost.active {
+  background: var(--primary-100);
+  color: var(--primary-700);
+}
+.btn-ghost.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--accent-500), var(--accent-600));
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(225, 29, 72, 0.15);
+}
+.btn-danger.hover {
+  background: linear-gradient(135deg, #E11D48, #BE123C);
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.25);
+}
+.btn-danger.active {
+  background: linear-gradient(135deg, #BE123C, #9F1239);
+  box-shadow: inset 0 2px 4px rgba(127, 29, 29, 0.3);
+  transform: translateY(1px);
+}
+.btn-danger.disabled {
+  opacity: 0.4;
+  filter: grayscale(0.5);
+  cursor: not-allowed;
+}
+
+/* Button State Grid */
+.btn-states-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.btn-state-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.btn-state-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* Variant Group */
+.variant-group {
+  margin-bottom: 20px;
+}
+.variant-group:last-child { margin-bottom: 0; }
+.variant-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+/* Input Styles */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 240px;
+}
+.input-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.input-field {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+  outline: none;
+}
+.input-field::placeholder { color: var(--text-tertiary); }
+.input-field.hover { border-color: var(--border-strong); }
+.input-field.focus {
+  border-color: var(--primary-400);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+}
+.input-field.disabled {
+  opacity: 0.5;
+  background: var(--bg-muted);
+  cursor: not-allowed;
+}
+.input-field.error {
+  border-color: var(--accent-500);
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.12);
+}
+.input-field.success {
+  border-color: var(--success);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+}
+.input-helper {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.input-helper.error-text { color: var(--accent-600); }
+.input-helper.success-text { color: var(--success); }
+
+/* Input with prefix/suffix */
+.input-with-icon {
+  position: relative;
+  width: 240px;
+}
+.input-with-icon .input-field {
+  padding-left: 36px;
+}
+.input-with-icon.suffix .input-field {
+  padding-left: 12px;
+  padding-right: 56px;
+}
+.input-icon-prefix {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+.input-suffix-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+.input-suffix-btn:hover { background: var(--bg-muted); color: var(--text-primary); }
+
+/* Input grid */
+.input-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+/* Textarea */
+.textarea-field {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+}
+.textarea-field.focus {
+  border-color: var(--primary-400);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+}
+.textarea-wrapper {
+  position: relative;
+  width: 320px;
+}
+.char-counter {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* Select */
+.select-field {
+  position: relative;
+  width: 240px;
+}
+.select-field select {
+  width: 100%;
+  padding: 9px 32px 9px 12px;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  appearance: none;
+  outline: none;
+  cursor: pointer;
+}
+.select-field::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--text-tertiary);
+  border-bottom: 1.5px solid var(--text-tertiary);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+.select-field.open select {
+  border-color: var(--primary-400);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+}
+.select-field.disabled select {
+  opacity: 0.5;
+  background: var(--bg-muted);
+  cursor: not-allowed;
+}
+
+/* Checkbox & Radio */
+.form-check-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.form-check.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.checkbox.checked {
+  background: var(--primary-500);
+  border-color: var(--primary-500);
+}
+.checkbox.checked::after {
+  content: '';
+  width: 10px;
+  height: 6px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+.checkbox.indeterminate {
+  background: var(--primary-500);
+  border-color: var(--primary-500);
+}
+.checkbox.indeterminate::after {
+  content: '';
+  width: 10px;
+  height: 2px;
+  background: #fff;
+  border-radius: 1px;
+}
+
+.radio {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.radio.checked {
+  border-color: var(--primary-500);
+}
+.radio.checked::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary-500);
+}
+
+/* Toggle Switch */
+.toggle-row {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.toggle-switch {
+  width: 40px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--border-strong);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+.toggle-switch.on {
+  background: var(--primary-500);
+}
+.toggle-switch.on::after {
+  left: 19px;
+}
+.toggle-switch.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.toggle-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Loading / Spinner */
+.spinner {
+  border-radius: 50%;
+  border: 2px solid var(--primary-200);
+  border-top-color: var(--primary-500);
+  animation: spin 0.8s linear infinite;
+}
+.spinner-sm { width: 16px; height: 16px; border-width: 2px; }
+.spinner-md { width: 24px; height: 24px; border-width: 3px; }
+.spinner-lg { width: 36px; height: 36px; border-width: 3px; }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner-row {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+.spinner-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.spinner-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* Loading Button */
+.btn .spinner {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+  border-color: rgba(255,255,255,0.3);
+  border-top-color: #fff;
+}
+.btn-secondary .spinner {
+  border-color: var(--primary-200);
+  border-top-color: var(--primary-500);
+}
+
+/* Skeleton */
+.skeleton-card {
+  width: 320px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+}
+.skeleton-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-muted);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.skeleton-line {
+  height: 12px;
+  border-radius: 4px;
+  background: var(--bg-muted);
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-line:nth-child(2) { width: 85%; }
+.skeleton-line:nth-child(3) { width: 60%; }
+
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 100%);
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Progress Bar */
+.progress-wrapper {
+  width: 320px;
+}
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-muted);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+.progress-fill {
+  height: 100%;
+  width: 60%;
+  background: linear-gradient(90deg, var(--primary-400), var(--primary-600));
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+.progress-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: right;
+  margin-top: 6px;
+}
+
+/* Focus Rings Section */
+.focus-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+.focus-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 16px;
+  background: var(--bg-canvas);
+  border-radius: var(--radius-md);
+}
+.focus-item .btn-primary {
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15), 0 1px 2px rgba(120, 53, 15, 0.15);
+  border: 1px solid var(--primary-400);
+}
+.focus-card {
+  width: 100%;
+  padding: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--primary-400);
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.focus-link {
+  font-size: 14px;
+  color: var(--primary-600);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  outline: 2px solid var(--primary-400);
+  outline-offset: 2px;
+  border-radius: 2px;
+  padding: 2px 4px;
+}
+
+/* Two-column layout for sections */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.three-col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+/* Icon SVG inline */
+.icon {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.icon-search { color: var(--text-tertiary); }
+.icon-error { color: var(--accent-500); }
+.icon-check { color: var(--success); }
+
+/* Input with error/success icon */
+.input-with-status {
+  position: relative;
+  width: 240px;
+}
+.input-with-status .input-field {
+  padding-right: 36px;
+}
+.input-status-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>
+</head>
+<body>
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="eyebrow">Interaction States</div>
+  <h1 class="page-title">交互状态全集</h1>
+  <p class="page-subtitle">按钮 · 输入 · 加载 · 禁用 · 焦点</p>
+</div>
+
+<!-- Scrollable Content -->
+<div class="content-scroll">
+<div class="content-inner">
+
+<!-- Section 1: Button States -->
+<div class="section-card">
+  <h2 class="section-title">按钮 · Buttons <small>4 种样式 · 5 种状态 · 3 种尺寸</small></h2>
+
+  <!-- Primary Button -->
+  <div class="variant-group">
+    <div class="variant-label">Primary — 主按钮</div>
+    <div class="btn-states-row">
+      <div class="btn-state-item">
+        <button class="btn btn-primary">Primary</button>
+        <span class="btn-state-label">default</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-primary hover">Primary</button>
+        <span class="btn-state-label">hover</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-primary active">Primary</button>
+        <span class="btn-state-label">active</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-primary disabled" disabled>Primary</button>
+        <span class="btn-state-label">disabled</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-primary">
+          <div class="spinner spinner-sm" style="border-color: rgba(255,255,255,0.3); border-top-color: #fff;"></div>
+          加载中
+        </button>
+        <span class="btn-state-label">loading</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Secondary Button -->
+  <div class="variant-group">
+    <div class="variant-label">Secondary — 次按钮</div>
+    <div class="btn-states-row">
+      <div class="btn-state-item">
+        <button class="btn btn-secondary">Secondary</button>
+        <span class="btn-state-label">default</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-secondary hover">Secondary</button>
+        <span class="btn-state-label">hover</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-secondary active">Secondary</button>
+        <span class="btn-state-label">active</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-secondary disabled" disabled>Secondary</button>
+        <span class="btn-state-label">disabled</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-secondary">
+          <div class="spinner spinner-sm"></div>
+          加载中
+        </button>
+        <span class="btn-state-label">loading</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ghost Button -->
+  <div class="variant-group">
+    <div class="variant-label">Ghost — 文字按钮</div>
+    <div class="btn-states-row">
+      <div class="btn-state-item">
+        <button class="btn btn-ghost">Ghost</button>
+        <span class="btn-state-label">default</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-ghost hover">Ghost</button>
+        <span class="btn-state-label">hover</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-ghost active">Ghost</button>
+        <span class="btn-state-label">active</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-ghost disabled" disabled>Ghost</button>
+        <span class="btn-state-label">disabled</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Danger Button -->
+  <div class="variant-group">
+    <div class="variant-label">Danger — 危险按钮</div>
+    <div class="btn-states-row">
+      <div class="btn-state-item">
+        <button class="btn btn-danger">Danger</button>
+        <span class="btn-state-label">default</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-danger hover">Danger</button>
+        <span class="btn-state-label">hover</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-danger active">Danger</button>
+        <span class="btn-state-label">active</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-danger disabled" disabled>Danger</button>
+        <span class="btn-state-label">disabled</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Button Sizes -->
+  <div class="variant-group" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-subtle);">
+    <div class="variant-label">Sizes — 尺寸</div>
+    <div class="btn-states-row">
+      <div class="btn-state-item">
+        <button class="btn btn-primary btn-sm">Small</button>
+        <span class="btn-state-label">sm · 6px 12px · 12px</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-primary">Medium</button>
+        <span class="btn-state-label">md · 10px 20px · 14px</span>
+      </div>
+      <div class="btn-state-item">
+        <button class="btn btn-primary btn-lg">Large</button>
+        <span class="btn-state-label">lg · 14px 28px · 16px</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 2: Input States -->
+<div class="section-card">
+  <h2 class="section-title">输入框 · Inputs <small>文本 · 多行 · 下拉 · 复选 · 开关</small></h2>
+
+  <!-- Text Input States -->
+  <div class="sub-section">
+    <div class="sub-title">Text Input — 文本输入</div>
+    <div class="input-grid">
+      <!-- Default -->
+      <div class="input-group">
+        <label class="input-label">Default</label>
+        <input type="text" class="input-field" placeholder="请输入内容">
+        <span class="input-helper">默认状态</span>
+      </div>
+      <!-- Hover -->
+      <div class="input-group">
+        <label class="input-label">Hover</label>
+        <input type="text" class="input-field hover" placeholder="请输入内容" value="悬停状态">
+        <span class="input-helper">边框加深</span>
+      </div>
+      <!-- Focus -->
+      <div class="input-group">
+        <label class="input-label">Focus</label>
+        <input type="text" class="input-field focus" placeholder="请输入内容" value="焦点状态">
+        <span class="input-helper">琥珀色光晕</span>
+      </div>
+      <!-- Disabled -->
+      <div class="input-group">
+        <label class="input-label">Disabled</label>
+        <input type="text" class="input-field disabled" placeholder="禁用状态" value="不可编辑" disabled>
+        <span class="input-helper">不透明度 50%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-section">
+    <div class="sub-title">Validation — 校验状态</div>
+    <div class="input-grid">
+      <!-- Error -->
+      <div class="input-group">
+        <label class="input-label">Error</label>
+        <div class="input-with-status">
+          <input type="text" class="input-field error" value="输入有误">
+          <span class="input-status-icon">
+            <svg class="icon icon-error" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </span>
+        </div>
+        <span class="input-helper error-text">请输入有效的邮箱地址</span>
+      </div>
+      <!-- Success -->
+      <div class="input-group">
+        <label class="input-label">Success</label>
+        <div class="input-with-status">
+          <input type="text" class="input-field success" value="验证通过">
+          <span class="input-status-icon">
+            <svg class="icon icon-check" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </span>
+        </div>
+        <span class="input-helper success-text">用户名可用</span>
+      </div>
+      <!-- Prefix Icon -->
+      <div class="input-group">
+        <label class="input-label">With Prefix</label>
+        <div class="input-with-icon">
+          <span class="input-icon-prefix">
+            <svg class="icon icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
+          <input type="text" class="input-field" placeholder="搜索...">
+        </div>
+        <span class="input-helper">前缀图标</span>
+      </div>
+      <!-- Suffix Action -->
+      <div class="input-group">
+        <label class="input-label">With Suffix</label>
+        <div class="input-with-icon suffix">
+          <input type="text" class="input-field" value="搜索关键词">
+          <button class="input-suffix-btn">清除</button>
+        </div>
+        <span class="input-helper">后缀操作</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two Column: Textarea + Select -->
+  <div class="two-col">
+    <!-- Textarea -->
+    <div class="sub-section">
+      <div class="sub-title">Textarea — 多行文本</div>
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="input-group" style="width: 100%;">
+          <label class="input-label">Default</label>
+          <textarea class="textarea-field" rows="3" placeholder="请输入描述内容..."></textarea>
+          <span class="input-helper">默认三行高度</span>
+        </div>
+        <div class="input-group" style="width: 100%;">
+          <label class="input-label">Focus</label>
+          <div class="textarea-wrapper" style="width: 100%;">
+            <textarea class="textarea-field focus" rows="3">这是一段正在编辑的文本内容，展示了焦点状态下的琥珀色边框光晕效果。</textarea>
+            <span class="char-counter">128 / 500</span>
+          </div>
+          <span class="input-helper">焦点 + 字符计数</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Select -->
+    <div class="sub-section">
+      <div class="sub-title">Select — 下拉选择</div>
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="input-group">
+          <label class="input-label">Default</label>
+          <div class="select-field">
+            <select>
+              <option>请选择选项</option>
+              <option>选项一</option>
+              <option>选项二</option>
+            </select>
+          </div>
+          <span class="input-helper">默认下拉</span>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Open / Active</label>
+          <div class="select-field open">
+            <select>
+              <option>选项一</option>
+              <option selected>选项二</option>
+              <option>选项三</option>
+            </select>
+          </div>
+          <span class="input-helper">展开状态</span>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Disabled</label>
+          <div class="select-field disabled">
+            <select disabled>
+              <option>不可选择</option>
+            </select>
+          </div>
+          <span class="input-helper">禁用状态</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkbox & Radio -->
+  <div class="two-col" style="margin-top: 8px;">
+    <div class="sub-section">
+      <div class="sub-title">Checkbox — 复选框</div>
+      <div class="form-check-row">
+        <label class="form-check">
+          <span class="checkbox"></span>
+          <span>未选中</span>
+        </label>
+        <label class="form-check">
+          <span class="checkbox checked"></span>
+          <span>已选中</span>
+        </label>
+        <label class="form-check">
+          <span class="checkbox indeterminate"></span>
+          <span>半选</span>
+        </label>
+        <label class="form-check disabled">
+          <span class="checkbox checked"></span>
+          <span>禁用</span>
+        </label>
+      </div>
+    </div>
+    <div class="sub-section">
+      <div class="sub-title">Radio — 单选框</div>
+      <div class="form-check-row">
+        <label class="form-check">
+          <span class="radio"></span>
+          <span>未选中</span>
+        </label>
+        <label class="form-check">
+          <span class="radio checked"></span>
+          <span>已选中</span>
+        </label>
+        <label class="form-check disabled">
+          <span class="radio checked"></span>
+          <span>禁用</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toggle Switch -->
+  <div class="sub-section">
+    <div class="sub-title">Toggle Switch — 开关</div>
+    <div class="toggle-row">
+      <div class="toggle-item">
+        <div class="toggle-switch"></div>
+        <span class="toggle-label">Off</span>
+      </div>
+      <div class="toggle-item">
+        <div class="toggle-switch on"></div>
+        <span class="toggle-label">On</span>
+      </div>
+      <div class="toggle-item">
+        <div class="toggle-switch disabled"></div>
+        <span class="toggle-label">Disabled Off</span>
+      </div>
+      <div class="toggle-item">
+        <div class="toggle-switch on disabled"></div>
+        <span class="toggle-label">Disabled On</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: Loading States -->
+<div class="section-card">
+  <h2 class="section-title">加载 · Loading <small>旋转器 · 骨架屏 · 进度条</small></h2>
+
+  <div class="three-col">
+    <!-- Spinners -->
+    <div class="sub-section">
+      <div class="sub-title">Spinners — 旋转加载</div>
+      <div class="spinner-row" style="margin-bottom: 16px;">
+        <div class="spinner-item">
+          <div class="spinner spinner-sm"></div>
+          <span class="spinner-label">16px</span>
+        </div>
+        <div class="spinner-item">
+          <div class="spinner spinner-md"></div>
+          <span class="spinner-label">24px</span>
+        </div>
+        <div class="spinner-item">
+          <div class="spinner spinner-lg"></div>
+          <span class="spinner-label">36px</span>
+        </div>
+      </div>
+      <div class="sub-title" style="margin-top: 16px;">Button Loading</div>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <button class="btn btn-primary">
+          <div class="spinner" style="width: 14px; height: 14px; border-width: 2px; border-color: rgba(255,255,255,0.3); border-top-color: #fff;"></div>
+          加载中...
+        </button>
+        <button class="btn btn-secondary">
+          <div class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></div>
+          处理中...
+        </button>
+      </div>
+    </div>
+
+    <!-- Skeleton -->
+    <div class="sub-section">
+      <div class="sub-title">Skeleton — 骨架屏</div>
+      <div class="skeleton-card">
+        <div class="skeleton-avatar skeleton-shimmer"></div>
+        <div class="skeleton-text">
+          <div class="skeleton-line skeleton-shimmer" style="width: 70%;"></div>
+          <div class="skeleton-line skeleton-shimmer"></div>
+          <div class="skeleton-line skeleton-shimmer"></div>
+        </div>
+      </div>
+      <span class="input-helper" style="display: block; margin-top: 8px;">Shimmer 渐变扫光动画</span>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="sub-section">
+      <div class="sub-title">Progress — 进度条</div>
+      <div class="progress-wrapper">
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+        <div class="progress-label">60%</div>
+      </div>
+      <div class="progress-wrapper" style="margin-top: 16px;">
+        <div class="progress-bar" style="height: 4px;">
+          <div class="progress-fill" style="width: 85%;"></div>
+        </div>
+        <div class="progress-label">85% · thin</div>
+      </div>
+      <div class="progress-wrapper" style="margin-top: 16px;">
+        <div class="progress-bar" style="height: 12px;">
+          <div class="progress-fill" style="width: 35%;"></div>
+        </div>
+        <div class="progress-label">35% · thick</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 4: Focus Visibility -->
+<div class="section-card">
+  <h2 class="section-title">焦点 · Focus Rings <small>键盘可达性 · 琥珀色焦点环</small></h2>
+
+  <div class="focus-grid">
+    <div class="focus-item">
+      <button class="btn btn-primary" style="box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15), 0 1px 2px rgba(120, 53, 15, 0.15); border: 1px solid var(--primary-400);">Button Focus</button>
+      <span class="btn-state-label">3px amber ring</span>
+    </div>
+    <div class="focus-item">
+      <div style="width: 100%;">
+        <input type="text" class="input-field focus" value="Input Focus" style="width: 100%;">
+      </div>
+      <span class="btn-state-label">border + ring</span>
+    </div>
+    <div class="focus-item">
+      <div class="focus-card">
+        <strong style="color: var(--text-ink);">Card Focus</strong><br>
+        <span style="font-size: 12px;">卡片焦点状态</span>
+      </div>
+      <span class="btn-state-label">border + outer ring</span>
+    </div>
+    <div class="focus-item">
+      <span class="focus-link">Link Focus</span>
+      <span class="btn-state-label">outline + underline</span>
+    </div>
+  </div>
+
+  <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-subtle);">
+    <div class="sub-title">Focus Ring Specs</div>
+    <div style="display: flex; gap: 32px; flex-wrap: wrap; font-size: 13px;">
+      <div>
+        <span style="color: var(--text-secondary);">颜色：</span>
+        <span style="font-family: var(--font-mono); color: var(--primary-600);">--primary-400 / #FBBF24</span>
+      </div>
+      <div>
+        <span style="color: var(--text-secondary);">宽度：</span>
+        <span style="font-family: var(--font-mono);">3px</span>
+      </div>
+      <div>
+        <span style="color: var(--text-secondary);">透明度：</span>
+        <span style="font-family: var(--font-mono);">15%</span>
+      </div>
+      <div>
+        <span style="color: var(--text-secondary);">圆角：</span>
+        <span style="font-family: var(--font-mono);">继承元素圆角</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440, initial-scale=1.0">
+<title>拼好镜 - 画布（暗色模式）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Primary — amber, brighter for dark mode */
+    --primary-400: #FBBF24;
+    --primary-500: #F59E0B;
+    --primary-600: #D97706;
+    /* Secondary — teal */
+    --secondary-400: #2DD4BF;
+    --secondary-500: #14B8A6;
+    /* Accent — rose */
+    --accent-400: #FB7185;
+    --accent-500: #F43F5E;
+    /* Dark backgrounds */
+    --bg-canvas: #1C1917;
+    --bg-surface: #292524;
+    --bg-sidebar: #262220;
+    --bg-muted: #312C28;
+    --bg-elevated: #3A3430;
+    /* Borders */
+    --border-subtle: #3D3835;
+    --border-strong: #57534E;
+    /* Text — warm light tones */
+    --text-ink: #FAFAF9;
+    --text-primary: #E7E5E4;
+    --text-secondary: #A8A29E;
+    --text-tertiary: #78716C;
+    /* Semantic */
+    --success: #34D399;
+    --warning: #FBBF24;
+    --error: #F87171;
+    /* Shadows — darker, subtler */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 24px 56px rgba(0, 0, 0, 0.5);
+    --shadow-2xl: 0 40px 80px rgba(0, 0, 0, 0.6);
+    --shadow-glow-amber: 0 0 24px rgba(251, 191, 36, 0.2), 0 0 48px rgba(251, 191, 36, 0.08);
+    /* Typography */
+    --font-display: "Fraunces", "Playfair Display", Georgia, "Noto Serif SC", serif;
+    --font-sans: "Space Grotesk", "Inter", system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    /* Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-full: 999px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 1440px;
+    height: 900px;
+    overflow: hidden;
+    font-family: var(--font-sans);
+    background: var(--bg-canvas);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ===== Dark Mode Badge ===== */
+  .dark-badge {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(41, 37, 36, 0.9);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--primary-400);
+    z-index: 200;
+    font-family: var(--font-mono);
+    letter-spacing: 0.03em;
+  }
+  .dark-badge .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary-400);
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.6);
+  }
+
+  /* ===== Top Bar ===== */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 52px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    z-index: 100;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 14px;
+    color: #1C1917;
+  }
+
+  .app-name {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-ink);
+    letter-spacing: -0.01em;
+  }
+
+  .topbar-center {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mode-pill {
+    display: flex;
+    background: var(--bg-muted);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .mode-pill-btn {
+    padding: 6px 18px;
+    border: none;
+    background: transparent;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    transition: all 0.2s ease;
+  }
+
+  .mode-pill-btn.active {
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    color: #1C1917;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .icon-btn:hover {
+    border-color: var(--primary-500);
+    color: var(--primary-400);
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    padding: 2px;
+    cursor: pointer;
+  }
+  .avatar-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--bg-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-400);
+  }
+
+  /* ===== Canvas Area ===== */
+  .canvas-area {
+    position: fixed;
+    top: 52px;
+    left: 0;
+    right: 300px;
+    bottom: 0;
+    background: var(--bg-canvas);
+    background-image:
+      radial-gradient(circle, #2A2623 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: 0 0;
+    overflow: hidden;
+  }
+
+  .canvas-glow {
+    position: absolute;
+    bottom: -120px;
+    right: -120px;
+    width: 480px;
+    height: 480px;
+    background: radial-gradient(circle, rgba(217, 119, 6, 0.1) 0%, transparent 65%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  /* ===== Blocks ===== */
+  .block {
+    position: absolute;
+    min-width: 220px;
+    max-width: 300px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    transition: all 0.25s ease;
+    cursor: grab;
+  }
+
+  .block.selected {
+    border-color: var(--primary-500);
+    box-shadow: var(--shadow-glow-amber), var(--shadow-lg);
+  }
+
+  .block-header {
+    padding: 10px 14px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .block-tag {
+    display: inline-flex;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(251, 191, 36, 0.12);
+    color: var(--primary-400);
+    font-size: 11px;
+    font-weight: 500;
+    font-family: var(--font-sans);
+  }
+
+  .block-drag-dots {
+    color: var(--text-tertiary);
+    font-size: 14px;
+    letter-spacing: 1px;
+    cursor: grab;
+    line-height: 1;
+  }
+
+  .block-body {
+    padding: 4px 14px 10px;
+  }
+
+  .block-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .block-footer {
+    padding: 8px 14px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .block-meta {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: var(--font-mono);
+  }
+
+  .block-drag-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary-400);
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.4);
+  }
+
+  /* Block positions */
+  .block-1 { top: 40px; left: 60px; max-width: 260px; }
+  .block-2 { top: 30px; left: 400px; max-width: 280px; }
+  .block-3 { top: 60px; left: 760px; max-width: 240px; }
+  .block-4 { top: 260px; left: 80px; max-width: 270px; }
+  .block-5 { top: 280px; left: 440px; max-width: 260px; }
+
+  /* ===== Splice Bar ===== */
+  .splice-bar {
+    position: fixed;
+    top: 52px;
+    right: 0;
+    bottom: 0;
+    width: 300px;
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+  }
+
+  .splice-header {
+    padding: 18px 20px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .splice-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .count-badge {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    color: #1C1917;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+  }
+
+  .splice-close {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .splice-close:hover {
+    background: var(--bg-muted);
+    color: var(--text-primary);
+  }
+
+  .splice-units {
+    flex: 1;
+    padding: 16px 16px 8px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .unit-card {
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    transition: all 0.2s ease;
+  }
+
+  .unit-card.filled {
+    border: 1px solid rgba(217, 119, 6, 0.4);
+    background: rgba(251, 191, 36, 0.08);
+  }
+
+  .unit-card.active {
+    border: 1px solid var(--primary-500);
+    box-shadow: 0 0 0 1px var(--primary-500), var(--shadow-glow-amber);
+  }
+
+  .unit-card.empty {
+    border: 1px dashed var(--border-subtle);
+    background: transparent;
+  }
+
+  .unit-number {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    color: #1C1917;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .unit-card.empty .unit-number {
+    background: var(--bg-muted);
+    color: var(--text-tertiary);
+    border: 1px dashed var(--border-subtle);
+  }
+
+  .unit-card.filled .unit-number {
+    position: relative;
+  }
+  .unit-card.filled .unit-number::after {
+    content: '✓';
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--primary-400);
+    color: #1C1917;
+    font-size: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+  }
+
+  .unit-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .unit-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .unit-card.empty .unit-title {
+    color: var(--text-tertiary);
+    font-style: italic;
+  }
+
+  .unit-subtitle {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 3px;
+  }
+
+  .unit-card.empty .unit-subtitle {
+    color: var(--text-tertiary);
+  }
+
+  /* Scrollbar */
+  .splice-units::-webkit-scrollbar { width: 4px; }
+  .splice-units::-webkit-scrollbar-track { background: transparent; }
+  .splice-units::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+
+  /* ===== Floating Write Button ===== */
+  .write-btn {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    color: #1C1917;
+    border: none;
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg), 0 0 20px rgba(251, 191, 36, 0.25);
+    z-index: 60;
+    transition: all 0.2s ease;
+  }
+  .write-btn:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-xl), 0 0 32px rgba(251, 191, 36, 0.35);
+  }
+
+  /* ===== View Controls ===== */
+  .view-controls {
+    position: fixed;
+    bottom: 24px;
+    right: 324px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: var(--shadow-md);
+    z-index: 60;
+  }
+
+  .vc-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    border-radius: 5px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    font-family: var(--font-mono);
+    font-weight: 500;
+  }
+  .vc-btn:hover {
+    background: var(--bg-muted);
+    color: var(--text-primary);
+  }
+  .vc-divider {
+    width: 1px;
+    height: 16px;
+    background: var(--border-subtle);
+    margin: 0 2px;
+  }
+
+  /* Canvas hint */
+  .canvas-hint {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    pointer-events: none;
+    font-family: var(--font-mono);
+  }
+</style>
+</head>
+<body>
+
+  <!-- Dark Mode Badge -->
+  <div class="dark-badge">
+    <span class="dot"></span>
+    DARK MODE
+  </div>
+
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo-mark">镜</div>
+      <div class="app-name">拼好镜</div>
+    </div>
+    <div class="topbar-center">
+      <div class="mode-pill">
+        <button class="mode-pill-btn active">画布</button>
+        <button class="mode-pill-btn">写作台</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" title="搜索">⌕</button>
+      <button class="icon-btn" title="素材库">▤</button>
+      <div class="avatar">
+        <div class="avatar-inner">H</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Canvas Area -->
+  <main class="canvas-area">
+    <div class="canvas-glow"></div>
+
+    <!-- Block 1: 场景 - portrait orientation, longer text -->
+    <div class="block block-1">
+      <div class="block-header">
+        <span class="block-tag">场景</span>
+        <span class="block-drag-dots">⋮⋮</span>
+      </div>
+      <div class="block-body">
+        <div class="block-text">一个穿白色连衣裙的女孩站在海边礁石上，日落金色阳光从背后洒下，形成柔和的轮廓光晕，海风吹起裙摆与发丝</div>
+      </div>
+      <div class="block-footer">
+        <span class="block-meta">138 字</span>
+        <span class="block-drag-dot"></span>
+      </div>
+    </div>
+
+    <!-- Block 2: 人物 - wider, medium text -->
+    <div class="block block-2">
+      <div class="block-header">
+        <span class="block-tag">人物</span>
+        <span class="block-drag-dots">⋮⋮</span>
+      </div>
+      <div class="block-body">
+        <div class="block-text">年轻女性肖像，侧逆光勾勒面部轮廓，眼神温柔望向远方，自然光线下皮肤质感细腻</div>
+      </div>
+      <div class="block-footer">
+        <span class="block-meta">138 字</span>
+        <span class="block-drag-dot"></span>
+      </div>
+    </div>
+
+    <!-- Block 3: 光影 - small, selected state with amber glow -->
+    <div class="block block-3 selected">
+      <div class="block-header">
+        <span class="block-tag">光影</span>
+        <span class="block-drag-dots">⋮⋮</span>
+      </div>
+      <div class="block-body">
+        <div class="block-text">黄金时刻侧逆光，暖色调，柔和阴影</div>
+      </div>
+      <div class="block-footer">
+        <span class="block-meta">138 字</span>
+        <span class="block-drag-dot"></span>
+      </div>
+    </div>
+
+    <!-- Block 4: 构图 - another position -->
+    <div class="block block-4">
+      <div class="block-header">
+        <span class="block-tag">构图</span>
+        <span class="block-drag-dots">⋮⋮</span>
+      </div>
+      <div class="block-body">
+        <div class="block-text">三分法构图，主体位于画面右下交点，留有呼吸空间</div>
+      </div>
+      <div class="block-footer">
+        <span class="block-meta">138 字</span>
+        <span class="block-drag-dot"></span>
+      </div>
+    </div>
+
+    <!-- Block 5: 风格 - highlight, slightly elevated -->
+    <div class="block block-5">
+      <div class="block-header">
+        <span class="block-tag">风格</span>
+        <span class="block-drag-dots">⋮⋮</span>
+      </div>
+      <div class="block-body">
+        <div class="block-text">电影感画面，柯达 Portra 400 胶片质感，颗粒细腻，暖色调</div>
+      </div>
+      <div class="block-footer">
+        <span class="block-meta">138 字</span>
+        <span class="block-drag-dot"></span>
+      </div>
+    </div>
+
+    <div class="canvas-hint">双击空白新建块 · 空格拖动画布</div>
+  </main>
+
+  <!-- Splice Bar -->
+  <aside class="splice-bar">
+    <div class="splice-header">
+      <div class="splice-title">
+        拼接栏
+        <span class="count-badge">3</span>
+      </div>
+      <div class="splice-close">×</div>
+    </div>
+
+    <div class="splice-units">
+      <!-- Unit 1: Filled -->
+      <div class="unit-card filled">
+        <div class="unit-number">1</div>
+        <div class="unit-content">
+          <div class="unit-title">海边日落女孩站在礁石上逆光轮廓</div>
+          <div class="unit-subtitle">场景 · 已拼接</div>
+        </div>
+      </div>
+
+      <!-- Unit 2: Active -->
+      <div class="unit-card active">
+        <div class="unit-number">2</div>
+        <div class="unit-content">
+          <div class="unit-title">黄金时刻侧逆光暖色调柔和阴影</div>
+          <div class="unit-subtitle">光影 · 编辑中</div>
+        </div>
+      </div>
+
+      <!-- Unit 3: Empty -->
+      <div class="unit-card empty">
+        <div class="unit-number">3</div>
+        <div class="unit-content">
+          <div class="unit-title">拖拽块到此处添加</div>
+          <div class="unit-subtitle">空单位</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Floating Write Button -->
+  <button class="write-btn">写</button>
+
+  <!-- View Controls -->
+  <div class="view-controls">
+    <button class="vc-btn" title="缩小">−</button>
+    <button class="vc-btn" title="放大">+</button>
+    <div class="vc-divider"></div>
+    <button class="vc-btn" title="适应">⊡</button>
+    <button class="vc-btn" title="网格">#</button>
+  </div>
+
+</body>
+</html>

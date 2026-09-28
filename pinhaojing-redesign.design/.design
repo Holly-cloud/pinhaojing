@@ -101,7 +101,14 @@
       "canvasData": {
         "x": 0,
         "y": 373,
-        "group": 1
+        "group": 1,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-540bca8d",
+          "measuredAt": 1790606295059
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-block-editor.html",
@@ -117,7 +124,14 @@
       "canvasData": {
         "x": 480,
         "y": 373,
-        "group": 1
+        "group": 1,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-8901b6f4",
+          "measuredAt": 1790606295059
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-template-editor.html",
@@ -133,7 +147,14 @@
       "canvasData": {
         "x": 960,
         "y": 373,
-        "group": 1
+        "group": 1,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-cbf843d5",
+          "measuredAt": 1790606295059
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-ui-components.html",
@@ -149,7 +170,14 @@
       "canvasData": {
         "x": 1440,
         "y": 373,
-        "group": 1
+        "group": 1,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-a850f9cf",
+          "measuredAt": 1790606295059
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-empty-states.html",
@@ -165,7 +193,14 @@
       "canvasData": {
         "x": 0,
         "y": 746,
-        "group": 2
+        "group": 2,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-472fff56",
+          "measuredAt": 1790606295059
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-splice-mode.html",
@@ -181,7 +216,14 @@
       "canvasData": {
         "x": 480,
         "y": 746,
-        "group": 2
+        "group": 2,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-72423da5",
+          "measuredAt": 1790606295059
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-image-multiselect.html",
@@ -197,10 +239,65 @@
       "canvasData": {
         "x": 960,
         "y": 746,
-        "group": 2
+        "group": 2,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-91de2d6f",
+          "measuredAt": 1790606295059
+        }
       },
       "devMetadata": {
         "htmlSrc": "pages/phj-corpus-health.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-design-tokens",
+      "title": "设计系统 Token",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1759081860000,
+      "canvasData": {
+        "x": 0,
+        "y": 1119,
+        "group": 3
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-design-tokens.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-interaction-states",
+      "title": "交互状态全集",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1759081920000,
+      "canvasData": {
+        "x": 480,
+        "y": 1119,
+        "group": 3
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-interaction-states.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-phj-dark-mode",
+      "title": "暗色模式预览",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1759081980000,
+      "canvasData": {
+        "x": 960,
+        "y": 1119,
+        "group": 3
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phj-dark-mode.html",
         "interactions": []
       }
     }

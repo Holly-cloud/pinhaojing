@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拼好镜 · 设计系统 Token 总览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,400&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary-50: #FFFBEB; --primary-100: #FEF3C7; --primary-200: #FDE68A;
+    --primary-300: #FCD34D; --primary-400: #FBBF24; --primary-500: #F59E0B;
+    --primary-600: #D97706; --primary-700: #B45309; --primary-800: #92400E; --primary-900: #78350F;
+    --secondary-500: #14B8A6; --secondary-700: #0F766E;
+    --accent-500: #F43F5E; --accent-600: #E11D48;
+    --bg-canvas: #FBF7F0; --bg-surface: #FFFFFF; --bg-sidebar: #F5EFE6;
+    --bg-muted: #EDE6DA; --border-subtle: #E5DDD0; --border-strong: #D4C9B8;
+    --text-ink: #1C1917; --text-primary: #292524; --text-secondary: #78716C;
+    --text-tertiary: #A8A29E; --text-inverse: #FFFBEB;
+    --success: #059669; --warning: #D97706; --error: #DC2626;
+    --font-display: "Fraunces", Georgia, "Noto Serif SC", serif;
+    --font-sans: "Space Grotesk", "Inter", system-ui, "Microsoft YaHei", sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    --shadow-sm: 0 1px 2px rgba(120, 53, 15, 0.06), 0 1px 3px rgba(120, 53, 15, 0.04);
+    --shadow-md: 0 4px 12px rgba(120, 53, 15, 0.08), 0 2px 4px rgba(120, 53, 15, 0.05);
+    --shadow-lg: 0 12px 32px rgba(120, 53, 15, 0.10), 0 4px 8px rgba(120, 53, 15, 0.05);
+    --shadow-xl: 0 24px 56px rgba(120, 53, 15, 0.12);
+    --shadow-2xl: 0 40px 80px rgba(120, 53, 15, 0.18);
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 1440px;
+    height: 900px;
+    overflow: hidden;
+    background: var(--bg-canvas);
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page-header {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 24px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-left .eyebrow {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--primary-600);
+    font-family: var(--font-sans);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .header-left .title {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-ink);
+    line-height: 1.2;
+  }
+
+  .header-left .subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .version-badge {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    padding: 4px 12px;
+    font-family: var(--font-mono);
+  }
+
+  .content {
+    height: calc(900px - 89px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  .content::-webkit-scrollbar { width: 6px; }
+  .content::-webkit-scrollbar-track { background: transparent; }
+  .content::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section {
+    padding: 32px 48px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .section:last-child { border-bottom: none; }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-ink);
+    margin-bottom: 16px;
+  }
+
+  /* Primary Palette */
+  .primary-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 0;
+  }
+
+  .swatch-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .swatch {
+    width: 100%;
+    height: 80px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 8px;
+  }
+
+  .swatch-item:first-child .swatch { border-radius: 8px 0 0 0; }
+  .swatch-item:last-child .swatch { border-radius: 0 8px 0 0; }
+
+  .swatch-label {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+  }
+
+  .swatch-token {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: var(--font-mono);
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  /* Semantic Colors */
+  .semantic-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .semantic-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .semantic-swatch {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .semantic-info .name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-ink);
+    margin-bottom: 2px;
+  }
+
+  .semantic-info .token {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+  }
+
+  /* Neutrals */
+  .neutrals-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .neutral-group-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+
+  .neutral-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .neutral-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .neutral-swatch {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .neutral-swatch.text-swatch {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+    border: none;
+    background: var(--bg-surface);
+  }
+
+  .neutral-name {
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  .neutral-token {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+  }
+
+  /* Typography */
+  .typography-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+
+  .type-column .type-label {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+
+  .type-sample-large {
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--text-ink);
+    line-height: 1.1;
+    margin-bottom: 20px;
+  }
+
+  .type-sans .type-sample-large {
+    font-family: var(--font-sans);
+    font-size: 40px;
+    font-weight: 600;
+  }
+
+  .weight-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .weight-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .weight-sample {
+    font-size: 15px;
+    color: var(--text-ink);
+  }
+
+  .weight-name {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+  }
+
+  .type-mono {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .type-mono .type-label {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+
+  .mono-sample {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    color: var(--text-ink);
+    background: var(--bg-muted);
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Shadows */
+  .shadow-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+  }
+
+  .shadow-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .shadow-demo {
+    width: 80px;
+    height: 80px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+  }
+
+  .shadow-info {
+    text-align: center;
+  }
+
+  .shadow-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-ink);
+    margin-bottom: 2px;
+  }
+
+  .shadow-token {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+    word-break: break-all;
+  }
+
+  /* Radius */
+  .radius-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .radius-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .radius-demo {
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, var(--primary-300), var(--primary-500));
+  }
+
+  .radius-demo.full {
+    width: 120px;
+    border-radius: var(--radius-full);
+  }
+
+  .radius-info {
+    text-align: center;
+  }
+
+  .radius-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-ink);
+    margin-bottom: 2px;
+  }
+
+  .radius-token {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+  }
+
+  /* Spacing */
+  .spacing-section {
+    padding-bottom: 48px;
+  }
+
+  .spacing-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 24px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+  }
+
+  .spacing-bar {
+    background: linear-gradient(180deg, var(--primary-400), var(--primary-600));
+    border-radius: 3px;
+    flex-shrink: 0;
+    height: 32px;
+  }
+
+  .spacing-labels {
+    display: flex;
+    gap: 8px;
+    padding: 0 24px;
+  }
+
+  .spacing-label-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .spacing-px {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-ink);
+  }
+
+  .spacing-token {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+  }
+</style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="header-left">
+      <div class="eyebrow">Design System</div>
+      <h1 class="title">Editorial Creative Studio</h1>
+      <div class="subtitle">拼好镜 · 设计系统 Token 总览</div>
+    </div>
+    <div class="version-badge">v1.0</div>
+  </header>
+
+  <main class="content">
+    <div class="container">
+
+      <!-- Section 1: Primary Palette -->
+      <section class="section">
+        <h2 class="section-title">主色 · Primary</h2>
+        <div class="primary-grid">
+          <div class="swatch-item">
+            <div class="swatch" style="background: var(--primary-50);">
+              <span class="swatch-label" style="color: var(--text-ink);">50</span>
+            </div>
+            <div class="swatch-token">--primary-50</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch" style="background: var(--primary-100);">
+              <span class="swatch-label" style="color: var(--text-ink);">100</span>
+            </div>
+            <div class="swatch-token">--primary-100</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch" style="background: var(--primary-200);">
+              <span class="swatch-label" style="color: var(--text-ink);">200</span>
+            </div>
+            <div class="swatch-token">--primary-200</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch" style="background: var(--primary-300);">
+              <span class="swatch-label" style="color: var(--text-ink);">300</span>
+            </div>
+            <div class="swatch-token">--primary-300</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch" style="background: var(--primary-400);">
+              <span class="swatch-label" style="color: var(--text-ink);">400</span>
+            </div>
+            <div class="swatch-token">--primary-400</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch" style="background: var(--primary-500);">
+              <span class="swatch-label" style="color: var(--text-inverse);">500</span>
+            </div>
+            <div class="swatch-token">--primary-500</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch" style="background: var(--primary-600);">
+              <span class="swatch-label" style="color: var(--text-inverse);">600</span>
+            </div>
+            <div class="swatch-token">--primary-600</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch" style="background: var(--primary-700);">
+              <span class="swatch-label" style="color: var(--text-inverse);">700</span>
+            </div>
+            <div class="swatch-token">--primary-700</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch" style="background: var(--primary-800);">
+              <span class="swatch-label" style="color: var(--text-inverse);">800</span>
+            </div>
+            <div class="swatch-token">--primary-800</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch" style="background: var(--primary-900);">
+              <span class="swatch-label" style="color: var(--text-inverse);">900</span>
+            </div>
+            <div class="swatch-token">--primary-900</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Semantic Colors -->
+      <section class="section">
+        <h2 class="section-title">功能色 · Semantic</h2>
+        <div class="semantic-grid">
+          <div class="semantic-card">
+            <div class="semantic-swatch" style="background: var(--success);"></div>
+            <div class="semantic-info">
+              <div class="name">Success</div>
+              <div class="token">--success</div>
+            </div>
+          </div>
+          <div class="semantic-card">
+            <div class="semantic-swatch" style="background: var(--warning);"></div>
+            <div class="semantic-info">
+              <div class="name">Warning</div>
+              <div class="token">--warning</div>
+            </div>
+          </div>
+          <div class="semantic-card">
+            <div class="semantic-swatch" style="background: var(--error);"></div>
+            <div class="semantic-info">
+              <div class="name">Error</div>
+              <div class="token">--error</div>
+            </div>
+          </div>
+          <div class="semantic-card">
+            <div class="semantic-swatch" style="background: var(--secondary-500);"></div>
+            <div class="semantic-info">
+              <div class="name">Secondary</div>
+              <div class="token">--secondary-500</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Neutrals & Backgrounds -->
+      <section class="section">
+        <h2 class="section-title">中性色 · Neutrals</h2>
+        <div class="neutrals-grid">
+          <div>
+            <div class="neutral-group-title">文字颜色 Text</div>
+            <div class="neutral-row">
+              <div class="neutral-item">
+                <div class="neutral-swatch text-swatch" style="color: var(--text-ink);">Aa</div>
+                <div class="neutral-name">Ink</div>
+                <div class="neutral-token">--text-ink</div>
+              </div>
+              <div class="neutral-item">
+                <div class="neutral-swatch text-swatch" style="color: var(--text-primary);">Aa</div>
+                <div class="neutral-name">Primary</div>
+                <div class="neutral-token">--text-primary</div>
+              </div>
+              <div class="neutral-item">
+                <div class="neutral-swatch text-swatch" style="color: var(--text-secondary);">Aa</div>
+                <div class="neutral-name">Secondary</div>
+                <div class="neutral-token">--text-secondary</div>
+              </div>
+              <div class="neutral-item">
+                <div class="neutral-swatch text-swatch" style="color: var(--text-tertiary);">Aa</div>
+                <div class="neutral-name">Tertiary</div>
+                <div class="neutral-token">--text-tertiary</div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="neutral-group-title">背景颜色 Background</div>
+            <div class="neutral-row">
+              <div class="neutral-item">
+                <div class="neutral-swatch" style="background: var(--bg-canvas);"></div>
+                <div class="neutral-name">Canvas</div>
+                <div class="neutral-token">--bg-canvas</div>
+              </div>
+              <div class="neutral-item">
+                <div class="neutral-swatch" style="background: var(--bg-surface);"></div>
+                <div class="neutral-name">Surface</div>
+                <div class="neutral-token">--bg-surface</div>
+              </div>
+              <div class="neutral-item">
+                <div class="neutral-swatch" style="background: var(--bg-sidebar);"></div>
+                <div class="neutral-name">Sidebar</div>
+                <div class="neutral-token">--bg-sidebar</div>
+              </div>
+              <div class="neutral-item">
+                <div class="neutral-swatch" style="background: var(--bg-muted);"></div>
+                <div class="neutral-name">Muted</div>
+                <div class="neutral-token">--bg-muted</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 24px;">
+          <div class="neutral-group-title">边框颜色 Border</div>
+          <div class="neutral-row">
+            <div class="neutral-item">
+              <div class="neutral-swatch" style="background: var(--border-subtle);"></div>
+              <div class="neutral-name">Subtle</div>
+              <div class="neutral-token">--border-subtle</div>
+            </div>
+            <div class="neutral-item">
+              <div class="neutral-swatch" style="background: var(--border-strong);"></div>
+              <div class="neutral-name">Strong</div>
+              <div class="neutral-token">--border-strong</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 4: Typography -->
+      <section class="section">
+        <h2 class="section-title">字体 · Typography</h2>
+        <div class="typography-grid">
+          <div class="type-column type-display">
+            <div class="type-label">Display · Fraunces</div>
+            <div class="type-sample-large">Aa 拼好镜</div>
+            <div class="weight-list">
+              <div class="weight-row">
+                <span class="weight-sample" style="font-family: var(--font-display); font-weight: 300;">The quick brown fox</span>
+                <span class="weight-name">Light 300</span>
+              </div>
+              <div class="weight-row">
+                <span class="weight-sample" style="font-family: var(--font-display); font-weight: 400;">The quick brown fox</span>
+                <span class="weight-name">Regular 400</span>
+              </div>
+              <div class="weight-row">
+                <span class="weight-sample" style="font-family: var(--font-display); font-weight: 600;">The quick brown fox</span>
+                <span class="weight-name">Semibold 600</span>
+              </div>
+              <div class="weight-row">
+                <span class="weight-sample" style="font-family: var(--font-display); font-weight: 700;">The quick brown fox</span>
+                <span class="weight-name">Bold 700</span>
+              </div>
+              <div class="weight-row">
+                <span class="weight-sample" style="font-family: var(--font-display); font-weight: 800;">The quick brown fox</span>
+                <span class="weight-name">ExtraBold 800</span>
+              </div>
+            </div>
+          </div>
+          <div class="type-column type-sans">
+            <div class="type-label">Sans · Space Grotesk</div>
+            <div class="type-sample-large">Aa 拼好镜</div>
+            <div class="weight-list">
+              <div class="weight-row">
+                <span class="weight-sample" style="font-family: var(--font-sans); font-weight: 300;">The quick brown fox</span>
+                <span class="weight-name">Light 300</span>
+              </div>
+              <div class="weight-row">
+                <span class="weight-sample" style="font-family: var(--font-sans); font-weight: 400;">The quick brown fox</span>
+                <span class="weight-name">Regular 400</span>
+              </div>
+              <div class="weight-row">
+                <span class="weight-sample" style="font-family: var(--font-sans); font-weight: 500;">The quick brown fox</span>
+                <span class="weight-name">Medium 500</span>
+              </div>
+              <div class="weight-row">
+                <span class="weight-sample" style="font-family: var(--font-sans); font-weight: 600;">The quick brown fox</span>
+                <span class="weight-name">Semibold 600</span>
+              </div>
+              <div class="weight-row">
+                <span class="weight-sample" style="font-family: var(--font-sans); font-weight: 700;">The quick brown fox</span>
+                <span class="weight-name">Bold 700</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="type-mono">
+          <div class="type-label">Mono · JetBrains Mono</div>
+          <div class="mono-sample">const prompt = 'hello pinhaojing';</div>
+        </div>
+      </section>
+
+      <!-- Section 5: Shadows -->
+      <section class="section">
+        <h2 class="section-title">阴影 · Shadows</h2>
+        <div class="shadow-grid">
+          <div class="shadow-card">
+            <div class="shadow-demo" style="box-shadow: var(--shadow-sm);"></div>
+            <div class="shadow-info">
+              <div class="shadow-name">sm</div>
+              <div class="shadow-token">--shadow-sm</div>
+            </div>
+          </div>
+          <div class="shadow-card">
+            <div class="shadow-demo" style="box-shadow: var(--shadow-md);"></div>
+            <div class="shadow-info">
+              <div class="shadow-name">md</div>
+              <div class="shadow-token">--shadow-md</div>
+            </div>
+          </div>
+          <div class="shadow-card">
+            <div class="shadow-demo" style="box-shadow: var(--shadow-lg);"></div>
+            <div class="shadow-info">
+              <div class="shadow-name">lg</div>
+              <div class="shadow-token">--shadow-lg</div>
+            </div>
+          </div>
+          <div class="shadow-card">
+            <div class="shadow-demo" style="box-shadow: var(--shadow-xl);"></div>
+            <div class="shadow-info">
+              <div class="shadow-name">xl</div>
+              <div class="shadow-token">--shadow-xl</div>
+            </div>
+          </div>
+          <div class="shadow-card">
+            <div class="shadow-demo" style="box-shadow: var(--shadow-2xl);"></div>
+            <div class="shadow-info">
+              <div class="shadow-name">2xl</div>
+              <div class="shadow-token">--shadow-2xl</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 6: Radius -->
+      <section class="section">
+        <h2 class="section-title">圆角 · Radius</h2>
+        <div class="radius-grid">
+          <div class="radius-item">
+            <div class="radius-demo" style="border-radius: var(--radius-sm);"></div>
+            <div class="radius-info">
+              <div class="radius-value">6px</div>
+              <div class="radius-token">--radius-sm</div>
+            </div>
+          </div>
+          <div class="radius-item">
+            <div class="radius-demo" style="border-radius: var(--radius-md);"></div>
+            <div class="radius-info">
+              <div class="radius-value">10px</div>
+              <div class="radius-token">--radius-md</div>
+            </div>
+          </div>
+          <div class="radius-item">
+            <div class="radius-demo" style="border-radius: var(--radius-lg);"></div>
+            <div class="radius-info">
+              <div class="radius-value">16px</div>
+              <div class="radius-token">--radius-lg</div>
+            </div>
+          </div>
+          <div class="radius-item">
+            <div class="radius-demo full"></div>
+            <div class="radius-info">
+              <div class="radius-value">999px</div>
+              <div class="radius-token">--radius-full</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 7: Spacing -->
+      <section class="section spacing-section">
+        <h2 class="section-title">间距 · Spacing</h2>
+        <div class="spacing-row">
+          <div class="spacing-bar" style="width: 4px;"></div>
+          <div class="spacing-bar" style="width: 8px;"></div>
+          <div class="spacing-bar" style="width: 12px;"></div>
+          <div class="spacing-bar" style="width: 16px;"></div>
+          <div class="spacing-bar" style="width: 24px;"></div>
+          <div class="spacing-bar" style="width: 32px;"></div>
+          <div class="spacing-bar" style="width: 48px;"></div>
+          <div class="spacing-bar" style="width: 64px;"></div>
+        </div>
+        <div class="spacing-labels">
+          <div class="spacing-label-item" style="width: 4px;">
+            <span class="spacing-px">4</span>
+          </div>
+          <div class="spacing-label-item" style="width: 8px;">
+            <span class="spacing-px">8</span>
+          </div>
+          <div class="spacing-label-item" style="width: 12px;">
+            <span class="spacing-px">12</span>
+          </div>
+          <div class="spacing-label-item" style="width: 16px;">
+            <span class="spacing-px">16</span>
+          </div>
+          <div class="spacing-label-item" style="width: 24px;">
+            <span class="spacing-px">24</span>
+          </div>
+          <div class="spacing-label-item" style="width: 32px;">
+            <span class="spacing-px">32</span>
+          </div>
+          <div class="spacing-label-item" style="width: 48px;">
+            <span class="spacing-px">48</span>
+          </div>
+          <div class="spacing-label-item" style="width: 64px;">
+            <span class="spacing-px">64</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</body>
+</html>
